@@ -108,7 +108,8 @@ content: |
   - [x] **Derived fleet state**: every count is computed at query time from indexed SQLite tables (migration 143); no mutable counters.
   - [x] **Batch Approval**: `shep fleet approve [--all | --gate <type>]` approves waiting gates sequentially with per-item error isolation.
   - [ ] **Deterministic Guardrail Rules**: not started. The evaluator, the `SupervisorPolicy` rule configuration, and the worker integration all belong to the next slice.
-  - [ ] **Fleet Circuit Breaker**: consecutive-failure and rolling-failure-rate thresholds trip a reported signal in `shep fleet status`. Automatic admission pausing is out of scope until admission control exists on `main`.
+  - [x] **Fleet Circuit Breaker**: consecutive-failure and rolling-failure-rate thresholds trip a reported signal in `shep fleet status`. Automatic admission pausing is out of scope until admission control exists on `main`.
+  - [x] **Breaker metrics share the fleet scope**: when a repository path is supplied, both breaker metrics are restricted to runs belonging to that repository, matching the definition of scope used by the overview counts. A scoped view must never trip because of another repository's failures.
   - [ ] **Batch Operations (remaining)**: `shep fleet retry [--ci | --failed]` and `shep fleet pause / resume` are not implemented; `--low-risk` is not implemented (it requires guardrail rule configuration, which is itself not wired).
   - [ ] **Web UI**: Fleet status bar, triage drawer, and their Storybook stories are not started.
   - [ ] **Full integration tests**: unit tests cover all four use cases; the repository has real-SQLite integration coverage. The 50-agent end-to-end simulation (task-18) is not written.

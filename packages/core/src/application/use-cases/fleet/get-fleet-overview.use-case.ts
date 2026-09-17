@@ -62,7 +62,12 @@ export class GetFleetOverviewUseCase {
       return overview;
     }
 
-    const consecutive = await this.fleetRepo.getConsecutiveFailures(CIRCUIT_BREAKER_WINDOW_MINUTES);
+    // Both breaker metrics are scoped exactly like the counts above: a scoped
+    // view must not trip because of another repository's failures.
+    const consecutive = await this.fleetRepo.getConsecutiveFailures(
+      repositoryPath,
+      CIRCUIT_BREAKER_WINDOW_MINUTES
+    );
     overview.consecutiveFailures = consecutive;
 
     if (consecutive >= config.consecutiveFailureThreshold) {
@@ -71,7 +76,10 @@ export class GetFleetOverviewUseCase {
       return overview;
     }
 
-    const rateData = await this.fleetRepo.getRollingFailureRate(CIRCUIT_BREAKER_WINDOW_MINUTES);
+    const rateData = await this.fleetRepo.getRollingFailureRate(
+      repositoryPath,
+      CIRCUIT_BREAKER_WINDOW_MINUTES
+    );
     if (
       rateData.totalCompleted >= CIRCUIT_BREAKER_MIN_SAMPLE_SIZE &&
       rateData.failureRatePercent >= config.failureRateThresholdPercent

@@ -38,16 +38,21 @@ export interface IFleetRepository {
   /**
    * Count consecutive agent run failures in the rolling time window (e.g. last 15 minutes).
    *
+   * @param repositoryPath Optional repository path to filter the run history
    * @param windowMinutes Rolling window duration in minutes (default: 15)
    */
-  getConsecutiveFailures(windowMinutes?: number): Promise<number>;
+  getConsecutiveFailures(repositoryPath?: string, windowMinutes?: number): Promise<number>;
 
   /**
    * Calculate the rolling failure percentage of runs finished in the window.
    *
+   * @param repositoryPath Optional repository path to filter the run history
    * @param windowMinutes Rolling window duration in minutes (default: 15)
    */
-  getRollingFailureRate(windowMinutes?: number): Promise<{
+  getRollingFailureRate(
+    repositoryPath?: string,
+    windowMinutes?: number
+  ): Promise<{
     totalCompleted: number;
     failedCount: number;
     failureRatePercent: number;

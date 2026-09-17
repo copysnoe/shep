@@ -352,6 +352,96 @@ describe('SQLiteFleetRepository', () => {
     });
   });
 
+  // Regression for the review on #860: the overview counts were scoped to a
+  // repository but the breaker metrics were not, so a scoped view of a healthy
+  // repo could report TRIPPED because of a different repo's failures.
+  describe('circuit breaker metrics — repository scoping', () => {
+    function seedRunIn(
+      repoPath: string,
+      id: string,
+      status: AgentRunStatus,
+      minutesAgo: number
+    ): void {
+      seedRun({
+        id: `run-${id}`,
+        status,
+        featureId: `feat-${id}`,
+        completedAt: NOW - minutesAgo * MINUTE,
+      });
+      seedFeature({
+        id: `feat-${id}`,
+        agentRunId: `run-${id}`,
+        repositoryPath: repoPath,
+      });
+    }
+
+    const seedFailureIn = (repoPath: string, id: string, minutesAgo: number): void =>
+      seedRunIn(repoPath, id, AgentRunStatus.failed, minutesAgo);
+
+    const seedCompletedIn = (repoPath: string, id: string, minutesAgo: number): void =>
+      seedRunIn(repoPath, id, AgentRunStatus.completed, minutesAgo);
+
+    it('does not count another repository failures against a scoped view', async () => {
+      for (let i = 1; i <= 4; i++) seedFailureIn(REPO_B, `b${i}`, i);
+
+      expect(await repo.getConsecutiveFailures(REPO_A, 15)).toBe(0);
+
+      const rate = await repo.getRollingFailureRate(REPO_A, 15);
+      expect(rate).toEqual({ totalCompleted: 0, failedCount: 0, failureRatePercent: 0 });
+    });
+
+    it('counts the scoped repository own failures', async () => {
+      for (let i = 1; i <= 4; i++) seedFailureIn(REPO_A, `a${i}`, i);
+
+      expect(await repo.getConsecutiveFailures(REPO_A, 15)).toBe(4);
+
+      const rate = await repo.getRollingFailureRate(REPO_A, 15);
+      expect(rate.totalCompleted).toBe(4);
+      expect(rate.failedCount).toBe(4);
+    });
+
+    it('keeps a failure streak per repository, and the break within it', async () => {
+      // Newest first overall: b2, a2, b1, a1.
+      seedFailureIn(REPO_A, 'a1', 4);
+      seedFailureIn(REPO_B, 'b1', 3);
+      seedCompletedIn(REPO_A, 'a2', 2);
+      seedFailureIn(REPO_B, 'b2', 1);
+
+      // Same rows, three different answers depending on scope: repo A's newest
+      // run succeeded, repo B has two consecutive failures, and the global
+      // view stops at repo A's success.
+      expect(await repo.getConsecutiveFailures(REPO_A, 15)).toBe(0);
+      expect(await repo.getConsecutiveFailures(REPO_B, 15)).toBe(2);
+      expect(await repo.getConsecutiveFailures(undefined, 15)).toBe(1);
+    });
+
+    it('leaves the unscoped metric unchanged, including runs with no feature', async () => {
+      seedFailureIn(REPO_A, 'a1', 2);
+      seedRun({ id: 'run-orphan', status: AgentRunStatus.failed, completedAt: NOW - MINUTE });
+
+      expect(await repo.getConsecutiveFailures(undefined, 15)).toBe(2);
+      // The orphan run belongs to no repository, so no scope claims it.
+      expect(await repo.getConsecutiveFailures(REPO_A, 15)).toBe(1);
+    });
+
+    it('excludes runs whose feature was soft-deleted from a scoped count', async () => {
+      seedRun({
+        id: 'run-gone',
+        status: AgentRunStatus.failed,
+        featureId: 'feat-gone',
+        completedAt: NOW - MINUTE,
+      });
+      seedFeature({
+        id: 'feat-gone',
+        agentRunId: 'run-gone',
+        repositoryPath: REPO_A,
+        deletedAt: NOW,
+      });
+
+      expect(await repo.getConsecutiveFailures(REPO_A, 15)).toBe(0);
+    });
+  });
+
   describe('circuit breaker metrics', () => {
     it('should count only the leading consecutive failures inside the window', async () => {
       seedRun({ id: 'r-1', status: AgentRunStatus.completed, completedAt: NOW - 3 * MINUTE });
@@ -360,7 +450,7 @@ describe('SQLiteFleetRepository', () => {
       // Outside the rolling window — must not be counted.
       seedRun({ id: 'r-old', status: AgentRunStatus.failed, completedAt: NOW - 40 * MINUTE });
 
-      expect(await repo.getConsecutiveFailures(15)).toBe(2);
+      expect(await repo.getConsecutiveFailures(undefined, 15)).toBe(2);
     });
 
     it('should stop counting consecutive failures at the first success', async () => {
@@ -369,7 +459,7 @@ describe('SQLiteFleetRepository', () => {
       seedRun({ id: 'r-2', status: AgentRunStatus.completed, completedAt: NOW - 2 * MINUTE });
       seedRun({ id: 'r-3', status: AgentRunStatus.failed, completedAt: NOW - 1 * MINUTE });
 
-      expect(await repo.getConsecutiveFailures(15)).toBe(1);
+      expect(await repo.getConsecutiveFailures(undefined, 15)).toBe(1);
     });
 
     it('should compute the rolling failure rate over the window only', async () => {
@@ -379,7 +469,7 @@ describe('SQLiteFleetRepository', () => {
       seedRun({ id: 'r-old', status: AgentRunStatus.failed, completedAt: NOW - 90 * MINUTE });
       seedRun({ id: 'r-running', status: AgentRunStatus.running, startedAt: NOW });
 
-      const rate = await repo.getRollingFailureRate(15);
+      const rate = await repo.getRollingFailureRate(undefined, 15);
 
       expect(rate.totalCompleted).toBe(3);
       expect(rate.failedCount).toBe(1);
@@ -389,7 +479,7 @@ describe('SQLiteFleetRepository', () => {
     it('should report a zero failure rate when nothing finished in the window', async () => {
       seedRun({ id: 'r-running', status: AgentRunStatus.running, startedAt: NOW });
 
-      const rate = await repo.getRollingFailureRate(15);
+      const rate = await repo.getRollingFailureRate(undefined, 15);
 
       expect(rate).toEqual({ totalCompleted: 0, failedCount: 0, failureRatePercent: 0 });
     });

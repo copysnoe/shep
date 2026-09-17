@@ -52,6 +52,24 @@ const FAILURE_STATUSES: AgentRunStatus[] = [AgentRunStatus.failed, AgentRunStatu
 /** Lifecycles that are still part of the active fleet. */
 const EXCLUDED_LIFECYCLES: SdlcLifecycle[] = [SdlcLifecycle.Archived];
 
+/**
+ * Correlated predicate restricting `agent_runs` to runs whose feature belongs
+ * to the scoped fleet.
+ *
+ * A run reaches a repository through its feature, and the fleet's definition of
+ * "in scope" must match {@link getOverview}: not soft-deleted, not archived.
+ * Runs with no feature row belong to no fleet and are therefore excluded when a
+ * scope is supplied — but still counted by the unscoped metric.
+ */
+const SCOPED_RUN_PREDICATE = `
+    AND EXISTS (
+      SELECT 1 FROM features f
+      WHERE f.id = agent_runs.feature_id
+        AND f.deleted_at IS NULL
+        AND f.lifecycle NOT IN (${EXCLUDED_LIFECYCLES.map(() => '?').join(', ')})
+        AND REPLACE(f.repository_path, char(92), '/') = ?
+    )`;
+
 interface FeatureRunRow {
   feature_id: string;
   feature_name: string;
@@ -407,17 +425,23 @@ export class SQLiteFleetRepository implements IFleetRepository {
     return typeof filters?.limit === 'number' ? filtered.slice(0, filters.limit) : filtered;
   }
 
-  async getConsecutiveFailures(windowMinutes = DEFAULT_WINDOW_MINUTES): Promise<number> {
+  async getConsecutiveFailures(
+    repositoryPath?: string,
+    windowMinutes = DEFAULT_WINDOW_MINUTES
+  ): Promise<number> {
+    const scope = repositoryPath ? normalizePath(repositoryPath) : undefined;
     const since = Date.now() - windowMinutes * MILLIS_PER_MINUTE;
     const rows = this.db
       .prepare(
         `
         SELECT status FROM agent_runs
-        WHERE completed_at IS NOT NULL AND completed_at >= ?
+        WHERE completed_at IS NOT NULL AND completed_at >= ?${scope ? SCOPED_RUN_PREDICATE : ''}
         ORDER BY completed_at DESC
       `
       )
-      .all(since) as { status: AgentRunStatus }[];
+      .all(since, ...(scope ? [...EXCLUDED_LIFECYCLES, scope] : [])) as {
+      status: AgentRunStatus;
+    }[];
 
     let consecutive = 0;
     for (const row of rows) {
@@ -428,8 +452,10 @@ export class SQLiteFleetRepository implements IFleetRepository {
   }
 
   async getRollingFailureRate(
+    repositoryPath?: string,
     windowMinutes = DEFAULT_WINDOW_MINUTES
   ): Promise<{ totalCompleted: number; failedCount: number; failureRatePercent: number }> {
+    const scope = repositoryPath ? normalizePath(repositoryPath) : undefined;
     const since = Date.now() - windowMinutes * MILLIS_PER_MINUTE;
     const row = this.db
       .prepare(
@@ -438,10 +464,10 @@ export class SQLiteFleetRepository implements IFleetRepository {
           COUNT(*) AS total_completed,
           SUM(CASE WHEN status IN (${FAILURE_STATUSES.map(() => '?').join(', ')}) THEN 1 ELSE 0 END) AS failed_count
         FROM agent_runs
-        WHERE completed_at IS NOT NULL AND completed_at >= ?
+        WHERE completed_at IS NOT NULL AND completed_at >= ?${scope ? SCOPED_RUN_PREDICATE : ''}
       `
       )
-      .get(...FAILURE_STATUSES, since) as {
+      .get(...FAILURE_STATUSES, since, ...(scope ? [...EXCLUDED_LIFECYCLES, scope] : [])) as {
       total_completed: number;
       failed_count: number | null;
     };

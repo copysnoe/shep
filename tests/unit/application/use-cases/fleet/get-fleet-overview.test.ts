@@ -118,4 +118,66 @@ describe('GetFleetOverviewUseCase', () => {
     expect(result.circuitBreakerTripped).toBe(true);
     expect(result.circuitBreakerReason).toContain('Failure rate threshold exceeded (50% > 25%');
   });
+
+  // Regression for the review on #860: the counts were scoped but the breaker
+  // metrics were called without the scope, so a scoped view could trip on
+  // another repository's failures. This is the assertion that was missing.
+  it('should pass the repository scope through to every scoped read', async () => {
+    vi.mocked(mockFleetRepo.getOverview).mockResolvedValue({
+      counts: {
+        total: 10,
+        cruising: 10,
+        queued: 0,
+        attentionNeeded: 0,
+        failed: 0,
+        waitingApproval: 0,
+        blockedQuestions: 0,
+      },
+      circuitBreakerTripped: false,
+      activeTriageCount: 0,
+      consecutiveFailures: 0,
+      timestamp: '2026-09-11T12:00:00Z',
+    });
+    vi.mocked(mockFleetRepo.getConsecutiveFailures).mockResolvedValue(0);
+    vi.mocked(mockFleetRepo.getRollingFailureRate).mockResolvedValue({
+      totalCompleted: 0,
+      failedCount: 0,
+      failureRatePercent: 0,
+    });
+
+    await useCase.execute('/repo/alpha');
+
+    expect(mockFleetRepo.getOverview).toHaveBeenCalledWith('/repo/alpha');
+    expect(mockFleetRepo.getConsecutiveFailures).toHaveBeenCalledWith('/repo/alpha', 15);
+    expect(mockFleetRepo.getRollingFailureRate).toHaveBeenCalledWith('/repo/alpha', 15);
+  });
+
+  it('should leave the breaker metrics unscoped when no repository is supplied', async () => {
+    vi.mocked(mockFleetRepo.getOverview).mockResolvedValue({
+      counts: {
+        total: 10,
+        cruising: 10,
+        queued: 0,
+        attentionNeeded: 0,
+        failed: 0,
+        waitingApproval: 0,
+        blockedQuestions: 0,
+      },
+      circuitBreakerTripped: false,
+      activeTriageCount: 0,
+      consecutiveFailures: 0,
+      timestamp: '2026-09-11T12:00:00Z',
+    });
+    vi.mocked(mockFleetRepo.getConsecutiveFailures).mockResolvedValue(0);
+    vi.mocked(mockFleetRepo.getRollingFailureRate).mockResolvedValue({
+      totalCompleted: 0,
+      failedCount: 0,
+      failureRatePercent: 0,
+    });
+
+    await useCase.execute();
+
+    expect(mockFleetRepo.getConsecutiveFailures).toHaveBeenCalledWith(undefined, 15);
+    expect(mockFleetRepo.getRollingFailureRate).toHaveBeenCalledWith(undefined, 15);
+  });
 });
