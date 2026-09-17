@@ -331,11 +331,11 @@ content: |
     settings-mapper round-trip. The use case currently reads a typed constant.
   - **Guardrail rules have no CLI authoring surface.** They are settable through
     `ConfigureSupervisorUseCase`, but `shep supervisor configure` has no flag for them yet.
-  - **`SupervisorPolicy.enabled` is not enforced on the LLM path.** `shep supervisor disable` flips
-    the flag, `supervisor status` displays it, and the prompt shows it — but nothing in
-    `EvaluateSupervisorDecisionUseCase` consults it, so a disabled policy still evaluates gates and
-    can auto-approve in autonomous mode. The guardrail pass added here *does* honour it. This is a
-    pre-existing spec-093 gap and is deliberately not changed by spec 111.
+  - **`SupervisorPolicy.enabled` is enforced in two places.** The guardrail pass added here checks it
+    first, because it runs ahead of `EvaluateSupervisorDecisionUseCase` and is therefore the only
+    thing between a disabled policy and a deterministic auto-approval. The LLM path's own check was a
+    pre-existing spec-093 gap (the flag was written by `shep supervisor disable`, displayed by
+    `supervisor status`, and read by nothing) and is fixed separately rather than in this slice.
   - **Circuit breaker does not pause anything.** Admission control (PR #847) is not on `main`,
     so there is no queue to pause; the trip is reported as a status signal only.
 

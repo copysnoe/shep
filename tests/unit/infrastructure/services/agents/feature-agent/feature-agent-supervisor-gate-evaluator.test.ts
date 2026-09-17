@@ -603,9 +603,10 @@ describe('deterministic guardrails (spec 111)', () => {
 
     const result = await bundle.evaluator.evaluateForGate(gate);
 
-    // Guardrails never auto-approve a disabled policy. (Whether the LLM path
-    // honours `enabled` is a separate, pre-existing question — see the PR
-    // description; it is deliberately not changed here.)
+    // Guardrails never auto-approve a disabled policy. This check is required
+    // independently of the LLM path: `applyGuardrails` runs first, so it is the
+    // only thing standing between a disabled policy and a deterministic
+    // auto-approval.
     expect(result.guardrailVerdict).toBeUndefined();
   });
 
