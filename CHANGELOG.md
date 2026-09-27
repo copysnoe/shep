@@ -4,6 +4,51 @@
   </a>
 </p>
 
+# 🚀 Shep [v1.233.1](/compare/v1.233.0...v1.233.1) · _2026-09-27_
+
+> Your organization does not have access to Claude. Please login again or contact your administrator.
+
+
+
+### 🐛 Bug Fixes
+
+* **web:** make "Try again" re-run a failed setup step ([#908](https://github.com/shep-ai/shep/issues/908)) ([f9560d9](https://github.com/shep-ai/shep/commit/f9560d904e65d3c6f2817d5f7790e57610e1af95)), closes [#895](https://github.com/shep-ai/shep/issues/895) [#895](https://github.com/shep-ai/shep/issues/895) [#905](https://github.com/shep-ai/shep/issues/905)
+
+  ![Setup failed with reason, light](https://raw.githubusercontent.com/miyannishar/shep/pr-assets/pr-895/setup-failed-with-reason-light.png)
+  ![Setup failed with reason, dark](https://raw.githubusercontent.com/miyannishar/shep/pr-assets/pr-895/setup-failed-with-reason-dark.png)
+  ![Chat unavailable, light](https://raw.githubusercontent.com/miyannishar/shep/pr-assets/pr-895/chat-unavailable-for-agent-light.png)
+  ![Chat unavailable, dark](https://raw.githubusercontent.com/miyannishar/shep/pr-assets/pr-895/chat-unavailable-for-agent-dark.png)
+* **web:** return 429 when the chat session cap is reached ([#907](https://github.com/shep-ai/shep/issues/907)) ([6e44914](https://github.com/shep-ai/shep/commit/6e449143da258e30ca3f5f3eb322dba53559aa42)), closes [#895](https://github.com/shep-ai/shep/issues/895) [#905](https://github.com/shep-ai/shep/issues/905)
+
+  ![Setup failed with reason, light](https://raw.githubusercontent.com/miyannishar/shep/pr-assets/pr-895/setup-failed-with-reason-light.png)
+  ![Setup failed with reason, dark](https://raw.githubusercontent.com/miyannishar/shep/pr-assets/pr-895/setup-failed-with-reason-dark.png)
+  ![Chat unavailable, light](https://raw.githubusercontent.com/miyannishar/shep/pr-assets/pr-895/chat-unavailable-for-agent-light.png)
+  ![Chat unavailable, dark](https://raw.githubusercontent.com/miyannishar/shep/pr-assets/pr-895/chat-unavailable-for-agent-dark.png)
+
+## 📦 Install or update
+
+```bash
+# upgrade an existing install
+npm i -g @shepai/cli@1.233.1
+
+# or run instantly without installing
+npx @shepai/cli@latest
+```
+
+## 💬 Join the community
+
+[💬 **Discord**](https://discord.gg/ES6tdVFfur) · [📖 **Docs**](https://github.com/shep-ai/shep#readme) · [⭐ **Star on GitHub**](https://github.com/shep-ai/shep) · [🐛 **Report an issue**](https://github.com/shep-ai/shep/issues)
+
+---
+
+<sub>🤖 Released autonomously by Shep — built by parallel AI agents working in isolated git worktrees. Try it: `npx @shepai/cli`</sub>
+
+<p align="center">
+  <a href="https://github.com/shep-ai/shep">
+    <img src="https://raw.githubusercontent.com/shep-ai/shep/main/docs/screenshots/shep-card.jpg" alt="Shep — run multiple AI agents in parallel" width="720" />
+  </a>
+</p>
+
 # 🚀 Shep [v1.233.0](/compare/v1.232.0...v1.233.0) · _2026-09-26_
 
 > Your organization does not have access to Claude. Please login again or contact your administrator.
