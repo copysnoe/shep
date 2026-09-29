@@ -4,6 +4,45 @@
   </a>
 </p>
 
+# 🚀 Shep [v1.233.2](/compare/v1.233.1...v1.233.2) · _2026-09-29_
+
+> Your organization does not have access to Claude. Please login again or contact your administrator.
+
+
+
+### 🐛 Bug Fixes
+
+* **agents:** stop a failed chat session boot leaving chat and setup stuck ([#909](https://github.com/shep-ai/shep/issues/909)) ([c32d2b1](https://github.com/shep-ai/shep/commit/c32d2b10cccccdfd8ca5980f57b3ac1ca013ee85)), closes [#905](https://github.com/shep-ai/shep/issues/905) [#906](https://github.com/shep-ai/shep/issues/906) [#907](https://github.com/shep-ai/shep/issues/907) [#908](https://github.com/shep-ai/shep/issues/908) [#902](https://github.com/shep-ai/shep/issues/902)
+
+  ![Setup failed with reason, light](https://raw.githubusercontent.com/miyannishar/shep/pr-assets/pr-895/setup-failed-with-reason-light.png)
+  ![Setup failed with reason, dark](https://raw.githubusercontent.com/miyannishar/shep/pr-assets/pr-895/setup-failed-with-reason-dark.png)
+  ![Chat unavailable, light](https://raw.githubusercontent.com/miyannishar/shep/pr-assets/pr-895/chat-unavailable-for-agent-light.png)
+  ![Chat unavailable, dark](https://raw.githubusercontent.com/miyannishar/shep/pr-assets/pr-895/chat-unavailable-for-agent-dark.png)
+
+## 📦 Install or update
+
+```bash
+# upgrade an existing install
+npm i -g @shepai/cli@1.233.2
+
+# or run instantly without installing
+npx @shepai/cli@latest
+```
+
+## 💬 Join the community
+
+[💬 **Discord**](https://discord.gg/ES6tdVFfur) · [📖 **Docs**](https://github.com/shep-ai/shep#readme) · [⭐ **Star on GitHub**](https://github.com/shep-ai/shep) · [🐛 **Report an issue**](https://github.com/shep-ai/shep/issues)
+
+---
+
+<sub>🤖 Released autonomously by Shep — built by parallel AI agents working in isolated git worktrees. Try it: `npx @shepai/cli`</sub>
+
+<p align="center">
+  <a href="https://github.com/shep-ai/shep">
+    <img src="https://raw.githubusercontent.com/shep-ai/shep/main/docs/screenshots/shep-card.jpg" alt="Shep — run multiple AI agents in parallel" width="720" />
+  </a>
+</p>
+
 # 🚀 Shep [v1.233.1](/compare/v1.233.0...v1.233.1) · _2026-09-27_
 
 > Your organization does not have access to Claude. Please login again or contact your administrator.
