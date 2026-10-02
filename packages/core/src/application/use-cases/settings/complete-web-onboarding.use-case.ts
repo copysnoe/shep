@@ -34,7 +34,10 @@ export class CompleteWebOnboardingUseCase {
         ...settings.agent,
         type: input.agentType,
       },
+      // Spread first: only the default model changes here. Rebuilding
+      // `models` from scratch would drop the saved effort and adaptive tiers.
       models: {
+        ...settings.models,
         default: input.model?.trim() ?? settings.models.default,
       },
       onboardingComplete: true,

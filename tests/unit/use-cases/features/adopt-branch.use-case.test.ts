@@ -604,6 +604,21 @@ describe('AdoptBranchUseCase', () => {
       );
     });
 
+    // Later spawns read effort from the run, so it must be pinned here like
+    // modelId — otherwise an adopted feature never runs with the default effort.
+    it('should pin the default effort from settings on the AgentRun', async () => {
+      vi.mocked(mockSettingsProvider.get).mockReturnValue({
+        agent: { type: 'claude-code' },
+        models: { default: 'claude-opus-5-5', effort: 'high' },
+      } as unknown as ReturnType<ISettingsProvider['get']>);
+
+      await useCase.execute({ branchName: 'fix/login-bug', repositoryPath: repoPath });
+
+      expect(mockAgentRunRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ modelId: 'claude-opus-5-5', effort: 'high' })
+      );
+    });
+
     it('should handle missing models.default setting gracefully', async () => {
       vi.mocked(mockSettingsProvider.get).mockReturnValue({
         agent: { type: 'cursor' },

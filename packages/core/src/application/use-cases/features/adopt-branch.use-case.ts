@@ -31,6 +31,7 @@ import type { IAgentRunRepository } from '../../ports/output/agents/agent-run-re
 import type { ISpecInitializerService } from '../../ports/output/services/spec-initializer.interface.js';
 import type { ISettingsProvider } from '../../ports/output/services/settings-provider.interface.js';
 import { deriveName, deriveSlug } from './branch-name-utils.js';
+import { effortField } from '../../../domain/shared/agent-effort.js';
 
 export interface AdoptBranchInput {
   branchName: string;
@@ -150,6 +151,8 @@ export class AdoptBranchUseCase {
       featureId: '', // Will be set after Feature creation, but we need runId first
       repositoryPath: effectiveRepoPath,
       ...(settings.models?.default ? { modelId: settings.models.default } : {}),
+      // Pinned like modelId: every later spawn reads effort from the run.
+      ...effortField(settings.models?.effort),
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
     };

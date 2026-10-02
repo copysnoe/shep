@@ -247,6 +247,44 @@ describe('PromoteExplorationUseCase', () => {
       );
     });
 
+    // Every later spawn, resume, approve and reject reads effort from the run,
+    // so a promotion that drops it loses it for the rest of the feature.
+    it('should keep the previous run effort on the new run and its spawn', async () => {
+      vi.mocked(mockRunRepo.findById).mockResolvedValue({
+        id: 'old-run-id',
+        effort: 'max',
+      } as never);
+
+      await useCase.execute({ featureId: 'explore-123', targetMode: BuildMode.Application });
+
+      expect(mockRunRepo.findById).toHaveBeenCalledWith('old-run-id');
+      expect(mockRunRepo.create).toHaveBeenCalledWith(expect.objectContaining({ effort: 'max' }));
+      expect(vi.mocked(mockProcessService.spawn).mock.calls[0][5]).toMatchObject({
+        effort: 'max',
+      });
+    });
+
+    it('should fall back to the default effort when the previous run has none', async () => {
+      vi.mocked(mockSettingsRepo.load).mockResolvedValue({
+        agent: { type: 'claude-code' },
+        models: { default: 'claude-opus-5-5', effort: 'high' },
+      } as never);
+
+      await useCase.execute({ featureId: 'explore-123', targetMode: BuildMode.Fast });
+
+      expect(mockRunRepo.create).toHaveBeenCalledWith(expect.objectContaining({ effort: 'high' }));
+      expect(vi.mocked(mockProcessService.spawn).mock.calls[0][5]).toMatchObject({
+        effort: 'high',
+      });
+    });
+
+    it('should not set effort when neither the run nor settings has one', async () => {
+      await useCase.execute({ featureId: 'explore-123', targetMode: BuildMode.Application });
+
+      expect(vi.mocked(mockRunRepo.create).mock.calls[0][0]).not.toHaveProperty('effort');
+      expect(vi.mocked(mockProcessService.spawn).mock.calls[0][5]).not.toHaveProperty('effort');
+    });
+
     it('should update the feature with new agentRunId', async () => {
       const result = await useCase.execute({
         featureId: 'explore-123',

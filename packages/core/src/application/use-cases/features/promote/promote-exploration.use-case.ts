@@ -31,6 +31,7 @@ import type { IAgentRunRepository } from '../../../ports/output/agents/agent-run
 import type { ISpecInitializerService } from '../../../ports/output/services/spec-initializer.interface.js';
 import type { IWorktreeService } from '../../../ports/output/services/worktree-service.interface.js';
 import type { ISettingsRepository } from '../../../ports/output/repositories/settings.repository.interface.js';
+import { effortField } from '../../../../domain/shared/agent-effort.js';
 
 export interface PromoteExplorationInput {
   featureId: string;
@@ -101,8 +102,12 @@ export class PromoteExplorationUseCase {
       );
     }
 
-    // Create a new agent run for the promoted mode
+    // Create a new agent run for the promoted mode. Effort is pinned on the
+    // run and every later spawn reads it from there, so carry the exploration
+    // run's effort over (falling back to the default) rather than drop it.
     const settings = await this.settingsRepo.load();
+    const previousRun = feature.agentRunId ? await this.runRepo.findById(feature.agentRunId) : null;
+    const effort = effortField(previousRun?.effort ?? settings?.models?.effort);
     const runId = randomUUID();
     const agentRun = {
       id: runId,
@@ -113,6 +118,7 @@ export class PromoteExplorationUseCase {
       threadId: randomUUID(),
       featureId: feature.id,
       repositoryPath: feature.repositoryPath,
+      ...effort,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -152,6 +158,7 @@ export class PromoteExplorationUseCase {
         enableEvidence: feature.enableEvidence,
         commitEvidence: feature.commitEvidence,
         ...(isFastMode ? { fast: true } : {}),
+        ...effort,
       }
     );
 
