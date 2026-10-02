@@ -4,6 +4,45 @@
   </a>
 </p>
 
+# 🚀 Shep [v1.234.1](/compare/v1.234.0...v1.234.1) · _2026-10-02_
+
+> Your organization does not have access to Claude. Please login again or contact your administrator.
+
+
+
+### 🐛 Bug Fixes
+
+* **deps:** bump next to 16.3.6 and dompurify to 3.4.16 ([#911](https://github.com/shep-ai/shep/issues/911)) ([b95eab0](https://github.com/shep-ai/shep/commit/b95eab0409f9542d8cad8cc63e2d82997e40b74a)), closes [#308](https://github.com/shep-ai/shep/issues/308) [#331](https://github.com/shep-ai/shep/issues/331) [#325](https://github.com/shep-ai/shep/issues/325)
+
+  ![Version badge tooltip showing 'Upgrade to v2.0.0' button in production mode](https://raw.githubusercontent.com/shep-ai/cli/feat/in-app-cli-upgrade/specs/061-in-app-cli-upgrade/evidence/version-badge-tooltip-upgrade-button.png)
+  ![Version badge tooltip in dev mode with upgrade button](https://raw.githubusercontent.com/shep-ai/cli/feat/in-app-cli-upgrade/specs/061-in-app-cli-upgrade/evidence/version-badge-tooltip-dev-with-button.png)
+  ![Plan tab visible](https://raw.githubusercontent.com/shep-ai/cli/feat/conditional-plan-tab/specs/064-conditional-plan-tab/evidence/plan-tab-visible-has-plan.png)
+  ![Plan tab hidden](https://raw.githubusercontent.com/shep-ai/cli/feat/conditional-plan-tab/specs/064-conditional-plan-tab/evidence/plan-tab-hidden-no-plan.png)
+
+## 📦 Install or update
+
+```bash
+# upgrade an existing install
+npm i -g @shepai/cli@1.234.1
+
+# or run instantly without installing
+npx @shepai/cli@latest
+```
+
+## 💬 Join the community
+
+[💬 **Discord**](https://discord.gg/ES6tdVFfur) · [📖 **Docs**](https://github.com/shep-ai/shep#readme) · [⭐ **Star on GitHub**](https://github.com/shep-ai/shep) · [🐛 **Report an issue**](https://github.com/shep-ai/shep/issues)
+
+---
+
+<sub>🤖 Released autonomously by Shep — built by parallel AI agents working in isolated git worktrees. Try it: `npx @shepai/cli`</sub>
+
+<p align="center">
+  <a href="https://github.com/shep-ai/shep">
+    <img src="https://raw.githubusercontent.com/shep-ai/shep/main/docs/screenshots/shep-card.jpg" alt="Shep — run multiple AI agents in parallel" width="720" />
+  </a>
+</p>
+
 # 🚀 Shep [v1.234.0](/compare/v1.233.2...v1.234.0) · _2026-09-30_
 
 > Your organization does not have access to Claude. Please login again or contact your administrator.
