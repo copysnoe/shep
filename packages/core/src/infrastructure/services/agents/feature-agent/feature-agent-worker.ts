@@ -64,7 +64,10 @@ import { AdmitQueuedFeaturesUseCase } from '@/application/use-cases/features/cap
 import { CleanupFeatureWorktreeUseCase } from '@/application/use-cases/features/cleanup-feature-worktree.use-case.js';
 import { startPluginServers, stopPluginServers } from './plugin-startup.js';
 import { SelectProjectMemoryUseCase } from '@/application/use-cases/project-memory/select-project-memory.use-case.js';
+import { CheckDocsGateUseCase } from '@/application/use-cases/docs-first/check-docs-gate.use-case.js';
 import { RecordProjectMemoryUseCase } from '@/application/use-cases/project-memory/record-project-memory.use-case.js';
+import { ResolveSpaceEnvironmentUseCase } from '@/application/use-cases/spaces/resolve-space-environment.use-case.js';
+import { applyRunSpaceEnvironment } from './apply-space-environment.js';
 
 import type { ApprovalGates } from '@/domain/generated/output.js';
 import { FEATURE_WORKER_HEARTBEAT_INTERVAL_MS } from '@/domain/shared/agent-run-liveness.js';
@@ -303,6 +306,37 @@ export async function runWorker(args: WorkerArgs): Promise<void> {
     return;
   }
 
+  // Spec 121: give this run its space's logins and identity before any agent,
+  // plugin server, gh or git process exists, and refuse an agent the space
+  // does not allow. Resolved from the repository, never the worktree path.
+  const spaceCheck = await applyRunSpaceEnvironment({
+    resolveEnvironment: (repositoryPath, agentType) =>
+      container.resolve(ResolveSpaceEnvironmentUseCase).execute(repositoryPath, agentType),
+    repositoryPath: args.repo,
+    agentType: args.agentType ?? settings.agent.type,
+    env: process.env,
+    log,
+  });
+  if (spaceCheck.refusal) {
+    log(`Refusing to run: ${spaceCheck.refusal}`);
+    await recordRunFailure(
+      {
+        runRepository,
+        featureRepository: container.resolve<IFeatureRepository>('IFeatureRepository'),
+        recordLifecycleEvent: (event) => recordLifecycleEvent(event),
+        drainCapacityQueue: () => container.resolve(AdmitQueuedFeaturesUseCase).execute(),
+        log,
+      },
+      {
+        runId: args.runId,
+        featureId: args.featureId,
+        message: spaceCheck.refusal,
+        failedAt: new Date(),
+      }
+    );
+    return;
+  }
+
   const executorProvider = container.resolve<IAgentExecutorProvider>('IAgentExecutorProvider');
 
   // Create executor — use pinned agentType when resuming, otherwise fall back to settings
@@ -365,6 +399,8 @@ export async function runWorker(args: WorkerArgs): Promise<void> {
       gitPrService,
       gitForkService: container.resolve<IGitForkService>('IGitForkService'),
       cleanupFeatureWorktreeUseCase,
+      checkDocsGate: (repositoryPath: string, changedFiles: readonly string[]) =>
+        container.resolve(CheckDocsGateUseCase).execute(repositoryPath, changedFiles),
     },
     extractMemoryDeps: {
       recordProjectMemory: container.resolve(RecordProjectMemoryUseCase),

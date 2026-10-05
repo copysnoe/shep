@@ -1,0 +1,264 @@
+/**
+ * RunTrackerSyncUseCase (spec 122)
+ *
+ * Runs one sync rule:
+ *
+ * 1. Pages through the tracker issues in the rule's scope updated since the
+ *    rule's cursor. A new issue becomes a work item; a known one is
+ *    reconciled field by field with planIssueSync against the values both
+ *    sides had at the last sync.
+ * 2. For a two-way rule, also pushes work items edited in shep whose issue
+ *    did not change (they are not in the tracker's "updated since" results).
+ * 3. Records what happened on the rule. The cursor only moves when every page
+ *    was read, so an interrupted run (rate limit, error) is simply repeated;
+ *    re-running is idempotent because issues are matched by external id.
+ *
+ * One failing issue is counted and skipped; a rate limit or rejected
+ * credentials stop the run.
+ */
+
+import { injectable, inject } from 'tsyringe';
+import {
+  TrackerSyncDirection,
+  type ExternalIssue,
+  type Connection,
+  type TrackerIssueLink,
+  type TrackerSyncRule,
+  type TrackerSyncRunSummary,
+  type WorkItem,
+} from '../../../domain/generated/output.js';
+import { planIssueSync, type SyncedFields } from '../../../domain/shared/tracker-sync.js';
+import { ProjectStates } from '../../../domain/shared/project-states.js';
+import type { IConnectionRepository } from '../../ports/output/repositories/connection-repository.interface.js';
+import type { ITrackerSyncRuleRepository } from '../../ports/output/repositories/tracker-sync-rule-repository.interface.js';
+import type { ITrackerIssueLinkRepository } from '../../ports/output/repositories/tracker-issue-link-repository.interface.js';
+import type { IWorkItemRepository } from '../../ports/output/repositories/work-item-repository.interface.js';
+import type { IWorkItemStateRepository } from '../../ports/output/repositories/work-item-state-repository.interface.js';
+import {
+  type ITrackerClient,
+  type ITrackerClientFactory,
+} from '../../ports/output/services/tracker-client.interface.js';
+import {
+  ConnectionAuthError,
+  ConnectionRateLimitError,
+} from '../../ports/output/services/connection-errors.js';
+import { CreateWorkItemUseCase } from '../work-items/create-work-item.use-case.js';
+import { UpdateWorkItemUseCase } from '../work-items/update-work-item.use-case.js';
+import { errorMessage, failure, type ConnectionResult } from '../connections/connection-refs.js';
+import { recordConnectionHealth } from '../connections/connection-health.js';
+import {
+  emptySummary,
+  localFields,
+  newLink,
+  remoteFields,
+  snapshotFields,
+  withSnapshot,
+  workItemUpdate,
+} from './tracker-sync-fields.js';
+
+/** Actor recorded in the work item activity log for synced changes. */
+export const TRACKER_SYNC_ACTOR = 'tracker-sync';
+/** Upper bound on pages per run, so a misbehaving tracker cannot loop forever. */
+export const MAX_PAGES_PER_RUN = 200;
+
+export interface TrackerSyncOutcome {
+  rule: TrackerSyncRule;
+  summary: TrackerSyncRunSummary;
+  /** Why the run stopped early, when it did. */
+  error?: string;
+}
+
+function isStoppingError(error: unknown): boolean {
+  return error instanceof ConnectionRateLimitError || error instanceof ConnectionAuthError;
+}
+
+@injectable()
+export class RunTrackerSyncUseCase {
+  constructor(
+    @inject('ITrackerSyncRuleRepository') private readonly rules: ITrackerSyncRuleRepository,
+    @inject('IConnectionRepository')
+    private readonly connections: IConnectionRepository,
+    @inject('ITrackerIssueLinkRepository') private readonly links: ITrackerIssueLinkRepository,
+    @inject('ITrackerClientFactory') private readonly clients: ITrackerClientFactory,
+    @inject('IWorkItemRepository') private readonly workItems: IWorkItemRepository,
+    @inject('IWorkItemStateRepository') private readonly states: IWorkItemStateRepository,
+    @inject(CreateWorkItemUseCase) private readonly createWorkItem: CreateWorkItemUseCase,
+    @inject(UpdateWorkItemUseCase) private readonly updateWorkItem: UpdateWorkItemUseCase
+  ) {}
+
+  async execute(ruleId: string): Promise<ConnectionResult<TrackerSyncOutcome>> {
+    const rule = await this.rules.findById(ruleId.trim());
+    if (!rule) return failure(`No sync rule "${ruleId}".`);
+    const connection = await this.connections.findById(rule.connectionId);
+    if (!connection) return failure(`The connection of rule ${rule.id} no longer exists.`);
+    const projectStates = await this.states.listByProject(rule.projectId);
+    if (projectStates.length === 0) return failure(`Project ${rule.projectId} has no states.`);
+
+    const secret = (await this.connections.getSecret(connection.id)) ?? '';
+    const client = this.clients.create({
+      provider: connection.provider,
+      ...(connection.siteUrl ? { siteUrl: connection.siteUrl } : {}),
+      ...(connection.accountEmail ? { accountEmail: connection.accountEmail } : {}),
+      secret,
+    });
+    const states = new ProjectStates(projectStates);
+    const summary = emptySummary();
+    const startedAt = new Date();
+    let error: string | undefined;
+    let rejected = false;
+    let cursor = rule.cursor;
+
+    try {
+      const pulled = await this.pullRemote(rule, connection, client, states, summary);
+      if (rule.direction === TrackerSyncDirection.TwoWay) {
+        await this.pushLocal(rule, client, states, summary, pulled.seen);
+      }
+      if (pulled.complete && pulled.newest) cursor = pulled.newest;
+    } catch (caught) {
+      error = errorMessage(caught);
+      summary.rateLimited = caught instanceof ConnectionRateLimitError;
+      rejected = caught instanceof ConnectionAuthError;
+    }
+
+    await recordConnectionHealth(this.connections, connection, error, rejected);
+    const { lastError: _previous, ...ruleRest } = rule;
+    const updated: TrackerSyncRule = {
+      ...ruleRest,
+      ...(cursor ? { cursor } : {}),
+      lastRunAt: startedAt,
+      lastRun: summary,
+      ...(error ? { lastError: error } : {}),
+      updatedAt: new Date(),
+    };
+    await this.rules.update(updated);
+    return { ok: true, rule: updated, summary, ...(error ? { error } : {}) };
+  }
+
+  /** Every page of remote changes: the newest update time seen, the work items synced, and whether every page was read. */
+  private async pullRemote(
+    rule: TrackerSyncRule,
+    connection: Connection,
+    client: ITrackerClient,
+    states: ProjectStates,
+    summary: TrackerSyncRunSummary
+  ): Promise<{ newest?: Date; seen: Set<string>; complete: boolean }> {
+    const seen = new Set<string>();
+    let newest = rule.cursor;
+    let page: string | undefined;
+    let pages = 0;
+    do {
+      const result = await client.searchUpdatedSince(rule.scope, rule.cursor, page);
+      for (const issue of result.issues) {
+        try {
+          seen.add(await this.syncIssue(rule, connection, client, issue, states, summary));
+        } catch (caught) {
+          if (isStoppingError(caught)) throw caught;
+          summary.failed += 1;
+        }
+        if (!newest || issue.updatedAt > newest) newest = issue.updatedAt;
+      }
+      page = result.nextPage;
+      pages += 1;
+    } while (page && pages < MAX_PAGES_PER_RUN);
+    return { ...(newest ? { newest } : {}), seen, complete: !page };
+  }
+
+  /** Creates or reconciles the work item of one issue; returns its id. */
+  private async syncIssue(
+    rule: TrackerSyncRule,
+    connection: Connection,
+    client: ITrackerClient,
+    issue: ExternalIssue,
+    states: ProjectStates,
+    summary: TrackerSyncRunSummary
+  ): Promise<string> {
+    const remote = remoteFields(issue);
+    const link = await this.links.findByExternalId(connection.id, issue.externalId);
+    if (!link) return this.importIssue(rule, connection, issue, remote, states, summary);
+
+    const workItem = await this.workItems.findById(link.workItemId);
+    // A work item deleted in shep stays deleted; its link is kept so it is not re-imported.
+    if (!workItem) return link.workItemId;
+    await this.reconcile(rule, client, link, workItem, remote, issue.updatedAt, states, summary);
+    return workItem.id;
+  }
+
+  private async importIssue(
+    rule: TrackerSyncRule,
+    connection: Connection,
+    issue: ExternalIssue,
+    remote: SyncedFields,
+    states: ProjectStates,
+    summary: TrackerSyncRunSummary
+  ): Promise<string> {
+    const created = await this.createWorkItem.execute({
+      projectId: rule.projectId,
+      title: remote.title,
+      ...(remote.description ? { description: remote.description } : {}),
+      stateId: states.stateFor(remote.stateGroup),
+      priority: remote.priority,
+    });
+    if (!created.ok) throw new Error(created.error);
+    await this.links.upsert(newLink(rule, connection, issue, created.workItem.id));
+    summary.created += 1;
+    return created.workItem.id;
+  }
+
+  private async reconcile(
+    rule: TrackerSyncRule,
+    client: ITrackerClient,
+    link: TrackerIssueLink,
+    workItem: WorkItem,
+    remote: SyncedFields,
+    remoteUpdatedAt: Date,
+    states: ProjectStates,
+    summary: TrackerSyncRunSummary
+  ): Promise<void> {
+    const local = localFields(workItem, states);
+    const plan = planIssueSync(rule.direction, snapshotFields(link), local, remote);
+
+    if (Object.keys(plan.applyLocal).length > 0) {
+      const input = workItemUpdate(plan.applyLocal, states);
+      const updated = await this.updateWorkItem.execute(workItem.id, input, TRACKER_SYNC_ACTOR);
+      if (!updated.ok) throw new Error(updated.error);
+      summary.updated += 1;
+    }
+    if (Object.keys(plan.pushRemote).length > 0) {
+      await client.updateIssue(rule.scope, link.externalId, plan.pushRemote);
+      summary.pushed += 1;
+    }
+    summary.conflicts += plan.conflicts.length;
+    await this.links.upsert(withSnapshot(link, { ...remote, ...plan.pushRemote }, remoteUpdatedAt));
+  }
+
+  /** Two-way rules: push work items edited in shep whose issue did not change remotely. */
+  private async pushLocal(
+    rule: TrackerSyncRule,
+    client: ITrackerClient,
+    states: ProjectStates,
+    summary: TrackerSyncRunSummary,
+    alreadySynced: Set<string>
+  ): Promise<void> {
+    for (const link of await this.links.listByRule(rule.id)) {
+      if (alreadySynced.has(link.workItemId)) continue;
+      const workItem = await this.workItems.findById(link.workItemId);
+      if (!workItem || new Date(workItem.updatedAt) <= new Date(link.updatedAt)) continue;
+      try {
+        // The issue is not in this run's remote changes, so it still matches the snapshot.
+        await this.reconcile(
+          rule,
+          client,
+          link,
+          workItem,
+          snapshotFields(link),
+          link.remoteUpdatedAt,
+          states,
+          summary
+        );
+      } catch (caught) {
+        if (isStoppingError(caught)) throw caught;
+        summary.failed += 1;
+      }
+    }
+  }
+}

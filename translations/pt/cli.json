@@ -494,6 +494,22 @@
         "notWaitingForApproval": "Recurso \"{{name}}\" não está aguardando aprovação (status: {{status}})",
         "noFeaturesWaiting": "Nenhum recurso aguardando aprovação neste repositório",
         "multipleFeaturesWaiting": "Múltiplos recursos aguardando aprovação. Especifique um:"
+      },
+      "comments": {
+        "description": "Mostrar os comentários de revisão do pull request de uma funcionalidade e o que o shep fez com eles",
+        "featureArg": "Id da funcionalidade ou prefixo",
+        "noRefreshOption": "Usar os comentários guardados em vez de ler o GitHub",
+        "failed": "O comando de comentários de PR falhou",
+        "title": "Comentários de revisão em {{name}}",
+        "none": "Ainda não há comentários de revisão.",
+        "next": "Trate os pendentes com: shep feat address-comments {{feature}}",
+        "round": "Última rodada: {{status}}, {{count}} comentários{{commit}}{{error}}",
+        "commit": ", {{sha}} enviado"
+      },
+      "addressComments": {
+        "description": "Fazer um agente tratar os comentários pendentes no worktree da funcionalidade, fazer push e responder a cada um",
+        "commentsArg": "Ids de comentários ou prefixos (padrão: todos os pendentes)",
+        "spinner": "Tratando {{count}} comentários"
       }
     },
     "repo": {
@@ -1098,6 +1114,684 @@
         "installed": "Installed",
         "available": "Available",
         "failed": "Failed to load plugin catalog"
+      }
+    },
+    "space": {
+      "description": "Separar áreas de trabalho: espaços, linhas de produto e as regras que colocam os repositórios",
+      "failed": "O comando de espaço falhou",
+      "spaceArg": "Nome, slug ou id do espaço",
+      "pathArg": "Caminho do repositório (por omissão, o diretório atual)",
+      "nameArg": "Nome a apresentar",
+      "lineArg": "Nome, slug ou id da linha de produto",
+      "lineOption": "Linha de produto dentro do espaço",
+      "descriptionOption": "Descrição breve",
+      "colorOption": "Cor hexadecimal, por exemplo #3456c4",
+      "ls": {
+        "description": "Listar espaços com as suas linhas de produto, repositórios e memória",
+        "title": "Espaços",
+        "nameColumn": "Nome",
+        "slugColumn": "Slug",
+        "linesColumn": "Linhas de produto",
+        "reposColumn": "Repos",
+        "memoryColumn": "Memória",
+        "defaultMarker": "(predefinido)"
+      },
+      "show": {
+        "description": "Mostrar em que espaço e linha de produto está um repositório, e porquê",
+        "space": "Espaço",
+        "productLine": "Linha de produto",
+        "source": "Motivo",
+        "sourceAssignment": "fixado com shep space assign",
+        "sourceRule": "corresponde à regra {{kind}} {{pattern}}",
+        "sourceDefault": "nenhuma regra corresponde, aplica-se o espaço predefinido"
+      },
+      "new": {
+        "description": "Criar um espaço",
+        "defaultOption": "Torná-lo o espaço predefinido",
+        "success": "Espaço \"{{name}}\" criado ({{slug}})"
+      },
+      "edit": {
+        "description": "Mudar o nome de um espaço ou a sua descrição ou cor",
+        "success": "Espaço \"{{name}}\" atualizado"
+      },
+      "rm": {
+        "description": "Eliminar um espaço com as suas regras, atribuições e linhas de produto",
+        "success": "Espaço \"{{space}}\" eliminado"
+      },
+      "default": {
+        "description": "Escolher o espaço para repositórios sem regra",
+        "success": "\"{{name}}\" é agora o espaço predefinido"
+      },
+      "line": {
+        "description": "Gerir linhas de produto dentro de um espaço",
+        "new": {
+          "description": "Adicionar uma linha de produto a um espaço",
+          "success": "Linha de produto \"{{name}}\" criada ({{slug}})"
+        },
+        "rm": {
+          "description": "Remover uma linha de produto; os repositórios ficam no espaço",
+          "success": "Linha de produto \"{{line}}\" removida"
+        }
+      },
+      "rule": {
+        "description": "Gerir as regras de caminho e remoto git que colocam os repositórios",
+        "patternArg": "Prefixo de caminho absoluto ou padrão remoto como github.com/acme/*",
+        "idArg": "Id da regra (ver shep space rule ls)",
+        "add": {
+          "description": "Adicionar uma regra que coloca os repositórios correspondentes num espaço",
+          "remoteOption": "Tratar o padrão como remoto git mesmo que pareça um caminho",
+          "priorityOption": "Desempate entre regras igualmente específicas; vence a menor (100 por omissão)",
+          "badPriority": "\"{{value}}\" não é um número inteiro",
+          "success": "Regra {{kind}} adicionada para {{pattern}}"
+        },
+        "ls": {
+          "description": "Listar regras, de um espaço ou de todos",
+          "title": "Regras de espaço",
+          "idColumn": "Id",
+          "kindColumn": "Tipo",
+          "patternColumn": "Padrão",
+          "priorityColumn": "Prioridade",
+          "empty": "Ainda não há regras. Adicione uma com shep space rule add."
+        },
+        "rm": {
+          "description": "Remover uma regra",
+          "success": "Regra removida"
+        }
+      },
+      "assign": {
+        "description": "Fixar um repositório num espaço, acima de qualquer regra",
+        "success": "{{path}} fixado em {{space}}"
+      },
+      "unassign": {
+        "description": "Remover a fixação de um repositório para que as regras voltem a aplicar-se",
+        "success": "{{path}} volta a seguir as regras de espaço"
+      },
+      "config": {
+        "description": "Ver ou alterar os logins dos agentes, a identidade git e os agentes permitidos de um espaço",
+        "claudeOption": "Diretório de configuração do Claude (CLAUDE_CONFIG_DIR) com o login do espaço",
+        "ghOption": "Diretório de configuração do gh (GH_CONFIG_DIR) com o login GitHub do espaço",
+        "gitNameOption": "Nome de autor git para os commits dos agentes",
+        "gitEmailOption": "Email de autor git para os commits dos agentes",
+        "awsProfileOption": "Perfil AWS (AWS_PROFILE), por exemplo para o Bedrock",
+        "bedrockOption": "Encaminhar o Claude pelo Amazon Bedrock",
+        "noBedrockOption": "Nunca usar o Bedrock para o Claude, seja qual for o host",
+        "agentsOption": "Tipos de agente permitidos, separados por vírgulas",
+        "clearOption": "Campos a limpar para voltarem a herdar do host",
+        "badClear": "\"{{field}}\" não é um campo que possa ser limpo",
+        "title": "Definições de agentes de {{name}}",
+        "claudeConfigDir": "Config. do Claude",
+        "ghConfigDir": "Config. do gh",
+        "gitAuthorName": "Nome git",
+        "gitAuthorEmail": "Email git",
+        "useBedrock": "Bedrock",
+        "awsProfile": "Perfil AWS",
+        "allowedAgents": "Agentes permitidos",
+        "inherit": "herdar do host",
+        "on": "ligado",
+        "off": "desligado",
+        "any": "qualquer",
+        "environment": "Ambiente dos processos de agentes",
+        "sets": "Define",
+        "removes": "Remove",
+        "success": "Definições de agentes de {{name}} guardadas",
+        "prCommentsOption": "Quais comentários de revisão o shep responde sozinho: off, mention (#shep) ou all",
+        "resolveThreadsOption": "Resolver uma thread de revisão depois de alterar código para ela",
+        "noResolveThreadsOption": "Deixar quem revisa resolver as threads",
+        "prComments": "Comentários de PR respondidos",
+        "resolveThreads": "Resolver threads",
+        "defaultValue": "{{value}} (padrão)",
+        "badTrigger": "\"{{value}}\" não é um gatilho de comentários de PR. Use um de: {{triggers}}",
+        "autoActions": "Roda em incidentes sem perguntar",
+        "autoActionsOption": "Ações que o shep roda em um incidente sem perguntar: restart, rollback, scale (separadas por vírgula)",
+        "none": "nenhuma",
+        "docsFirstOption": "Os agentes escrevem a documentação ao planejar; uma mudança sem documentação espera uma pessoa antes do merge",
+        "noDocsFirstOption": "Desligar docs first",
+        "docsPathsOption": "Prefixos de caminhos de documentação, separados por vírgula (padrão docs/,README.md)",
+        "docsFirst": "Docs first",
+        "docsFirstOn": "Ligado ({{paths}})"
+      }
+    },
+    "connection": {
+      "description": "Conectar contas do Linear e Jira que o shep mantém sincronizadas, e workspaces do Notion que ele lê",
+      "failed": "O comando de ligação falhou",
+      "connectionArg": "Slug ou id da ligação",
+      "add": {
+        "description": "Conectar uma conta do Linear, Jira ou Notion; a chave é testada antes de ser salva",
+        "providerArg": "linear, jira ou notion",
+        "nameOption": "Nome a apresentar",
+        "spaceOption": "Espaço da ligação (o predefinido se omitido)",
+        "siteOption": "URL do site Jira, por exemplo https://acme.atlassian.net",
+        "emailOption": "Email da conta Jira do token",
+        "secretEnvOption": "Ler a chave ou o token desta variável de ambiente em vez de perguntar",
+        "linearPrompt": "Chave de API do Linear",
+        "jiraPrompt": "Token de API do Jira",
+        "badProvider": "\"{{provider}}\" não é suportado; use linear, jira ou notion",
+        "emptyEnv": "A variável de ambiente {{variable}} está vazia ou não definida",
+        "success": "{{name}} ({{slug}}) ligado como {{account}}",
+        "notionPrompt": "Token de integração do Notion"
+      },
+      "ls": {
+        "description": "Listar conexões",
+        "title": "Conexões",
+        "nameColumn": "Nome",
+        "slugColumn": "Slug",
+        "providerColumn": "Ferramenta",
+        "accountColumn": "Conta",
+        "statusColumn": "Estado",
+        "empty": "Ainda não há ligações. Adicione uma com shep connection add."
+      },
+      "test": {
+        "description": "Verificar de novo as credenciais de uma ligação",
+        "success": "{{name}} funciona ({{account}})"
+      },
+      "rm": {
+        "description": "Remover uma ligação e as suas regras; os itens sincronizados ficam",
+        "success": "Ligação {{ref}} removida"
+      }
+    },
+    "sync": {
+      "description": "Manter equipas Linear e consultas Jira em projetos shep",
+      "failed": "O comando de sincronização falhou",
+      "connectionArg": "Slug ou id da ligação",
+      "ruleArg": "Id da regra (ver shep sync rule ls)",
+      "summary": "{{created}} criados, {{updated}} atualizados, {{pushed}} enviados, {{conflicts}} conflitos, {{failed}} falhados",
+      "rule": {
+        "description": "Gerir regras de sincronização",
+        "add": {
+          "description": "Manter uma equipa Linear ou uma consulta JQL do Jira num projeto",
+          "projectOption": "Slug ou id do projeto shep",
+          "scopeOption": "Chave de equipa Linear (ENG) ou consulta JQL do Jira",
+          "twoWayOption": "Enviar também as alterações do shep para o gestor",
+          "everyOption": "Minutos entre execuções automáticas (15 por omissão)",
+          "success": "Regra {{id}} adicionada para {{scope}}"
+        },
+        "ls": {
+          "description": "Listar regras com a última execução",
+          "title": "Regras de sincronização",
+          "idColumn": "Id",
+          "fromColumn": "Origem",
+          "intoColumn": "Para",
+          "modeColumn": "Modo",
+          "lastRunColumn": "Última execução",
+          "never": "nunca executada",
+          "off": "(desativada)",
+          "empty": "Ainda não há regras. Adicione uma com shep sync rule add."
+        },
+        "enable": {
+          "description": "Deixar o daemon executar uma regra",
+          "success": "Regra {{id}} ativada"
+        },
+        "disable": {
+          "description": "Impedir o daemon de executar uma regra",
+          "success": "Regra {{id}} desativada"
+        },
+        "rm": {
+          "description": "Remover uma regra; os itens sincronizados ficam",
+          "success": "Regra {{id}} removida"
+        }
+      },
+      "run": {
+        "description": "Executar agora uma regra ou todas as ativas",
+        "nothing": "Não há regras ativas",
+        "conflictsNote": "Campos alterados nos dois lados: {{count}}; o valor do tracker foi mantido"
+      }
+    },
+    "item": {
+      "itemArg": "Chave do item de trabalho (PAY-42) ou id",
+      "agentOption": "Agente a usar (padrão: o agente configurado)",
+      "failed": "O comando de item de trabalho falhou",
+      "investigate": {
+        "description": "Fazer um agente ler o código e classificar hipóteses sobre a causa de um bug",
+        "repoOption": "Repositório a ler (padrão: o último do item, depois a aplicação do projeto)",
+        "spinner": "Investigando {{key}} (cópia somente leitura de {{repository}})",
+        "starting": "Investigando {{key}} em {{repository}} com {{agent}}. Seu checkout não é alterado."
+      },
+      "hypotheses": {
+        "description": "Mostrar a última investigação de um item de trabalho"
+      },
+      "fix": {
+        "description": "Iniciar uma funcionalidade de correção a partir de uma hipótese: primeiro um teste que falha, depois a correção",
+        "numberArg": "Número da hipótese (1 é a mais provável)",
+        "specOption": "Executar o pipeline completo de especificação em vez do modo rápido",
+        "agentOption": "Agente para a correção (padrão: o agente que investigou)",
+        "spinner": "Iniciando a funcionalidade de correção",
+        "created": "A funcionalidade {{name}} ({{id}}) está corrigindo {{key}} a partir da hipótese {{number}}.",
+        "startFailed": "A funcionalidade foi criada mas não iniciou: {{error}}"
+      },
+      "render": {
+        "none": "{{key}} não foi investigado. Execute: shep item investigate {{key}} --repo <caminho>",
+        "header": "{{repository}}{{commit}} investigado com {{agent}} — {{status}}",
+        "running": "Ainda em andamento; verifique de novo com: shep item hypotheses {{key}}",
+        "evidence": "Evidências",
+        "test": "Teste que falha",
+        "fix": "Correção",
+        "next": "Inicie uma correção com: shep item fix {{key}} <número>",
+        "approved": "A hipótese {{number}} está sendo corrigida pela funcionalidade {{feature}}."
+      }
+    },
+    "agentOption": {
+      "unknown": "\"{{value}}\" não é um agente suportado. Use um de: {{supported}}"
+    },
+    "everyOption": {
+      "invalid": "\"{{value}}\" não é um número inteiro de minutos"
+    },
+    "knowledge": {
+      "description": "Conhecimento da equipe vindo do Notion que os agentes de um espaço podem ler",
+      "failed": "O comando knowledge falhou",
+      "connectionArg": "Slug ou id da conexão do Notion",
+      "sourceArg": "Id da fonte de conhecimento (veja shep knowledge source ls)",
+      "summary": "{{added}} adicionados, {{updated}} atualizados, {{removed}} removidos, {{failed}} com falha",
+      "source": {
+        "description": "Gerenciar as páginas e bancos de dados do Notion que o shep mantém sincronizados",
+        "add": {
+          "description": "Manter uma árvore de páginas ou um banco de dados do Notion como conhecimento do espaço da conexão",
+          "scopeOption": "Link ou id de uma página ou banco de dados do Notion compartilhado com a integração",
+          "productLineOption": "Somente para repositórios desta linha de produto (slug ou id)",
+          "everyOption": "Minutos entre sincronizações automáticas (padrão 60)",
+          "success": "Fonte de conhecimento {{id}} adicionada para {{title}}; execute shep knowledge sync para lê-la agora"
+        },
+        "ls": {
+          "description": "Listar fontes de conhecimento com sua última sincronização",
+          "title": "Fontes de conhecimento",
+          "idColumn": "Id",
+          "fromColumn": "De",
+          "documentsColumn": "Docs",
+          "everyColumn": "A cada",
+          "lastRunColumn": "Última sincronização",
+          "never": "nunca sincronizada",
+          "off": "(desativada)",
+          "empty": "Nenhuma fonte de conhecimento ainda. Adicione uma com shep knowledge source add."
+        },
+        "enable": {
+          "description": "Deixar o daemon sincronizar uma fonte",
+          "success": "Fonte de conhecimento {{id}} ativada"
+        },
+        "disable": {
+          "description": "Impedir o daemon de sincronizar uma fonte",
+          "success": "Fonte de conhecimento {{id}} desativada"
+        },
+        "rm": {
+          "description": "Remover uma fonte e os documentos que ela sincronizou",
+          "success": "Fonte de conhecimento {{id}} removida"
+        }
+      },
+      "sync": {
+        "description": "Sincronizar agora uma fonte de conhecimento, ou todas as ativadas",
+        "nothing": "Nenhuma fonte de conhecimento ativada"
+      },
+      "ls": {
+        "description": "Listar os documentos de conhecimento de um espaço",
+        "spaceOption": "Slug ou id do espaço (padrão se omitido)",
+        "title": "Conhecimento de {{space}}",
+        "titleColumn": "Documento",
+        "linkColumn": "Link",
+        "empty": "Nenhum documento de conhecimento neste espaço ainda."
+      },
+      "search": {
+        "description": "Mostrar os trechos que um agente trabalhando em um repositório leria para uma tarefa",
+        "queryArg": "Texto da tarefa a buscar",
+        "repoOption": "Caminho do repositório (diretório atual se omitido)",
+        "none": "Nenhum conhecimento da equipe no espaço deste repositório corresponde a essa tarefa."
+      }
+    },
+    "numberOption": {
+      "invalid": "{{option}} espera um número, não \"{{value}}\""
+    },
+    "signal": {
+      "description": "Registrar evidências do que os usuários precisam",
+      "failed": "O comando signal falhou",
+      "spaceOption": "Slug ou id do espaço (padrão se omitido)",
+      "signalArg": "Id do sinal (veja shep signal ls)",
+      "add": {
+        "description": "Registrar um sinal: um pedido, um incidente, uma issue ou uma descoberta",
+        "titleArg": "Resumo de uma linha",
+        "productLineOption": "Linha de produto afetada (slug ou id)",
+        "kindOption": "feedback, incident, tracker, discovery ou manual (padrão manual)",
+        "customerOption": "Cliente ou conta por trás",
+        "revenueOption": "Receita mensal em jogo para esse cliente",
+        "urgentOption": "Precisa de atenção em breve",
+        "urlOption": "Link para o original",
+        "detailOption": "Texto mais longo",
+        "opportunityOption": "Id da oportunidade a vincular",
+        "badKind": "\"{{kind}}\" não é um tipo de sinal; use feedback, incident, tracker, discovery ou manual",
+        "success": "Sinal {{id}} registrado"
+      },
+      "ls": {
+        "description": "Listar sinais, mais recentes primeiro",
+        "unlinkedOption": "Somente sinais sem oportunidade",
+        "title": "Sinais",
+        "idColumn": "Id",
+        "titleColumn": "Sinal",
+        "kindColumn": "Tipo",
+        "customerColumn": "Cliente",
+        "opportunityColumn": "Oportunidade",
+        "unlinked": "não vinculado",
+        "empty": "Nenhum sinal ainda. Registre um com shep signal add."
+      },
+      "rm": {
+        "description": "Remover um sinal",
+        "success": "Sinal {{id}} removido"
+      }
+    },
+    "opportunity": {
+      "description": "Apostas apoiadas por sinais, ordenadas por valor por hora de revisão",
+      "failed": "O comando opportunity falhou",
+      "opportunityArg": "Id da oportunidade (veja shep opportunity ls)",
+      "signalArg": "Id do sinal (veja shep signal ls)",
+      "spaceOption": "Slug ou id do espaço (padrão se omitido)",
+      "hoursOption": "Horas estimadas de revisão humana para fazer o merge",
+      "confidenceOption": "Confiança de que entrega o valor, de 0 a 1 (padrão 0.5)",
+      "strategicOption": "Avança um objetivo estratégico do espaço",
+      "problemOption": "O problema que resolve, nas palavras dos usuários",
+      "add": {
+        "description": "Formar uma nova oportunidade",
+        "titleArg": "Nome de uma linha da aposta",
+        "productLineOption": "Linha de produto afetada (slug ou id)",
+        "success": "Oportunidade {{id}} proposta"
+      },
+      "estimate": {
+        "description": "Alterar a estimativa, a confiança ou o problema de uma oportunidade",
+        "success": "Oportunidade {{id}} atualizada"
+      },
+      "link": {
+        "description": "Vincular um sinal a uma oportunidade do seu espaço",
+        "success": "O sinal {{signal}} apoia {{opportunity}}"
+      },
+      "unlink": {
+        "description": "Desvincular um sinal da sua oportunidade",
+        "success": "Sinal {{signal}} desvinculado"
+      },
+      "accept": {
+        "description": "Aceitar uma oportunidade: ela disputa capacidade de revisão",
+        "success": "{{title}} aceita"
+      },
+      "drop": {
+        "description": "Descartar uma oportunidade, dizendo por quê",
+        "reasonOption": "Por que é descartada",
+        "success": "{{title}} descartada"
+      },
+      "build": {
+        "description": "Transformar uma oportunidade em item de trabalho de um projeto",
+        "projectOption": "Slug ou id do projeto",
+        "success": "Construindo {{title}} como item {{workItem}}"
+      },
+      "ls": {
+        "description": "Ordenar as oportunidades abertas e marcar a linha (▶) que cabe nesta semana",
+        "title": "Oportunidades em {{space}} — {{used}} de {{capacity}} horas de revisão na linha",
+        "idColumn": "Id",
+        "titleColumn": "Oportunidade",
+        "statusColumn": "Status",
+        "scoreColumn": "Valor/h",
+        "hoursColumn": "Horas",
+        "evidenceColumn": "Evidências",
+        "empty": "Nenhuma oportunidade aberta. Forme uma com shep opportunity add.",
+        "unlinked": "Sinais ainda sem oportunidade: {{count}} (shep signal ls --unlinked)"
+      },
+      "show": {
+        "description": "Mostrar uma oportunidade com suas evidências e pontuação",
+        "score": "{{score}} de valor por hora de revisão (valor {{value}}, {{hours}} h, confiança {{confidence}})",
+        "dropped": "Descartada: {{reason}}"
+      },
+      "weights": {
+        "description": "Mostrar ou definir os pesos e a capacidade semanal de revisão de um espaço",
+        "reachOption": "Valor de cada cliente",
+        "revenueOption": "Valor de cada 1.000 por mês em jogo",
+        "urgencyOption": "Valor de cada sinal urgente",
+        "strategicOption": "Valor adicionado a uma aposta estratégica",
+        "capacityOption": "Horas de revisão humana por semana",
+        "current": "alcance {{reach}} · receita {{revenue}} · urgência {{urgency}} · estratégico {{strategic}} · capacidade {{capacity}} h/semana"
+      },
+      "evidenceParts": {
+        "signals_one": "{{count}} sinal",
+        "signals_few": "{{count}} sinais",
+        "signals_many": "{{count}} sinais",
+        "signals_other": "{{count}} sinais",
+        "customers_one": "{{count}} cliente",
+        "customers_few": "{{count}} clientes",
+        "customers_many": "{{count}} clientes",
+        "customers_other": "{{count}} clientes",
+        "urgent_one": "{{count}} urgente",
+        "urgent_few": "{{count}} urgentes",
+        "urgent_many": "{{count}} urgentes",
+        "urgent_other": "{{count}} urgentes",
+        "revenue": "{{revenue}}/mês"
+      }
+    },
+    "feedback": {
+      "description": "Chaves que ferramentas usam para enviar feedback, e os temas que ele forma",
+      "failed": "O comando feedback falhou",
+      "spaceOption": "Slug ou id do espaço (padrão se omitido)",
+      "key": {
+        "description": "Gerenciar chaves de feedback",
+        "keyArg": "Id da chave (veja shep feedback key ls)",
+        "create": {
+          "description": "Criar uma chave que uma ferramenta envia para publicar feedback em um espaço",
+          "nameOption": "Qual ferramenta ou script a usa",
+          "success": "Chave de feedback para {{name}} criada. Copie agora; ela não será mostrada de novo:",
+          "once": "Envie como \"Authorization: Bearer <chave>\" em cada POST para {{path}} no seu servidor shep."
+        },
+        "ls": {
+          "description": "Listar chaves de feedback",
+          "title": "Chaves de feedback",
+          "idColumn": "Id",
+          "nameColumn": "Ferramenta",
+          "prefixColumn": "Chave",
+          "usedColumn": "Último uso",
+          "revoked": "revogada",
+          "never": "nunca usada",
+          "empty": "Nenhuma chave ainda. Crie uma com shep feedback key create."
+        },
+        "revoke": {
+          "description": "Revogar uma chave: envios com ela são recusados",
+          "success": "Chave de feedback {{id}} revogada"
+        }
+      },
+      "themes": {
+        "description": "Agrupar em temas os sinais não vinculados de um espaço",
+        "title": "Temas em {{space}}",
+        "keyColumn": "Tema",
+        "themeColumn": "Palavras",
+        "evidenceColumn": "Evidências",
+        "empty": "Nenhum tema: nenhum par de sinais não vinculados compartilha palavras suficientes."
+      },
+      "promote": {
+        "description": "Transformar um tema em oportunidade com seus sinais vinculados",
+        "themeArg": "Chave do tema (veja shep feedback themes)",
+        "titleOption": "Título da oportunidade (as palavras do tema se omitido)",
+        "success": "{{title}} ({{id}}) proposta; sinais vinculados: {{count}}"
+      }
+    },
+    "discovery": {
+      "description": "Um agente lê os sinais soltos de um espaço e propõe oportunidades",
+      "failed": "O comando discovery falhou",
+      "spaceOption": "Slug ou id do espaço (padrão se omitido)",
+      "run": {
+        "description": "Executar a descoberta em um espaço agora",
+        "agentOption": "Agente a usar (as regras do espaço se aplicam)",
+        "started": "Lendo as evidências do espaço; pode levar alguns minutos…",
+        "success": "Sinais lidos: {{read}} · oportunidades propostas: {{proposed}} · propostas descartadas: {{dropped}}"
+      },
+      "ls": {
+        "description": "Listar as execuções de descoberta de um espaço",
+        "title": "Execuções de descoberta",
+        "whenColumn": "Início",
+        "statusColumn": "Status",
+        "resultColumn": "Resultado",
+        "result": "{{proposed}} propostas a partir de {{read}} sinais ({{dropped}} descartadas)",
+        "empty": "A descoberta ainda não rodou neste espaço."
+      },
+      "schedule": {
+        "description": "Executar a descoberta em um espaço a cada N horas, ou desligá-la",
+        "everyOption": "Horas entre execuções (1 a 720)",
+        "offOption": "Desligar a descoberta agendada",
+        "needEvery": "Informe --every <horas> ou --off",
+        "on": "A descoberta roda a cada {{hours}} horas",
+        "off": "A descoberta agendada está desligada"
+      }
+    },
+    "incident": {
+      "description": "Incidentes de produção: abrir, analisar, agir na carga e resolver",
+      "failed": "O comando incident falhou",
+      "spaceOption": "Slug ou id do espaço (padrão se omitido)",
+      "incidentArg": "Id do incidente (veja shep incident ls)",
+      "actionIdArg": "Id da ação (veja shep incident show)",
+      "badSeverity": "\"{{value}}\" não é uma severidade; use {{severities}}",
+      "badAction": "\"{{value}}\" não é uma ação; use {{actions}}",
+      "recovered": "recuperado",
+      "notRecovered": "não recuperado",
+      "awaiting": "Aguardando aprovação: {{action}} — execute shep incident approve {{id}}",
+      "open": {
+        "description": "Abrir um incidente",
+        "titleArg": "Resumo de uma linha",
+        "severityOption": "critical, major (padrão) ou minor",
+        "detailOption": "O que está acontecendo",
+        "urlOption": "Link para o alerta ou painel",
+        "workloadOption": "O deployment Kubernetes afetado",
+        "namespaceOption": "Seu namespace (padrão: default)",
+        "contextOption": "Seu contexto do kubeconfig (padrão: o atual)",
+        "success": "Incidente {{id}} aberto: {{title}}"
+      },
+      "ls": {
+        "description": "Listar incidentes, mais recentes primeiro",
+        "openOption": "Somente incidentes não resolvidos",
+        "title": "Incidentes",
+        "idColumn": "Id",
+        "titleColumn": "Incidente",
+        "severityColumn": "Severidade",
+        "statusColumn": "Status",
+        "workloadColumn": "Carga",
+        "empty": "Nenhum incidente."
+      },
+      "show": {
+        "description": "Mostrar um incidente com sua linha do tempo e ações"
+      },
+      "note": {
+        "description": "Adicionar uma nota à linha do tempo",
+        "textArg": "A nota",
+        "success": "Nota adicionada"
+      },
+      "triage": {
+        "description": "Ler a carga e pedir a um agente causas e uma ação",
+        "agentOption": "Agente a usar (as regras do espaço se aplicam)",
+        "started": "Lendo a carga e consultando o agente; pode levar alguns minutos…"
+      },
+      "act": {
+        "description": "Reiniciar, reverter ou escalar agora a carga do incidente",
+        "actionArg": "restart, rollback ou scale",
+        "replicasOption": "Número de réplicas, para scale",
+        "reasonOption": "Por quê"
+      },
+      "approve": {
+        "description": "Aprovar uma ação proposta; ela roda na hora"
+      },
+      "reject": {
+        "description": "Recusar uma ação proposta",
+        "reasonOption": "Por quê",
+        "success": "Ação {{id}} recusada"
+      },
+      "resolve": {
+        "description": "Resolver um incidente; o postmortem é rascunhado da linha do tempo se nenhum for dado",
+        "postmortemOption": "Seu postmortem (Markdown)",
+        "success": "{{title}} resolvido"
+      }
+    },
+    "outcome": {
+      "description": "O que aconteceu depois da entrega: relatos antes e depois, clientes a avisar, calibração",
+      "failed": "O comando outcome falhou",
+      "spaceOption": "Slug ou id do espaço (o espaço padrão se omitido)",
+      "opportunityArg": "Id da oportunidade",
+      "ls": {
+        "description": "Listar as oportunidades entregues de um espaço e seus resultados",
+        "title": "Resultados — {{space}}",
+        "opportunityColumn": "Oportunidade",
+        "shippedColumn": "Entregue",
+        "verdictColumn": "Veredito",
+        "reportsColumn": "Relatos",
+        "tellColumn": "A avisar",
+        "empty": "Nada foi entregue neste espaço ainda."
+      },
+      "check": {
+        "description": "Entregar agora as oportunidades cujo item de trabalho terminou e julgar os resultados devidos",
+        "summary": "Entregues {{shipped}}, reabertas {{reopened}}, julgados {{judged}}",
+        "shipped": "entregue:",
+        "reopened": "de volta a aceita:"
+      },
+      "ship": {
+        "description": "Marcar uma oportunidade como entregue manualmente",
+        "success": "{{title}} entregue; o resultado será julgado em {{date}}"
+      },
+      "tell": {
+        "description": "Mostrar os clientes a avisar da entrega, ou marcá-los como avisados",
+        "doneOption": "Marcar os clientes como avisados",
+        "told": "Clientes marcados como avisados: {{told}}",
+        "nobody": "Todos os clientes por trás dela foram avisados.",
+        "note": "Diga a eles: “{{title}}” foi entregue — obrigado por nos dizer o que vocês precisavam.",
+        "markHint": "Quando souberem: shep outcome tell {{id}} --done"
+      },
+      "hours": {
+        "description": "Registrar as horas de revisão humana que uma oportunidade entregue realmente levou",
+        "hoursArg": "Horas, mais de 0",
+        "success": "Registradas {{hours}} horas de revisão"
+      },
+      "calibration": {
+        "hours": "As horas reais de revisão são {{ratio}}× as estimativas ({{timed}} registradas)",
+        "noHours": "Nenhuma hora real de revisão registrada ainda",
+        "solved": "{{solved}} de {{judged}} resultados julgados resolvidos",
+        "noVerdicts": "Nenhum resultado julgado ainda"
+      }
+    },
+    "autopilot": {
+      "description": "O que o shep inicia sozinho num espaço: investigações, correções e a linha da semana",
+      "failed": "O comando autopilot falhou",
+      "spaceOption": "Slug ou id do espaço (o espaço padrão se omitido)",
+      "on": "ligado",
+      "off": "desligado",
+      "investigate": "Investigar itens urgentes",
+      "fix": "Corrigir hipóteses confiáveis",
+      "mergeFixes": "As correções fazem merge sem uma pessoa",
+      "budget": "Correções por dia",
+      "fillLine": "Construir a linha da semana",
+      "project": "Projeto da linha",
+      "pass": "investigados {{investigated}} · corrigidos {{fixed}} · construídos {{built}}",
+      "show": {
+        "description": "Mostrar a política de autopilot de um espaço e as passagens recentes",
+        "title": "Autopilot — {{space}}",
+        "noRuns": "Nenhuma passagem ainda."
+      },
+      "set": {
+        "description": "Alterar a política de autopilot de um espaço",
+        "investigateOption": "Investigar itens urgentes abertos sem investigação",
+        "fixOption": "Iniciar a correção quando a hipótese principal for High",
+        "mergeFixesOption": "Deixar essas correções fazerem merge sem uma pessoa",
+        "fillLineOption": "Construir as oportunidades aceitas dentro da linha",
+        "offOption": "Desligar esta parte",
+        "projectOption": "Projeto onde construir a linha (id ou slug)",
+        "clearProjectOption": "Parar de construir a linha num projeto",
+        "budgetOption": "No máximo estas correções em 24 horas (0 a 20)",
+        "success": "Política de autopilot salva"
+      },
+      "run": {
+        "description": "Executar agora uma passagem de autopilot num espaço",
+        "started": "Executando uma passagem de autopilot; investigações podem levar muitos minutos…"
+      }
+    },
+    "factory": {
+      "description": "A fábrica de software num relance",
+      "failed": "O comando factory falhou",
+      "spaceOption": "Slug ou id do espaço (o espaço padrão se omitido)",
+      "status": {
+        "description": "O que a fábrica de um espaço está fazendo e o que espera por pessoas",
+        "title": "Fábrica — {{space}}",
+        "line": "Linha",
+        "lineValue": "{{used}}/{{capacity}} horas de revisão, {{inLine}} na linha, {{waiting}} esperando",
+        "building": "Em construção",
+        "incidents": "Incidentes abertos",
+        "actions": "Ações aguardando aprovação",
+        "outcomes": "Resultados pendentes",
+        "customers": "Clientes a avisar",
+        "autopilot": "Autopilot",
+        "features": "Funcionalidades",
+        "featuresValue": "{{inFlight}} em andamento, {{waiting}} aguardando aprovação"
       }
     }
   },

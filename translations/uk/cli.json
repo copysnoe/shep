@@ -494,6 +494,22 @@
         "modeLabel": "Mode:",
         "promoted": "Exploration promoted: {{name}}",
         "statusLabel": "Status:"
+      },
+      "comments": {
+        "description": "Показати коментарі рев'ю до pull request функції та що shep з ними зробив",
+        "featureArg": "Id функції або його префікс",
+        "noRefreshOption": "Використати збережені коментарі замість читання GitHub",
+        "failed": "Команда коментарів PR завершилася з помилкою",
+        "title": "Коментарі рев'ю до {{name}}",
+        "none": "Коментарів рев'ю поки немає.",
+        "next": "Опрацюйте ті, що очікують: shep feat address-comments {{feature}}",
+        "round": "Останній раунд: {{status}}, коментарів: {{count}}{{commit}}{{error}}",
+        "commit": ", надіслано {{sha}}"
+      },
+      "addressComments": {
+        "description": "Агент опрацьовує коментарі рев'ю, що очікують, у worktree функції, робить push і відповідає на кожен",
+        "commentsArg": "Id коментарів або префікси (типово — усі, що очікують)",
+        "spinner": "Опрацювання коментарів: {{count}}"
       }
     },
     "repo": {
@@ -1098,6 +1114,684 @@
         "installed": "Installed",
         "available": "Available",
         "failed": "Failed to load plugin catalog"
+      }
+    },
+    "space": {
+      "description": "Розділення напрямів роботи: простори, продуктові лінійки та правила розміщення репозиторіїв",
+      "failed": "Команду простору не виконано",
+      "spaceArg": "Назва, слаг або id простору",
+      "pathArg": "Шлях до репозиторію (типово поточний каталог)",
+      "nameArg": "Відображувана назва",
+      "lineArg": "Назва, слаг або id продуктової лінійки",
+      "lineOption": "Продуктова лінійка всередині простору",
+      "descriptionOption": "Короткий опис",
+      "colorOption": "Колір у hex, наприклад #3456c4",
+      "ls": {
+        "description": "Список просторів з лінійками, репозиторіями та пам'яттю",
+        "title": "Простори",
+        "nameColumn": "Назва",
+        "slugColumn": "Слаг",
+        "linesColumn": "Лінійки",
+        "reposColumn": "Репоз.",
+        "memoryColumn": "Пам'ять",
+        "defaultMarker": "(типовий)"
+      },
+      "show": {
+        "description": "Показати, у якому просторі та лінійці перебуває репозиторій і чому",
+        "space": "Простір",
+        "productLine": "Лінійка",
+        "source": "Причина",
+        "sourceAssignment": "закріплено через shep space assign",
+        "sourceRule": "збіглося правило {{kind}} {{pattern}}",
+        "sourceDefault": "жодне правило не підійшло, застосовано типовий простір"
+      },
+      "new": {
+        "description": "Створити простір",
+        "defaultOption": "Зробити типовим простором",
+        "success": "Простір «{{name}}» створено ({{slug}})"
+      },
+      "edit": {
+        "description": "Перейменувати простір або змінити опис чи колір",
+        "success": "Простір «{{name}}» оновлено"
+      },
+      "rm": {
+        "description": "Видалити простір разом із правилами, призначеннями та лінійками",
+        "success": "Простір «{{space}}» видалено"
+      },
+      "default": {
+        "description": "Обрати простір для репозиторіїв без правил",
+        "success": "«{{name}}» тепер типовий простір"
+      },
+      "line": {
+        "description": "Керування продуктовими лінійками в просторі",
+        "new": {
+          "description": "Додати продуктову лінійку до простору",
+          "success": "Лінійку «{{name}}» створено ({{slug}})"
+        },
+        "rm": {
+          "description": "Видалити лінійку; її репозиторії залишаються в просторі",
+          "success": "Лінійку «{{line}}» видалено"
+        }
+      },
+      "rule": {
+        "description": "Керування правилами за шляхом і git-remote для розміщення репозиторіїв",
+        "patternArg": "Префікс абсолютного шляху або шаблон remote, наприклад github.com/acme/*",
+        "idArg": "Id правила (див. shep space rule ls)",
+        "add": {
+          "description": "Додати правило, що розміщує відповідні репозиторії в просторі",
+          "remoteOption": "Вважати шаблон git-remote, навіть якщо він схожий на шлях",
+          "priorityOption": "Вибір між однаково точними правилами; менше перемагає (типово 100)",
+          "badPriority": "«{{value}}» не ціле число",
+          "success": "Правило {{kind}} додано для {{pattern}}"
+        },
+        "ls": {
+          "description": "Список правил для одного або всіх просторів",
+          "title": "Правила просторів",
+          "idColumn": "Id",
+          "kindColumn": "Тип",
+          "patternColumn": "Шаблон",
+          "priorityColumn": "Пріоритет",
+          "empty": "Правил ще немає. Додайте через shep space rule add."
+        },
+        "rm": {
+          "description": "Видалити правило",
+          "success": "Правило видалено"
+        }
+      },
+      "assign": {
+        "description": "Закріпити репозиторій за простором понад усі правила",
+        "success": "{{path}} закріплено за {{space}}"
+      },
+      "unassign": {
+        "description": "Зняти закріплення, щоб знову діяли правила",
+        "success": "{{path}} знову підпорядковується правилам просторів"
+      },
+      "config": {
+        "description": "Показати або змінити входи агентів, git-ідентичність і дозволених агентів простору",
+        "claudeOption": "Каталог конфігурації Claude (CLAUDE_CONFIG_DIR) із входом простору",
+        "ghOption": "Каталог конфігурації gh (GH_CONFIG_DIR) із входом GitHub простору",
+        "gitNameOption": "Ім'я автора git для комітів агентів",
+        "gitEmailOption": "Email автора git для комітів агентів",
+        "awsProfileOption": "Профіль AWS (AWS_PROFILE), наприклад для Bedrock",
+        "bedrockOption": "Спрямовувати Claude через Amazon Bedrock",
+        "noBedrockOption": "Ніколи не спрямовувати Claude через Bedrock, хоч би що задав хост",
+        "agentsOption": "Дозволені типи агентів через кому",
+        "clearOption": "Поля, які треба очистити, щоб знову успадковувати від хоста",
+        "badClear": "«{{field}}» — не поле, яке можна очистити",
+        "title": "Налаштування агентів {{name}}",
+        "claudeConfigDir": "Конфіг Claude",
+        "ghConfigDir": "Конфіг gh",
+        "gitAuthorName": "Ім'я git",
+        "gitAuthorEmail": "Email git",
+        "useBedrock": "Bedrock",
+        "awsProfile": "Профіль AWS",
+        "allowedAgents": "Дозволені агенти",
+        "inherit": "успадковувати від хоста",
+        "on": "увімк.",
+        "off": "вимк.",
+        "any": "будь-які",
+        "environment": "Оточення процесів агентів",
+        "sets": "Задає",
+        "removes": "Видаляє",
+        "success": "Налаштування агентів {{name}} збережено",
+        "prCommentsOption": "На які коментарі рев'ю shep відповідає сам: off, mention (#shep) або all",
+        "resolveThreadsOption": "Закривати гілку рев'ю після зміни коду за нею",
+        "noResolveThreadsOption": "Залишати закриття гілок рецензенту",
+        "prComments": "Відповіді на коментарі PR",
+        "resolveThreads": "Закривати гілки",
+        "defaultValue": "{{value}} (типово)",
+        "badTrigger": "«{{value}}» — не режим коментарів PR. Використайте один із: {{triggers}}",
+        "autoActions": "Виконується при інцидентах без питань",
+        "autoActionsOption": "Дії, які shep виконує при інциденті без питань: restart, rollback, scale (через кому)",
+        "none": "немає",
+        "docsFirstOption": "Агенти пишуть документацію для користувачів під час планування; зміна без документації чекає людину перед злиттям",
+        "noDocsFirstOption": "Вимкнути docs first",
+        "docsPathsOption": "Префікси шляхів документації через кому (типово docs/,README.md)",
+        "docsFirst": "Docs first",
+        "docsFirstOn": "Увімк. ({{paths}})"
+      }
+    },
+    "connection": {
+      "description": "Підключити облікові записи Linear і Jira, які shep синхронізує, і простори Notion, які він читає",
+      "failed": "Команду підключення не виконано",
+      "connectionArg": "Слаг або id підключення",
+      "add": {
+        "description": "Підключити обліковий запис Linear, Jira або Notion; ключ перевіряється перед збереженням",
+        "providerArg": "linear, jira або notion",
+        "nameOption": "Відображувана назва",
+        "spaceOption": "Простір підключення (типовий, якщо не вказано)",
+        "siteOption": "URL сайту Jira, наприклад https://acme.atlassian.net",
+        "emailOption": "Email облікового запису Jira, якому належить токен",
+        "secretEnvOption": "Читати ключ або токен із цієї змінної оточення замість запиту",
+        "linearPrompt": "API-ключ Linear",
+        "jiraPrompt": "API-токен Jira",
+        "badProvider": "«{{provider}}» не підтримується; використовуйте linear, jira або notion",
+        "emptyEnv": "Змінна оточення {{variable}} порожня або не задана",
+        "success": "{{name}} ({{slug}}) підключено як {{account}}",
+        "notionPrompt": "Токен інтеграції Notion"
+      },
+      "ls": {
+        "description": "Список підключень",
+        "title": "Підключення",
+        "nameColumn": "Назва",
+        "slugColumn": "Слаг",
+        "providerColumn": "Сервіс",
+        "accountColumn": "Обліковий запис",
+        "statusColumn": "Статус",
+        "empty": "Підключень ще немає. Додайте через shep connection add."
+      },
+      "test": {
+        "description": "Повторно перевірити облікові дані підключення",
+        "success": "{{name}} працює ({{account}})"
+      },
+      "rm": {
+        "description": "Видалити підключення та його правила; синхронізовані задачі залишаються",
+        "success": "Підключення {{ref}} видалено"
+      }
+    },
+    "sync": {
+      "description": "Синхронізувати команди Linear і запити Jira з проєктами shep",
+      "failed": "Команду синхронізації не виконано",
+      "connectionArg": "Слаг або id підключення",
+      "ruleArg": "Id правила (див. shep sync rule ls)",
+      "summary": "створено {{created}}, оновлено {{updated}}, надіслано {{pushed}}, конфліктів {{conflicts}}, помилок {{failed}}",
+      "rule": {
+        "description": "Керування правилами синхронізації",
+        "add": {
+          "description": "Синхронізувати команду Linear або JQL-запит Jira з проєктом shep",
+          "projectOption": "Слаг або id проєкту shep",
+          "scopeOption": "Ключ команди Linear (ENG) або JQL-запит Jira",
+          "twoWayOption": "Також надсилати зміни з shep у трекер",
+          "everyOption": "Хвилин між автоматичними запусками (типово 15)",
+          "success": "Правило {{id}} додано для {{scope}}"
+        },
+        "ls": {
+          "description": "Список правил з останнім запуском",
+          "title": "Правила синхронізації",
+          "idColumn": "Id",
+          "fromColumn": "Звідки",
+          "intoColumn": "Куди",
+          "modeColumn": "Режим",
+          "lastRunColumn": "Останній запуск",
+          "never": "не запускалося",
+          "off": "(вимк.)",
+          "empty": "Правил ще немає. Додайте через shep sync rule add."
+        },
+        "enable": {
+          "description": "Дозволити демону запускати правило",
+          "success": "Правило {{id}} увімкнено"
+        },
+        "disable": {
+          "description": "Заборонити демону запускати правило",
+          "success": "Правило {{id}} вимкнено"
+        },
+        "rm": {
+          "description": "Видалити правило; синхронізовані задачі залишаються",
+          "success": "Правило {{id}} видалено"
+        }
+      },
+      "run": {
+        "description": "Запустити зараз одне правило або всі увімкнені",
+        "nothing": "Немає увімкнених правил",
+        "conflictsNote": "Полів змінено з обох боків: {{count}}; збережено значення трекера"
+      }
+    },
+    "item": {
+      "itemArg": "Ключ робочого елемента (PAY-42) або id",
+      "agentOption": "Агент (типово — налаштований агент)",
+      "failed": "Команда робочого елемента завершилася з помилкою",
+      "investigate": {
+        "description": "Агент читає код і ранжує гіпотези щодо причини помилки",
+        "repoOption": "Репозиторій для читання (типово — останній для елемента, потім застосунок проєкту)",
+        "spinner": "Дослідження {{key}} (копія {{repository}} лише для читання)",
+        "starting": "Дослідження {{key}} у {{repository}} за допомогою {{agent}}. Вашу робочу копію не змінено."
+      },
+      "hypotheses": {
+        "description": "Показати останнє дослідження робочого елемента"
+      },
+      "fix": {
+        "description": "Запустити виправлення за гіпотезою: спершу тест, що падає, потім виправлення",
+        "numberArg": "Номер гіпотези (1 — найімовірніша)",
+        "specOption": "Запустити повний конвеєр специфікації замість швидкого режиму",
+        "agentOption": "Агент для виправлення (типово — агент, що досліджував)",
+        "spinner": "Запуск виправлення",
+        "created": "Функція {{name}} ({{id}}) виправляє {{key}} за гіпотезою {{number}}.",
+        "startFailed": "Функцію створено, але вона не запустилася: {{error}}"
+      },
+      "render": {
+        "none": "{{key}} ще не досліджено. Виконайте: shep item investigate {{key}} --repo <шлях>",
+        "header": "Досліджено {{repository}}{{commit}} за допомогою {{agent}} — {{status}}",
+        "running": "Ще виконується; перевірте знову: shep item hypotheses {{key}}",
+        "evidence": "Докази",
+        "test": "Тест, що падає",
+        "fix": "Виправлення",
+        "next": "Запустіть виправлення: shep item fix {{key}} <номер>",
+        "approved": "Гіпотезу {{number}} виправляє функція {{feature}}."
+      }
+    },
+    "agentOption": {
+      "unknown": "«{{value}}» — непідтримуваний агент. Використайте один із: {{supported}}"
+    },
+    "everyOption": {
+      "invalid": "«{{value}}» — не ціле число хвилин"
+    },
+    "knowledge": {
+      "description": "Знання команди з Notion, які можуть читати агенти простору",
+      "failed": "Команда knowledge завершилася з помилкою",
+      "connectionArg": "Slug або id підключення Notion",
+      "sourceArg": "Id джерела знань (див. shep knowledge source ls)",
+      "summary": "{{added}} додано, {{updated}} оновлено, {{removed}} видалено, {{failed}} з помилкою",
+      "source": {
+        "description": "Керувати сторінками та базами даних Notion, які shep синхронізує",
+        "add": {
+          "description": "Синхронізувати дерево сторінок або базу даних Notion як знання простору підключення",
+          "scopeOption": "Посилання або id сторінки чи бази даних Notion, відкритої для інтеграції",
+          "productLineOption": "Лише для репозиторіїв цієї продуктової лінії (slug або id)",
+          "everyOption": "Хвилини між автоматичними синхронізаціями (типово 60)",
+          "success": "Джерело знань {{id}} додано для {{title}}; запустіть shep knowledge sync, щоб прочитати його зараз"
+        },
+        "ls": {
+          "description": "Список джерел знань з останньою синхронізацією",
+          "title": "Джерела знань",
+          "idColumn": "Id",
+          "fromColumn": "Звідки",
+          "documentsColumn": "Док.",
+          "everyColumn": "Кожні",
+          "lastRunColumn": "Остання синхронізація",
+          "never": "ще не синхронізовано",
+          "off": "(вимк.)",
+          "empty": "Джерел знань поки немає. Додайте за допомогою shep knowledge source add."
+        },
+        "enable": {
+          "description": "Дозволити демону синхронізувати джерело",
+          "success": "Джерело знань {{id}} увімкнено"
+        },
+        "disable": {
+          "description": "Заборонити демону синхронізувати джерело",
+          "success": "Джерело знань {{id}} вимкнено"
+        },
+        "rm": {
+          "description": "Видалити джерело та синхронізовані з нього документи",
+          "success": "Джерело знань {{id}} видалено"
+        }
+      },
+      "sync": {
+        "description": "Синхронізувати зараз одне джерело знань або всі увімкнені",
+        "nothing": "Немає увімкнених джерел знань"
+      },
+      "ls": {
+        "description": "Список документів знань простору",
+        "spaceOption": "Slug або id простору (типовий, якщо не вказано)",
+        "title": "Знання {{space}}",
+        "titleColumn": "Документ",
+        "linkColumn": "Посилання",
+        "empty": "У цьому просторі поки немає документів знань."
+      },
+      "search": {
+        "description": "Показати фрагменти, які агент у репозиторії прочитає для задачі",
+        "queryArg": "Текст задачі для пошуку",
+        "repoOption": "Шлях до репозиторію (поточний каталог, якщо не вказано)",
+        "none": "Знання команди в просторі цього репозиторію не відповідають цій задачі."
+      }
+    },
+    "numberOption": {
+      "invalid": "{{option}} очікує число, а не «{{value}}»"
+    },
+    "signal": {
+      "description": "Записувати свідчення того, що потрібно користувачам",
+      "failed": "Команда signal завершилася з помилкою",
+      "spaceOption": "Slug або id простору (типовий, якщо не вказано)",
+      "signalArg": "Id сигналу (див. shep signal ls)",
+      "add": {
+        "description": "Записати сигнал: запит, інцидент, задачу або знахідку",
+        "titleArg": "Короткий опис в один рядок",
+        "productLineOption": "Зачеплена продуктова лінія (slug або id)",
+        "kindOption": "feedback, incident, tracker, discovery або manual (типово manual)",
+        "customerOption": "Клієнт або акаунт",
+        "revenueOption": "Місячний дохід цього клієнта під загрозою",
+        "urgentOption": "Потребує швидкої уваги",
+        "urlOption": "Посилання на оригінал",
+        "detailOption": "Докладний текст",
+        "opportunityOption": "Id можливості для зв'язку",
+        "badKind": "«{{kind}}» — не тип сигналу; використовуйте feedback, incident, tracker, discovery або manual",
+        "success": "Сигнал {{id}} записано"
+      },
+      "ls": {
+        "description": "Список сигналів, нові спочатку",
+        "unlinkedOption": "Лише сигнали без можливості",
+        "title": "Сигнали",
+        "idColumn": "Id",
+        "titleColumn": "Сигнал",
+        "kindColumn": "Тип",
+        "customerColumn": "Клієнт",
+        "opportunityColumn": "Можливість",
+        "unlinked": "не пов'язано",
+        "empty": "Сигналів поки немає. Запишіть за допомогою shep signal add."
+      },
+      "rm": {
+        "description": "Видалити сигнал",
+        "success": "Сигнал {{id}} видалено"
+      }
+    },
+    "opportunity": {
+      "description": "Ставки, підкріплені сигналами, за цінністю на годину рев'ю",
+      "failed": "Команда opportunity завершилася з помилкою",
+      "opportunityArg": "Id можливості (див. shep opportunity ls)",
+      "signalArg": "Id сигналу (див. shep signal ls)",
+      "spaceOption": "Slug або id простору (типовий, якщо не вказано)",
+      "hoursOption": "Оцінка годин людського рев'ю до злиття",
+      "confidenceOption": "Впевненість, що цінність буде отримано, від 0 до 1 (типово 0.5)",
+      "strategicOption": "Просуває стратегічну мету простору",
+      "problemOption": "Проблема, яку вона розв'язує, словами користувачів",
+      "add": {
+        "description": "Сформувати нову можливість",
+        "titleArg": "Назва ставки в один рядок",
+        "productLineOption": "Зачеплена продуктова лінія (slug або id)",
+        "success": "Можливість {{id}} запропоновано"
+      },
+      "estimate": {
+        "description": "Змінити оцінку, впевненість або проблему можливості",
+        "success": "Можливість {{id}} оновлено"
+      },
+      "link": {
+        "description": "Пов'язати сигнал із можливістю його простору",
+        "success": "Сигнал {{signal}} підтримує {{opportunity}}"
+      },
+      "unlink": {
+        "description": "Відв'язати сигнал від можливості",
+        "success": "Сигнал {{signal}} відв'язано"
+      },
+      "accept": {
+        "description": "Прийняти можливість: вона претендує на час рев'ю",
+        "success": "{{title}} прийнято"
+      },
+      "drop": {
+        "description": "Відхилити можливість із причиною",
+        "reasonOption": "Чому її відхилено",
+        "success": "{{title}} відхилено"
+      },
+      "build": {
+        "description": "Перетворити можливість на робочий елемент проєкту",
+        "projectOption": "Slug або id проєкту",
+        "success": "{{title}} будується як робочий елемент {{workItem}}"
+      },
+      "ls": {
+        "description": "Ранжувати відкриті можливості й позначити лінію (▶), що вміщується в цей тиждень",
+        "title": "Можливості в {{space}} — {{used}} з {{capacity}} годин рев'ю в лінії",
+        "idColumn": "Id",
+        "titleColumn": "Можливість",
+        "statusColumn": "Статус",
+        "scoreColumn": "Цінн./год",
+        "hoursColumn": "Години",
+        "evidenceColumn": "Свідчення",
+        "empty": "Відкритих можливостей немає. Створіть за допомогою shep opportunity add.",
+        "unlinked": "Сигналів без можливості: {{count}} (shep signal ls --unlinked)"
+      },
+      "show": {
+        "description": "Показати можливість зі свідченнями та оцінкою",
+        "score": "{{score}} цінності на годину рев'ю (цінність {{value}}, {{hours}} год, впевненість {{confidence}})",
+        "dropped": "Відхилено: {{reason}}"
+      },
+      "weights": {
+        "description": "Показати або задати ваги та тижневу місткість рев'ю простору",
+        "reachOption": "Цінність кожного клієнта",
+        "revenueOption": "Цінність кожної 1000 на місяць під загрозою",
+        "urgencyOption": "Цінність кожного термінового сигналу",
+        "strategicOption": "Додаток для стратегічної ставки",
+        "capacityOption": "Години людського рев'ю на тиждень",
+        "current": "охоплення {{reach}} · дохід {{revenue}} · терміновість {{urgency}} · стратегія {{strategic}} · місткість {{capacity}} год/тижд."
+      },
+      "evidenceParts": {
+        "signals_one": "{{count}} сигнал",
+        "signals_few": "{{count}} сигнали",
+        "signals_many": "{{count}} сигналів",
+        "signals_other": "{{count}} сигналу",
+        "customers_one": "{{count}} клієнт",
+        "customers_few": "{{count}} клієнти",
+        "customers_many": "{{count}} клієнтів",
+        "customers_other": "{{count}} клієнта",
+        "urgent_one": "{{count}} терміновий",
+        "urgent_few": "{{count}} термінові",
+        "urgent_many": "{{count}} термінових",
+        "urgent_other": "{{count}} термінових",
+        "revenue": "{{revenue}}/міс."
+      }
+    },
+    "feedback": {
+      "description": "Ключі, з якими сервіси надсилають відгуки, і теми у відгуках",
+      "failed": "Команда feedback завершилася з помилкою",
+      "spaceOption": "Slug або id простору (типовий, якщо не вказано)",
+      "key": {
+        "description": "Керувати ключами для відгуків",
+        "keyArg": "Id ключа (див. shep feedback key ls)",
+        "create": {
+          "description": "Створити ключ, з яким сервіс надсилає відгуки в простір",
+          "nameOption": "Який сервіс або скрипт його використовує",
+          "success": "Ключ для {{name}} створено. Скопіюйте зараз — його більше не буде показано:",
+          "once": "Надсилайте його як \"Authorization: Bearer <ключ>\" з кожним POST на {{path}} вашого сервера shep."
+        },
+        "ls": {
+          "description": "Список ключів для відгуків",
+          "title": "Ключі для відгуків",
+          "idColumn": "Id",
+          "nameColumn": "Сервіс",
+          "prefixColumn": "Ключ",
+          "usedColumn": "Останнє використання",
+          "revoked": "відкликано",
+          "never": "не використовувався",
+          "empty": "Ключів поки немає. Створіть за допомогою shep feedback key create."
+        },
+        "revoke": {
+          "description": "Відкликати ключ: надсилання з ним відхиляються",
+          "success": "Ключ {{id}} відкликано"
+        }
+      },
+      "themes": {
+        "description": "Згрупувати непов'язані сигнали простору в теми",
+        "title": "Теми в {{space}}",
+        "keyColumn": "Тема",
+        "themeColumn": "Слова",
+        "evidenceColumn": "Свідчення",
+        "empty": "Тем немає: жодні два непов'язані сигнали не мають достатньо спільних слів."
+      },
+      "promote": {
+        "description": "Перетворити тему на можливість із пов'язаними сигналами",
+        "themeArg": "Ключ теми (див. shep feedback themes)",
+        "titleOption": "Назва можливості (слова теми, якщо не вказано)",
+        "success": "{{title}} ({{id}}) запропоновано; пов’язано сигналів: {{count}}"
+      }
+    },
+    "discovery": {
+      "description": "Агент читає непов'язані сигнали простору й пропонує можливості",
+      "failed": "Команда discovery завершилася з помилкою",
+      "spaceOption": "Slug або id простору (типовий, якщо не вказано)",
+      "run": {
+        "description": "Запустити пошук можливостей у просторі зараз",
+        "agentOption": "Агент (діють правила простору)",
+        "started": "Читаю свідчення простору; це може тривати кілька хвилин…",
+        "success": "Прочитано сигналів: {{read}} · запропоновано можливостей: {{proposed}} · відкинуто пропозицій: {{dropped}}"
+      },
+      "ls": {
+        "description": "Список запусків пошуку в просторі",
+        "title": "Запуски пошуку",
+        "whenColumn": "Початок",
+        "statusColumn": "Статус",
+        "resultColumn": "Результат",
+        "result": "Запропоновано {{proposed}} з {{read}} сигналів (відкинуто {{dropped}})",
+        "empty": "У цьому просторі пошук ще не запускався."
+      },
+      "schedule": {
+        "description": "Запускати пошук у просторі кожні N годин або вимкнути",
+        "everyOption": "Години між запусками (1–720)",
+        "offOption": "Вимкнути пошук за розкладом",
+        "needEvery": "Вкажіть --every <години> або --off",
+        "on": "Пошук запускається кожні {{hours}} год",
+        "off": "Пошук за розкладом вимкнено"
+      }
+    },
+    "incident": {
+      "description": "Інциденти в продакшені: відкрити, розібрати, вплинути на навантаження й закрити",
+      "failed": "Команда incident завершилася з помилкою",
+      "spaceOption": "Slug або id простору (типовий, якщо не вказано)",
+      "incidentArg": "Id інциденту (див. shep incident ls)",
+      "actionIdArg": "Id дії (див. shep incident show)",
+      "badSeverity": "«{{value}}» — не рівень серйозності; використовуйте {{severities}}",
+      "badAction": "«{{value}}» — не дія; використовуйте {{actions}}",
+      "recovered": "відновлено",
+      "notRecovered": "не відновлено",
+      "awaiting": "Чекає схвалення: {{action}} — виконайте shep incident approve {{id}}",
+      "open": {
+        "description": "Відкрити інцидент",
+        "titleArg": "Короткий опис",
+        "severityOption": "critical, major (типово) або minor",
+        "detailOption": "Що відбувається",
+        "urlOption": "Посилання на алерт або дашборд",
+        "workloadOption": "Зачеплений deployment Kubernetes",
+        "namespaceOption": "Його namespace (типово: default)",
+        "contextOption": "Його контекст kubeconfig (типово: поточний)",
+        "success": "Інцидент {{id}} відкрито: {{title}}"
+      },
+      "ls": {
+        "description": "Список інцидентів, нові спочатку",
+        "openOption": "Лише незакриті",
+        "title": "Інциденти",
+        "idColumn": "Id",
+        "titleColumn": "Інцидент",
+        "severityColumn": "Серйозність",
+        "statusColumn": "Статус",
+        "workloadColumn": "Навантаження",
+        "empty": "Інцидентів немає."
+      },
+      "show": {
+        "description": "Показати інцидент із хронологією та діями"
+      },
+      "note": {
+        "description": "Додати нотатку до хронології",
+        "textArg": "Нотатка",
+        "success": "Нотатку додано"
+      },
+      "triage": {
+        "description": "Прочитати навантаження й запитати агента про причини та одну дію",
+        "agentOption": "Агент (діють правила простору)",
+        "started": "Читаю навантаження й питаю агента; це може тривати кілька хвилин…"
+      },
+      "act": {
+        "description": "Перезапустити, відкотити або масштабувати навантаження зараз",
+        "actionArg": "restart, rollback або scale",
+        "replicasOption": "Кількість реплік, для scale",
+        "reasonOption": "Чому"
+      },
+      "approve": {
+        "description": "Схвалити запропоновану дію; вона виконається одразу"
+      },
+      "reject": {
+        "description": "Відхилити запропоновану дію",
+        "reasonOption": "Чому",
+        "success": "Дію {{id}} відхилено"
+      },
+      "resolve": {
+        "description": "Закрити інцидент; постмортем складається з хронології, якщо не заданий",
+        "postmortemOption": "Ваш постмортем (Markdown)",
+        "success": "{{title}} закрито"
+      }
+    },
+    "outcome": {
+      "description": "Що сталося після випуску: повідомлення до і після, клієнти, яких треба сповістити, калібрування",
+      "failed": "Команда outcome не виконана",
+      "spaceOption": "Слаг або id простору (типовий простір, якщо не вказано)",
+      "opportunityArg": "Id можливості",
+      "ls": {
+        "description": "Показати випущені можливості простору та їхні підсумки",
+        "title": "Підсумки — {{space}}",
+        "opportunityColumn": "Можливість",
+        "shippedColumn": "Випущено",
+        "verdictColumn": "Вердикт",
+        "reportsColumn": "Повідомлення",
+        "tellColumn": "Сповістити",
+        "empty": "У цьому просторі ще нічого не випущено."
+      },
+      "check": {
+        "description": "Зараз випустити можливості із завершеною задачею та оцінити підсумки, термін яких настав",
+        "summary": "Випущено {{shipped}}, повернуто {{reopened}}, оцінено {{judged}}",
+        "shipped": "випущено:",
+        "reopened": "знову прийнято:"
+      },
+      "ship": {
+        "description": "Позначити можливість випущеною вручну",
+        "success": "{{title}} випущено; підсумок буде оцінено {{date}}"
+      },
+      "tell": {
+        "description": "Показати клієнтів, яких треба сповістити про випуск, або позначити їх сповіщеними",
+        "doneOption": "Позначити клієнтів сповіщеними",
+        "told": "Клієнтів позначено сповіщеними: {{told}}",
+        "nobody": "Усіх клієнтів уже сповіщено.",
+        "note": "Скажіть їм: «{{title}}» випущено — дякуємо, що розповіли, що вам потрібно.",
+        "markHint": "Коли вони дізнаються: shep outcome tell {{id}} --done"
+      },
+      "hours": {
+        "description": "Записати, скільки годин рев’ю насправді зайняла випущена можливість",
+        "hoursArg": "Години, більше 0",
+        "success": "Записано годин рев’ю: {{hours}}"
+      },
+      "calibration": {
+        "hours": "Фактичні години рев’ю — {{ratio}}× від оцінок (записано: {{timed}})",
+        "noHours": "Фактичні години рев’ю ще не записано",
+        "solved": "Розв’язано підсумків: {{solved}} з {{judged}}",
+        "noVerdicts": "Підсумки ще не оцінено"
+      }
+    },
+    "autopilot": {
+      "description": "Що shep запускає сам у просторі: розслідування, виправлення та лінію тижня",
+      "failed": "Команда autopilot не виконана",
+      "spaceOption": "Слаг або id простору (типовий простір, якщо не вказано)",
+      "on": "увімк.",
+      "off": "вимк.",
+      "investigate": "Розслідувати термінові задачі",
+      "fix": "Виправляти впевнені гіпотези",
+      "mergeFixes": "Виправлення зливаються без людини",
+      "budget": "Виправлень на день",
+      "fillLine": "Будувати лінію тижня",
+      "project": "Проєкт для лінії",
+      "pass": "розслідувано {{investigated}} · виправлено {{fixed}} · побудовано {{built}}",
+      "show": {
+        "description": "Показати політику autopilot простору та останні проходи",
+        "title": "Autopilot — {{space}}",
+        "noRuns": "Проходів ще не було."
+      },
+      "set": {
+        "description": "Змінити політику autopilot простору",
+        "investigateOption": "Розслідувати відкриті термінові задачі без розслідування",
+        "fixOption": "Запускати виправлення, коли головна гіпотеза High",
+        "mergeFixesOption": "Дозволити цим виправленням зливатися без людини",
+        "fillLineOption": "Будувати прийняті можливості в межах лінії тижня",
+        "offOption": "Вимкнути цю частину",
+        "projectOption": "Проєкт, у який будується лінія (id або слаг)",
+        "clearProjectOption": "Більше не будувати лінію в проєкт",
+        "budgetOption": "Не більше виправлень за 24 години (0–20)",
+        "success": "Політику autopilot збережено"
+      },
+      "run": {
+        "description": "Запустити прохід autopilot у просторі зараз",
+        "started": "Триває прохід autopilot; розслідування можуть тривати багато хвилин…"
+      }
+    },
+    "factory": {
+      "description": "Фабрика ПЗ одним поглядом",
+      "failed": "Команда factory не виконана",
+      "spaceOption": "Слаг або id простору (типовий простір, якщо не вказано)",
+      "status": {
+        "description": "Що робить фабрика простору і що чекає людей",
+        "title": "Фабрика — {{space}}",
+        "line": "Лінія",
+        "lineValue": "{{used}}/{{capacity}} год рев’ю, у лінії {{inLine}}, чекають {{waiting}}",
+        "building": "У роботі",
+        "incidents": "Відкриті інциденти",
+        "actions": "Дії на схваленні",
+        "outcomes": "Підсумки в очікуванні",
+        "customers": "Клієнти, яких сповістити",
+        "autopilot": "Autopilot",
+        "features": "Фічі",
+        "featuresValue": "у роботі: {{inFlight}}, чекають схвалення: {{waiting}}"
       }
     }
   },

@@ -444,7 +444,12 @@
     "clusters": "المجموعات",
     "plugins": "Plugins",
     "projectMemory": "Project Memory",
-    "harness": "Harness"
+    "harness": "Harness",
+    "spaces": "المساحات",
+    "trackers": "الاتصالات",
+    "opportunities": "الفرص",
+    "incidents": "الحوادث",
+    "factory": "المصنع"
   },
   "sidebar": {
     "features": "الميزات",
@@ -998,8 +1003,7 @@
       "delete": "Delete",
       "save": "Save",
       "cancel": "Cancel",
-      "makeOrgWide": "Make organization-wide",
-      "makeProjectOnly": "Make project-only"
+      "scope": "تغيير من يرى هذا"
     },
     "deleteDialog": {
       "title": "Delete this memory entry?",
@@ -1007,10 +1011,18 @@
     },
     "errors": {
       "emptyContent": "Memory content cannot be empty.",
-      "updateFailed": "Failed to update the memory entry."
+      "updateFailed": "Failed to update the memory entry.",
+      "scopeFailed": "تعذر تغيير من يرى هذا الإدخال."
     },
     "scope": {
-      "organization": "Organization"
+      "project": "هذا المستودع فقط",
+      "productLine": "خط المنتج الخاص به",
+      "space": "المساحة بأكملها",
+      "menuLabel": "مشترك مع"
+    },
+    "filter": {
+      "label": "التصفية حسب المساحة",
+      "allSpaces": "كل المساحات"
     }
   },
   "sessionTree": {
@@ -1289,6 +1301,524 @@
         "toolOutputRatio": "مخرجات الأدوات المعروضة",
         "evidenceRecall": "تغطية الأدلة"
       }
+    }
+  },
+  "spaces": {
+    "title": "المساحات",
+    "subtitle": "افصل بين مجالات العمل. الذاكرة المشتركة داخل مساحة لا تصل أبدًا إلى أخرى.",
+    "create": {
+      "title": "مساحة جديدة",
+      "name": "الاسم",
+      "namePlaceholder": "Acme",
+      "description": "الوصف",
+      "descriptionPlaceholder": "عمل للعميل Acme Corp",
+      "color": "اللون",
+      "submit": "إنشاء مساحة"
+    },
+    "card": {
+      "default": "افتراضي",
+      "makeDefault": "تعيين كافتراضي",
+      "delete": "حذف المساحة",
+      "counts": "المستودعات: {{repositories}} · إدخالات الذاكرة: {{memory}}",
+      "edit": "تعديل المساحة",
+      "save": "حفظ"
+    },
+    "lines": {
+      "title": "خطوط المنتجات",
+      "empty": "لا توجد خطوط منتجات بعد.",
+      "placeholder": "خط منتج جديد",
+      "add": "إضافة",
+      "remove": "إزالة {{name}}"
+    },
+    "rules": {
+      "title": "القواعد",
+      "empty": "لا توجد قواعد. تصل المستودعات إلى هنا فقط عند تثبيتها.",
+      "placeholder": "‎/work/acme أو github.com/acme/*",
+      "line": "خط المنتج للمستودعات المطابقة",
+      "noLine": "بلا خط منتج",
+      "add": "إضافة قاعدة",
+      "remove": "إزالة القاعدة"
+    },
+    "repositories": {
+      "title": "المستودعات",
+      "empty": "لا توجد مستودعات بعد. أضف واحدًا من مركز التحكم.",
+      "repository": "المستودع",
+      "space": "المساحة",
+      "line": "خط المنتج",
+      "because": "السبب",
+      "sourceAssignment": "مثبّت",
+      "sourceRule": "قاعدة",
+      "sourceDefault": "المساحة الافتراضية",
+      "pin": "تثبيت في مساحة…",
+      "unpin": "إلغاء التثبيت لتُطبّق القواعد"
+    },
+    "deleteDialog": {
+      "title": "حذف {{name}}؟",
+      "description": "تُزال قواعدها وتثبيتاتها وخطوط منتجاتها. تعود مستودعاتها إلى قواعد أخرى أو إلى المساحة الافتراضية.",
+      "confirm": "حذف المساحة",
+      "cancel": "إلغاء"
+    },
+    "errors": {
+      "actionFailed": "تعذر حفظ التغيير. حاول مرة أخرى."
+    },
+    "agent": {
+      "title": "إعدادات الوكلاء",
+      "customised": "مخصّص",
+      "inherits": "يرث من المضيف",
+      "claudeConfigDir": "دليل إعدادات Claude",
+      "ghConfigDir": "دليل إعدادات gh",
+      "gitName": "اسم مؤلف git",
+      "gitEmail": "بريد مؤلف git",
+      "awsProfile": "ملف AWS",
+      "bedrock": "Amazon Bedrock",
+      "bedrockInherit": "وراثة من المضيف",
+      "bedrockOn": "توجيه Claude عبر Bedrock",
+      "bedrockOff": "عدم استخدام Bedrock أبدًا",
+      "loginHint": "سجّل الدخول مرة واحدة مع تعيين الدليل، مثل CLAUDE_CONFIG_DIR=~/.claude-acme claude أو GH_CONFIG_DIR=~/.config/gh-acme gh auth login. لا يخزّن Shep بيانات الاعتماد أبدًا.",
+      "allowedAgents": "الوكلاء المسموح بهم",
+      "allowedAgentsHint": "عدم التحديد يسمح بكل الوكلاء.",
+      "save": "حفظ إعدادات الوكلاء",
+      "prComments": "تعليقات طلبات الدمج",
+      "prCommentsHint": "تعليقات المراجعة على طلبات دمج shep التي يُرد عليها دون طلب. يمكن معالجة الباقي من الميزة.",
+      "prTrigger": {
+        "Off": "عند الطلب فقط",
+        "Mention": "التعليقات التي تذكر #shep",
+        "All": "كل التعليقات"
+      },
+      "resolveThreads": "إغلاق السلاسل التي عُدّلت الشيفرة لأجلها",
+      "autoActions": "تُنفَّذ دون سؤال عند الحوادث",
+      "autoActionsHint": "ينفّذ Shep هذه على حمل عمل الحادث دون انتظار موافقة. الأخرى تنتظر موافقة أحد.",
+      "docsFirst": "Docs first",
+      "docsFirstHint": "يكتب الوكلاء توثيق المستخدم أثناء التخطيط ويبنون وفقه. ينتظر التغيير الذي لا يمس التوثيق شخصًا قبل الدمج.",
+      "docsFirstOn": "اشتراط docs first",
+      "docsPaths": "مسارات التوثيق"
+    }
+  },
+  "trackers": {
+    "title": "الاتصالات",
+    "subtitle": "مشكلات Linear وJira محفوظة في مشاريع shep، وصفحات Notion محفوظة كمعرفة للفريق.",
+    "syncAll": "مزامنة الآن",
+    "empty": "لا توجد اتصالات بعد. أضف أعلاه مفتاح API لـ Linear أو رمز Jira أو رمز تكامل Notion.",
+    "add": {
+      "title": "إضافة اتصال",
+      "provider": "الأداة",
+      "name": "الاسم",
+      "space": "المساحة",
+      "site": "موقع Jira",
+      "email": "بريد الحساب",
+      "linearSecret": "مفتاح Linear",
+      "jiraSecret": "رمز Jira",
+      "submit": "ربط",
+      "notionSecret": "رمز تكامل Notion"
+    },
+    "connection": {
+      "connected": "متصل",
+      "error": "خطأ",
+      "account": "باسم {{account}}",
+      "space": "المساحة {{space}}",
+      "test": "اختبار",
+      "remove": "إزالة الاتصال",
+      "removeTitle": "إزالة {{name}}؟",
+      "removeDescription": "تتوقف قواعد المزامنة ومصادر المعرفة الخاصة به وتُزال. تبقى عناصر العمل التي زامنها في مشاريعها.",
+      "cancel": "إلغاء"
+    },
+    "rules": {
+      "title": "قواعد المزامنة",
+      "empty": "لا توجد قواعد بعد. أضف قاعدة لاستيراد المهام.",
+      "noProjects": "أنشئ مشروعًا أولًا؛ فالقواعد تكتب المهام في مشروع.",
+      "scope": "مفتاح فريق Linear أو JQL من Jira",
+      "project": "المشروع",
+      "twoWay": "باتجاهين",
+      "import": "استيراد",
+      "every": "كل",
+      "minutes": "دقيقة",
+      "everyShort": "كل {{minutes}} دقيقة",
+      "paused": "متوقفة مؤقتًا",
+      "summary": "{{created}} أُنشئت، {{updated}} حُدّثت، {{pushed}} أُرسلت، {{conflicts}} تعارضات، {{failed}} فشلت",
+      "never": "لم يُشغَّل بعد",
+      "add": "إضافة قاعدة",
+      "pause": "إيقاف مؤقت",
+      "resume": "استئناف",
+      "runNow": "تشغيل الآن",
+      "remove": "إزالة القاعدة"
+    },
+    "errors": {
+      "actionFailed": "تعذر حفظ التغيير. حاول مرة أخرى."
+    },
+    "badge": {
+      "open": "فتح {{key}} في المتتبع"
+    }
+  },
+  "bugLoop": {
+    "title": "التحقيق",
+    "intro": "يقرأ وكيل المستودع في نسخة مؤقتة للقراءة فقط ويرتّب الأسباب المرجّحة. نسختك العاملة لا تُمسّ أبداً.",
+    "repository": "المستودع",
+    "noRepositories": "أضف مستودعاً إلى shep للتحقيق في هذا العنصر.",
+    "investigate": "تحقيق",
+    "investigateAgain": "تحقيق من جديد",
+    "running": "يقرأ الوكيل نسخة للقراءة فقط من {{repository}}…",
+    "approved": "يجري إصلاح الفرضية {{number}}.",
+    "openFeature": "فتح ميزة الإصلاح",
+    "fullSpec": "الإصلاح عبر مسار المواصفات الكامل بدلاً من الوضع السريع",
+    "status": {
+      "Pending": "جارٍ البدء",
+      "Running": "جارٍ التحقيق",
+      "Completed": "الفرضيات جاهزة",
+      "Failed": "فشل"
+    },
+    "confidence": {
+      "High": "ثقة عالية",
+      "Medium": "ثقة متوسطة",
+      "Low": "ثقة منخفضة"
+    },
+    "hypothesis": {
+      "evidence": "الأدلة",
+      "test": "اختبار فاشل",
+      "fix": "الإصلاح",
+      "fixThis": "إصلاح هذا",
+      "fixing": "جارٍ بدء الإصلاح…",
+      "approved": "قيد الإصلاح"
+    }
+  },
+  "prComments": {
+    "title": "تعليقات المراجعة",
+    "refresh": "قراءة التعليقات من GitHub",
+    "address": "معالجة {{count}} معلّقة",
+    "running": "يعالج وكيل {{count}} تعليقات في مساحة عمل الميزة…",
+    "roundPushed": "دفعت الجولة الأخيرة {{sha}} وردّت.",
+    "roundAnswered": "ردّت الجولة الأخيرة دون تعديل الشيفرة.",
+    "roundFailed": "فشلت الجولة الأخيرة: {{error}}",
+    "empty": "لا توجد تعليقات مراجعة على طلب الدمج بعد.",
+    "openOnGitHub": "فتح في GitHub",
+    "status": {
+      "Pending": "معلّق",
+      "Addressing": "قيد المعالجة",
+      "Addressed": "تمت المعالجة",
+      "Declined": "مرفوض",
+      "Failed": "فشل"
+    },
+    "kind": {
+      "Inline": "على سطر",
+      "Conversation": "محادثة",
+      "Review": "مراجعة"
+    },
+    "addressNone": "لا شيء للمعالجة"
+  },
+  "knowledge": {
+    "sources": {
+      "title": "مصادر المعرفة",
+      "empty": "لا توجد مصادر بعد. شارك صفحة أو قاعدة بيانات في Notion مع التكامل ثم أضف رابطها.",
+      "kind": {
+        "Page": "شجرة صفحات",
+        "Database": "قاعدة بيانات"
+      },
+      "productLine": "{{name}} فقط",
+      "wholeSpace": "المساحة كاملة",
+      "productLineLabel": "خط المنتجات",
+      "scope": "رابط صفحة أو قاعدة بيانات في Notion",
+      "documents_one": "{{count}} مستند",
+      "documents_few": "{{count}} مستندات",
+      "documents_many": "{{count}} مستندًا",
+      "documents_other": "{{count}} مستند",
+      "summary": "{{added}} مضاف، {{updated}} محدَّث، {{removed}} محذوف، {{failed}} فاشل",
+      "never": "لم تتم المزامنة بعد",
+      "add": "إضافة مصدر",
+      "syncNow": "مزامنة الآن",
+      "remove": "إزالة المصدر"
+    },
+    "documents": {
+      "title": "معرفة الفريق",
+      "subtitle": "صفحات Notion التي يقرؤها الوكلاء في كل مساحة عندما تطابق المهمة.",
+      "empty": "لا توجد معرفة فريق بعد. أضف اتصال Notion وصفحاته في صفحة",
+      "connections": "الاتصالات"
+    }
+  },
+  "opportunities": {
+    "title": "الفرص",
+    "subtitle": "رهانات مدعومة بالأدلة، مرتبة حسب القيمة لكل ساعة مراجعة.",
+    "space": "المساحة",
+    "empty": "لا توجد فرص مفتوحة في هذه المساحة. صغ واحدة أعلاه.",
+    "errors": {
+      "actionFailed": "تعذر حفظ التغيير. حاول مرة أخرى."
+    },
+    "capacity": {
+      "title": "سعة المراجعة هذا الأسبوع",
+      "used": "{{used}} من {{capacity}} ساعة مراجعة",
+      "waiting_one": "رهان مقبول {{count}} ينتظر السعة",
+      "waiting_few": "{{count}} رهانات مقبولة تنتظر السعة",
+      "waiting_many": "{{count}} رهانًا مقبولًا ينتظر السعة",
+      "waiting_other": "{{count}} رهان مقبول ينتظر السعة"
+    },
+    "row": {
+      "inLine": "في خط هذا الأسبوع",
+      "outOfLine": "خارج الخط",
+      "strategic": "استراتيجية",
+      "cost": "{{hours}} ساعة · ثقة {{confidence}}٪",
+      "evidenceParts": {
+        "signals_one": "{{count}} إشارة",
+        "signals_few": "{{count}} إشارات",
+        "signals_many": "{{count}} إشارة",
+        "signals_other": "{{count}} إشارة",
+        "customers_one": "{{count}} عميل",
+        "customers_few": "{{count}} عملاء",
+        "customers_many": "{{count}} عميلًا",
+        "customers_other": "{{count}} عميل",
+        "urgent_one": "{{count}} عاجلة",
+        "urgent_few": "{{count}} عاجلة",
+        "urgent_many": "{{count}} عاجلة",
+        "urgent_other": "{{count}} عاجلة",
+        "revenue": "{{revenue}}/شهر"
+      }
+    },
+    "status": {
+      "Proposed": "مقترحة",
+      "Accepted": "مقبولة",
+      "Building": "قيد البناء",
+      "Shipped": "مُطلقة",
+      "Dropped": "مستبعدة"
+    },
+    "kind": {
+      "Feedback": "ملاحظات",
+      "Incident": "حادث",
+      "Tracker": "متتبع",
+      "Discovery": "اكتشاف",
+      "Manual": "ملاحظة"
+    },
+    "actions": {
+      "accept": "قبول",
+      "build": "بناء",
+      "drop": "استبعاد",
+      "cancel": "إلغاء",
+      "reason": "لماذا تُستبعد؟",
+      "project": "المشروع",
+      "noProjects": "أنشئ مشروعًا أولًا؛ البناء ينشئ فيه عنصر عمل.",
+      "ship": "وضع علامة الإطلاق"
+    },
+    "inbox": {
+      "title": "إشارات للربط ({{count}})",
+      "empty": "كل إشارة تدعم فرصة.",
+      "urgent": "عاجل",
+      "customerRevenue": "{{customer}} · {{revenue}} شهريًا",
+      "link": "ربط بـ…",
+      "remove": "إزالة الإشارة"
+    },
+    "signalForm": {
+      "title": "تسجيل إشارة",
+      "signal": "الإشارة",
+      "placeholder": "ماذا طلب مستخدم، أو ما الذي تعطل؟",
+      "kind": "النوع",
+      "customer": "العميل",
+      "revenue": "الإيراد شهريًا",
+      "urgent": "عاجل",
+      "submit": "تسجيل"
+    },
+    "opportunityForm": {
+      "title": "صياغة فرصة",
+      "name": "الفرصة",
+      "placeholder": "رهان يستحق البناء",
+      "hours": "ساعات مراجعة",
+      "confidence": "٪ ثقة",
+      "productLine": "خط المنتجات",
+      "anyLine": "المساحة كاملة",
+      "strategic": "استراتيجية",
+      "submit": "إضافة"
+    },
+    "weights": {
+      "title": "الأوزان والسعة",
+      "formula": "القيمة = الانتشار × العملاء + الإيراد × (الإيراد المعرّض للخطر ÷ 1000) + الإلحاح × الإشارات العاجلة + الاستراتيجي. الدرجة = القيمة × الثقة ÷ ساعات المراجعة.",
+      "reach": "الانتشار",
+      "revenue": "الإيراد",
+      "urgency": "الإلحاح",
+      "strategic": "استراتيجي",
+      "weeklyReviewHours": "ساعات مراجعة/أسبوع",
+      "save": "حفظ"
+    },
+    "themes": {
+      "title": "المواضيع في الإشارات غير المرتبطة",
+      "empty": "لا مواضيع بعد: لا توجد إشارتان غير مرتبطتين تتشاركان كلمات كافية.",
+      "promote": "ترقية",
+      "hours": "ساعات المراجعة"
+    },
+    "feedbackKeys": {
+      "title": "مفاتيح الملاحظات",
+      "subtitle": "ترسل الأدوات الملاحظات بمفتاح: {{endpoint}} مع \"Authorization: Bearer <المفتاح>\".",
+      "empty": "لا توجد مفاتيح بعد.",
+      "name": "الأداة",
+      "namePlaceholder": "Zendesk أو أداة أو سكربت…",
+      "create": "إنشاء مفتاح",
+      "secretOnce": "انسخ هذا المفتاح الآن؛ لن يُعرض مرة أخرى.",
+      "revoke": "إلغاء",
+      "revoked": "ملغى",
+      "lastUsed": "آخر استخدام {{when}}",
+      "neverUsed": "لم يُستخدم"
+    },
+    "source": {
+      "Manual": "يدوية",
+      "Theme": "من موضوع",
+      "Discovery": "مكتشفة"
+    },
+    "discovery": {
+      "title": "الاكتشاف",
+      "run": "اكتشف الآن",
+      "discovering": "جارٍ الاكتشاف…",
+      "schedule": "الجدولة",
+      "off": "متوقف",
+      "everyHours": "كل {{hours}} ساعة",
+      "never": "لم يعمل الاكتشاف في هذه المساحة بعد.",
+      "running": "الاكتشاف قيد التشغيل…",
+      "failed": "فشل التشغيل الأخير: {{error}}",
+      "succeeded": "آخر تشغيل: اقتُرحت {{proposed}} من {{read}} إشارة، {{when}}"
+    },
+    "outcomes": {
+      "title": "النتائج",
+      "check": "تحقق الآن",
+      "empty": "لم يُطلق شيء في هذه المساحة بعد.",
+      "judgedOn": "يُحكم عليها في {{date}}",
+      "counts": "{{before}} بلاغات مشابهة قبل، {{after}} بعد",
+      "hours": "ساعات المراجعة",
+      "saveHours": "حفظ",
+      "hoursTaken": "استغرقت {{actual}} س من {{estimated}} س مقدّرة",
+      "note": "أخبرهم أن «{{title}}» أُطلقت:",
+      "markTold": "وضع علامة الإبلاغ",
+      "hoursRatio": "ساعات المراجعة الفعلية تساوي {{ratio}}× التقديرات (سُجّل {{timed}})",
+      "noHours": "لم تُسجَّل ساعات مراجعة فعلية بعد",
+      "solvedShare": "حُلّت {{solved}} من {{judged}} نتيجة محكوم عليها",
+      "noVerdicts": "لم يُحكم على أي نتيجة بعد",
+      "verdict": {
+        "Pending": "قيد الانتظار",
+        "Solved": "حُلّت",
+        "Persisting": "مستمرة"
+      }
+    }
+  },
+  "incidents": {
+    "title": "الحوادث",
+    "subtitle": "مشاكل بيئة الإنتاج وفرزها، وإعادة التشغيل والتراجع وتغيير الحجم التي تصلحها، وتقرير ما بعد الحادث.",
+    "space": "المساحة",
+    "list": "الحوادث",
+    "empty": "لا توجد حوادث في هذه المساحة.",
+    "timeline": "الخط الزمني",
+    "actions": "إجراءات التشغيل",
+    "approve": "موافقة",
+    "reject": "رفض",
+    "recovered": "تعافى",
+    "notRecovered": "لم يتعافَ",
+    "scaleTo": "تغيير الحجم إلى {{replicas}} نسخ",
+    "showEvidence": "عرض الأدلة",
+    "triage": "فرز",
+    "triaging": "جارٍ الفرز…",
+    "workload": "deployment/{{workload}} في {{namespace}} ({{context}})",
+    "currentContext": "السياق الحالي",
+    "noWorkload": "لا يوجد حمل عمل — الإجراءات متوقفة.",
+    "openLink": "فتح التنبيه",
+    "errors": {
+      "actionFailed": "فشل الإجراء."
+    },
+    "form": {
+      "title": "فتح حادث",
+      "incident": "حادث",
+      "placeholder": "ما المشكلة؟",
+      "severity": "الخطورة",
+      "workload": "حمل العمل",
+      "namespace": "Namespace",
+      "context": "السياق",
+      "submit": "فتح"
+    },
+    "act": {
+      "title": "تشغيل إجراء",
+      "kind": "الإجراء",
+      "replicas": "النسخ",
+      "reason": "لماذا؟",
+      "submit": "تشغيل",
+      "running": "جارٍ التشغيل…"
+    },
+    "note": {
+      "title": "ملاحظة",
+      "placeholder": "إضافة ملاحظة إلى الخط الزمني",
+      "submit": "إضافة"
+    },
+    "resolve": {
+      "title": "حل",
+      "postmortem": "تقرير ما بعد الحادث",
+      "placeholder": "اكتب التقرير، أو اتركه فارغًا لمسودة من الخط الزمني",
+      "submit": "حل"
+    },
+    "severity": {
+      "Critical": "حرج",
+      "Major": "كبير",
+      "Minor": "بسيط"
+    },
+    "status": {
+      "Open": "مفتوح",
+      "Mitigated": "مُخفَّف",
+      "Resolved": "محلول"
+    },
+    "actionKind": {
+      "Restart": "إعادة تشغيل",
+      "Rollback": "تراجع",
+      "Scale": "تغيير الحجم"
+    },
+    "actionStatus": {
+      "Proposed": "بانتظار الموافقة",
+      "Approved": "تمت الموافقة",
+      "Rejected": "مرفوض",
+      "Succeeded": "تم",
+      "Failed": "فشل"
+    },
+    "proposedBy": {
+      "Agent": "اقترحه الوكيل",
+      "Person": "طلبه شخص"
+    },
+    "eventKind": {
+      "Opened": "فُتح",
+      "Note": "ملاحظة",
+      "Evidence": "أدلة",
+      "Hypothesis": "فرضية",
+      "ActionProposed": "اقتُرح إجراء",
+      "ActionApproved": "تمت الموافقة على إجراء",
+      "ActionRejected": "رُفض إجراء",
+      "ActionSucceeded": "تم إجراء",
+      "ActionFailed": "فشل إجراء",
+      "Recovered": "تعافى",
+      "NotRecovered": "لم يتعافَ",
+      "Resolved": "حُلّ"
+    }
+  },
+  "factory": {
+    "title": "المصنع",
+    "subtitle": "ما يفعله مصنع البرمجيات في المساحة وما ينتظر الأشخاص.",
+    "space": "المساحة",
+    "errors": {
+      "actionFailed": "فشل الإجراء."
+    },
+    "cards": {
+      "line": "ساعات المراجعة هذا الأسبوع",
+      "building": "قيد البناء",
+      "incidents": "حوادث مفتوحة",
+      "actions": "إجراءات بانتظار الموافقة",
+      "outcomes": "نتائج معلّقة",
+      "customers": "عملاء للإبلاغ",
+      "features": "ميزات قيد التنفيذ",
+      "approval": "بانتظار الموافقة"
+    },
+    "runs": {
+      "title": "جولات autopilot",
+      "none": "لم يعمل autopilot في هذه المساحة بعد.",
+      "pass": "حُقّق في {{investigated}} · أُصلح {{fixed}} · بُني {{built}}"
+    },
+    "autopilot": {
+      "title": "Autopilot",
+      "hint": "ما يبدؤه shep هنا بنفسه كل ساعة. كل شيء متوقف حتى تشغّله.",
+      "investigate": "التحقيق في العناصر العاجلة المفتوحة",
+      "fix": "الإصلاح عندما تكون الفرضية الأولى High",
+      "mergeFixes": "السماح بدمج هذه الإصلاحات دون شخص",
+      "fillLine": "بناء الفرص المقبولة في الخط",
+      "budget": "إصلاحات في اليوم",
+      "project": "البناء في",
+      "noProject": "بلا مشروع",
+      "save": "حفظ",
+      "run": "تشغيل الآن",
+      "running": "جارٍ التشغيل…"
     }
   }
 }

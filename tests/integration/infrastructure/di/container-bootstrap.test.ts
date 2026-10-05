@@ -47,6 +47,19 @@ import { registerUseCases } from '@/infrastructure/di/modules/register-use-cases
 import { registerInteractive } from '@/infrastructure/di/modules/register-interactive.js';
 import { registerAspm } from '@/infrastructure/di/modules/register-aspm.js';
 import { registerHarness } from '@/infrastructure/di/modules/register-harness.js';
+import { registerSpaces } from '@/infrastructure/di/modules/register-spaces.js';
+import { registerTrackers } from '@/infrastructure/di/modules/register-trackers.js';
+import { registerBugLoop } from '@/infrastructure/di/modules/register-bug-loop.js';
+import { registerPrComments } from '@/infrastructure/di/modules/register-pr-comments.js';
+import { registerKnowledge } from '@/infrastructure/di/modules/register-knowledge.js';
+import { registerOpportunities } from '@/infrastructure/di/modules/register-opportunities.js';
+import { registerFeedback } from '@/infrastructure/di/modules/register-feedback.js';
+import { registerDiscovery } from '@/infrastructure/di/modules/register-discovery.js';
+import { registerIncidents } from '@/infrastructure/di/modules/register-incidents.js';
+import { registerOutcomes } from '@/infrastructure/di/modules/register-outcomes.js';
+import { registerAutopilot } from '@/infrastructure/di/modules/register-autopilot.js';
+import { SessionSpaceEnvironment } from '@/infrastructure/services/interactive/lifecycle/session-space-environment.js';
+import { ResolveSpaceEnvironmentUseCase } from '@/application/use-cases/spaces/resolve-space-environment.use-case.js';
 import type { IDeploymentService } from '@/application/ports/output/services/deployment-service.interface.js';
 import { DeploymentService } from '@/infrastructure/services/deployment/deployment.service.js';
 import type { IInteractiveSessionRepository } from '@/application/ports/output/repositories/interactive-session-repository.interface.js';
@@ -170,6 +183,56 @@ const WEB_ROUTE_TOKENS: readonly string[] = [
   'ListHarnessEvalRunsUseCase',
   'GetHarnessEvalReportUseCase',
   'SaveHarnessEvalCaseUseCase',
+  // Spaces and product lines (spec 120)
+  'ResolveSpaceContextUseCase',
+  'ManageSpacesUseCase',
+  'ManageSpaceMembershipUseCase',
+  'GetSpacesOverviewUseCase',
+  // Space agent settings (spec 121)
+  'ConfigureSpaceAgentUseCase',
+  'ResolveSpaceEnvironmentUseCase',
+  // Tracker sync (spec 122)
+  'ManageConnectionsUseCase',
+  'ManageTrackerSyncRulesUseCase',
+  'InvestigateWorkItemUseCase',
+  'ApproveHypothesisUseCase',
+  'GetWorkItemInvestigationsUseCase',
+  'FetchPrCommentsUseCase',
+  'AddressPrCommentsUseCase',
+  'GetPrCommentsUseCase',
+  'SyncPrCommentsUseCase',
+  'ManageKnowledgeSourcesUseCase',
+  'SyncKnowledgeSourceUseCase',
+  'SyncKnowledgeSourcesUseCase',
+  'ListKnowledgeUseCase',
+  'ManageSignalsUseCase',
+  'ManageOpportunitiesUseCase',
+  'GetOpportunityBoardUseCase',
+  'ManageOpportunityWeightsUseCase',
+  'BuildOpportunityUseCase',
+  'ManageFeedbackKeysUseCase',
+  'IngestFeedbackUseCase',
+  'GetFeedbackThemesUseCase',
+  'PromoteThemeUseCase',
+  'RunDiscoveryUseCase',
+  'SyncDiscoveryUseCase',
+  'ListDiscoveryRunsUseCase',
+  'OpenIncidentUseCase',
+  'ManageIncidentsUseCase',
+  'RuntimeActionsUseCase',
+  'TriageIncidentUseCase',
+  'GetIncidentBoardUseCase',
+  'TrackOutcomesUseCase',
+  'ManageOutcomesUseCase',
+  'ManageAutopilotUseCase',
+  'RunAutopilotUseCase',
+  'GetFactoryStatusUseCase',
+  'AdoptLocalRepositoryUseCase',
+  'IngestAlertUseCase',
+  'RunTrackerSyncUseCase',
+  'SyncTrackerRulesUseCase',
+  'GetTrackerIssueLinkUseCase',
+  'GetTrackerOverviewUseCase',
 ] as const;
 
 /**
@@ -178,6 +241,36 @@ const WEB_ROUTE_TOKENS: readonly string[] = [
  * if someone deletes a registration.
  */
 const CRITICAL_INFRA_TOKENS: readonly string[] = [
+  // Spaces and product lines (spec 120)
+  'ISpaceRepository',
+  'IProductLineRepository',
+  'ISpaceMembershipRepository',
+  // Tracker sync (spec 122)
+  'IConnectionRepository',
+  'ITrackerSyncRuleRepository',
+  'ITrackerIssueLinkRepository',
+  'IInvestigationRepository',
+  'IInvestigationWorkspace',
+  'IPrCommentRepository',
+  'IPrCommentRoundRepository',
+  'IKnowledgeSourceRepository',
+  'IKnowledgeDocumentRepository',
+  'IConnectionVerifier',
+  'ISignalRepository',
+  'IOpportunityRepository',
+  'IOpportunityWeightsRepository',
+  'IFeedbackKeyRepository',
+  'IFeedbackKeyGenerator',
+  'IDiscoveryRunRepository',
+  'IIncidentRepository',
+  'IOutcomeRepository',
+  'IAutopilotPolicyRepository',
+  'IAutopilotRunRepository',
+  'IIncidentEventRepository',
+  'IRuntimeActionRepository',
+  'IRuntimeController',
+  'IPullRequestCommentService',
+  'ITrackerClientFactory',
   // Query-aware harness (spec 119)
   'IHarnessBlobStore',
   'IHarnessEventLog',
@@ -331,6 +424,17 @@ describe('DI container bootstrap (integration)', () => {
     scopedContainer.registerInstance<Database.Database>('Database', db);
 
     registerRepositories(scopedContainer);
+    registerSpaces(scopedContainer);
+    registerTrackers(scopedContainer);
+    registerKnowledge(scopedContainer);
+    registerOpportunities(scopedContainer);
+    registerFeedback(scopedContainer);
+    registerDiscovery(scopedContainer);
+    registerIncidents(scopedContainer);
+    registerOutcomes(scopedContainer);
+    registerAutopilot(scopedContainer);
+    registerBugLoop(scopedContainer);
+    registerPrComments(scopedContainer);
     registerServices(scopedContainer);
     registerTools(scopedContainer);
     registerAgents(scopedContainer);
@@ -405,7 +509,11 @@ describe('DI container bootstrap (integration)', () => {
       agentExecutorFactory,
       agentConfigResolver,
       interactionCoordinator,
-      logger
+      logger,
+      new SessionSpaceEnvironment(
+        featureRepository,
+        scopedContainer.resolve(ResolveSpaceEnvironmentUseCase)
+      )
     );
     const terminator = new SessionTerminator(
       sessionRegistry,

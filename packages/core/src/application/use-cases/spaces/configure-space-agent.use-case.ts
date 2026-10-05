@@ -1,0 +1,161 @@
+/**
+ * ConfigureSpaceAgentUseCase (spec 121)
+ *
+ * Shows and changes a space's agent settings: the Claude and gh config
+ * directories, the git identity, Bedrock and AWS profile, and the agent types
+ * the space allows, which PR comments shep answers on its own (spec 124), and
+ * which runtime actions shep runs on an incident without asking (spec 129),
+ * and docs first with its documentation paths (spec 131).
+ * A patch sets the fields it gives, clears the ones it sets
+ * to null, and keeps the rest. Credentials are never stored; a space only
+ * points at directories the tools manage their own logins in.
+ */
+
+import { injectable, inject } from 'tsyringe';
+import {
+  AgentType,
+  PrCommentTrigger,
+  RuntimeActionKind,
+  type Space,
+  type SpaceAgentSettings,
+} from '../../../domain/generated/output.js';
+import { isAbsolutePath } from '../../../domain/shared/absolute-path.js';
+import { normalizePath } from '../../../domain/shared/normalize-path.js';
+import { normalizeDocsPath } from '../../../domain/shared/docs-first.js';
+import {
+  spaceEnvironment,
+  type SpaceEnvironment,
+} from '../../../domain/shared/space-environment.js';
+import type { ISpaceRepository } from '../../ports/output/repositories/space-repository.interface.js';
+import { failure, findSpace, type SpaceResult } from './space-refs.js';
+
+/** A change to a space's agent settings: a value sets a field, null clears it. */
+export type SpaceAgentSettingsPatch = {
+  [K in keyof SpaceAgentSettings]?: SpaceAgentSettings[K] | null;
+};
+
+const EMAIL = /^[^\s@]+@[^\s@]+$/;
+const AWS_PROFILE = /^[\w.+@-]+$/;
+const AGENT_TYPES = new Set<string>(Object.values(AgentType));
+const PR_COMMENT_TRIGGERS = new Set<string>(Object.values(PrCommentTrigger));
+const RUNTIME_ACTION_KINDS = new Set<string>(Object.values(RuntimeActionKind));
+
+type Validated<T> = { ok: true; value: T | undefined } | { ok: false; error: string };
+
+function directory(label: string, value: string): Validated<string> {
+  const path = normalizePath(value.trim()).replace(/\/+$/, '');
+  if (!isAbsolutePath(path))
+    return { ok: false, error: `${label} "${value}" is not an absolute path.` };
+  return { ok: true, value: path };
+}
+
+function text(value: string): Validated<string> {
+  const trimmed = value.trim();
+  return { ok: true, value: trimmed === '' ? undefined : trimmed };
+}
+
+function validateField(
+  key: keyof SpaceAgentSettings,
+  value: NonNullable<SpaceAgentSettingsPatch[keyof SpaceAgentSettings]>
+): Validated<SpaceAgentSettings[keyof SpaceAgentSettings]> {
+  switch (key) {
+    case 'claudeConfigDir':
+      return directory('Claude config directory', value as string);
+    case 'ghConfigDir':
+      return directory('gh config directory', value as string);
+    case 'gitAuthorName':
+      return text(value as string);
+    case 'gitAuthorEmail': {
+      const email = (value as string).trim();
+      return EMAIL.test(email)
+        ? { ok: true, value: email }
+        : { ok: false, error: `"${email}" is not an email address.` };
+    }
+    case 'awsProfile': {
+      const profile = (value as string).trim();
+      return AWS_PROFILE.test(profile)
+        ? { ok: true, value: profile }
+        : { ok: false, error: `"${profile}" is not an AWS profile name.` };
+    }
+    case 'useBedrock':
+      return { ok: true, value: value as boolean };
+    case 'allowedAgentTypes': {
+      const types = [...new Set(value as AgentType[])];
+      const unknown = types.find((type) => !AGENT_TYPES.has(type));
+      if (unknown) return { ok: false, error: `"${unknown}" is not an agent type.` };
+      return { ok: true, value: types.length > 0 ? types : undefined };
+    }
+    case 'prCommentTrigger':
+      return PR_COMMENT_TRIGGERS.has(value as string)
+        ? { ok: true, value: value as PrCommentTrigger }
+        : {
+            ok: false,
+            error: `"${String(value)}" is not a PR comment trigger (${[...PR_COMMENT_TRIGGERS].join(', ')}).`,
+          };
+    case 'prCommentResolveThreads':
+      return { ok: true, value: value as boolean };
+    case 'autoRuntimeActions': {
+      const kinds = [...new Set(value as RuntimeActionKind[])];
+      const unknown = kinds.find((kind) => !RUNTIME_ACTION_KINDS.has(kind));
+      if (unknown) return { ok: false, error: `"${unknown}" is not a runtime action.` };
+      return { ok: true, value: kinds.length > 0 ? kinds : undefined };
+    }
+    case 'docsFirst':
+      return { ok: true, value: value as boolean };
+    case 'docsPaths': {
+      const paths: string[] = [];
+      for (const raw of value as string[]) {
+        const path = normalizeDocsPath(raw);
+        if (path === undefined) {
+          return { ok: false, error: `"${raw}" is not a path inside the repository.` };
+        }
+        if (!paths.includes(path)) paths.push(path);
+      }
+      return { ok: true, value: paths.length > 0 ? paths : undefined };
+    }
+  }
+}
+
+@injectable()
+export class ConfigureSpaceAgentUseCase {
+  constructor(@inject('ISpaceRepository') private readonly spaces: ISpaceRepository) {}
+
+  /** A space with the environment its settings produce. */
+  async show(ref: string): Promise<SpaceResult<{ space: Space; environment: SpaceEnvironment }>> {
+    const space = await findSpace(this.spaces, ref);
+    if (!space) return failure(`No space "${ref}".`);
+    return { ok: true, space, environment: spaceEnvironment(space.agentSettings) };
+  }
+
+  async configure(
+    ref: string,
+    patch: SpaceAgentSettingsPatch
+  ): Promise<SpaceResult<{ space: Space; environment: SpaceEnvironment }>> {
+    const space = await findSpace(this.spaces, ref);
+    if (!space) return failure(`No space "${ref}".`);
+
+    const next: Record<string, unknown> = { ...space.agentSettings };
+    for (const key of Object.keys(patch) as (keyof SpaceAgentSettings)[]) {
+      const value = patch[key];
+      if (value === undefined) continue;
+      if (value === null) {
+        delete next[key];
+        continue;
+      }
+      const validated = validateField(key, value);
+      if (!validated.ok) return failure(validated.error);
+      if (validated.value === undefined) delete next[key];
+      else next[key] = validated.value;
+    }
+
+    const agentSettings = next as SpaceAgentSettings;
+    const { agentSettings: _previous, ...rest } = space;
+    const updated: Space = {
+      ...rest,
+      ...(Object.keys(agentSettings).length > 0 ? { agentSettings } : {}),
+      updatedAt: new Date(),
+    };
+    await this.spaces.update(updated);
+    return { ok: true, space: updated, environment: spaceEnvironment(updated.agentSettings) };
+  }
+}

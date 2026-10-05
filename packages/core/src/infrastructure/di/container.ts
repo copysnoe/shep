@@ -86,6 +86,19 @@ import type { IVersionService } from '../../application/ports/output/services/ve
 
 // Topic-grouped registration modules
 import { registerRepositories } from './modules/register-repositories.js';
+import { registerSpaces } from './modules/register-spaces.js';
+import { registerTrackers } from './modules/register-trackers.js';
+import { registerBugLoop } from './modules/register-bug-loop.js';
+import { registerPrComments } from './modules/register-pr-comments.js';
+import { registerKnowledge } from './modules/register-knowledge.js';
+import { registerOpportunities } from './modules/register-opportunities.js';
+import { registerFeedback } from './modules/register-feedback.js';
+import { registerDiscovery } from './modules/register-discovery.js';
+import { registerIncidents } from './modules/register-incidents.js';
+import { registerOutcomes } from './modules/register-outcomes.js';
+import { registerAutopilot } from './modules/register-autopilot.js';
+import { SessionSpaceEnvironment } from '../services/interactive/lifecycle/session-space-environment.js';
+import { ResolveSpaceEnvironmentUseCase } from '../../application/use-cases/spaces/resolve-space-environment.use-case.js';
 import { registerServices } from './modules/register-services.js';
 import { registerTools } from './modules/register-tools.js';
 import { registerAgents } from './modules/register-agents.js';
@@ -129,6 +142,17 @@ export async function initializeContainer(): Promise<typeof container> {
 
   // ─── Topic-grouped registrations (pure, lazy) ────────────────────────────
   registerRepositories(container);
+  registerSpaces(container);
+  registerTrackers(container);
+  registerKnowledge(container);
+  registerOpportunities(container);
+  registerFeedback(container);
+  registerDiscovery(container);
+  registerIncidents(container);
+  registerOutcomes(container);
+  registerAutopilot(container);
+  registerBugLoop(container);
+  registerPrComments(container);
   registerServices(container);
   registerTools(container);
   registerAgents(container);
@@ -304,7 +328,11 @@ export async function initializeContainer(): Promise<typeof container> {
     agentExecutorFactory,
     agentConfigResolver,
     interactionCoordinator,
-    logger
+    logger,
+    new SessionSpaceEnvironment(
+      featureRepository,
+      container.resolve(ResolveSpaceEnvironmentUseCase)
+    )
   );
   const terminator = new SessionTerminator(
     sessionRegistry,

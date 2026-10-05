@@ -444,7 +444,12 @@
     "clusters": "Clusters",
     "plugins": "Plugins",
     "projectMemory": "Project Memory",
-    "harness": "Harness"
+    "harness": "Harness",
+    "spaces": "Spaces",
+    "trackers": "Connections",
+    "opportunities": "Opportunities",
+    "incidents": "Incidents",
+    "factory": "Factory"
   },
   "sidebar": {
     "features": "Features",
@@ -998,8 +1003,7 @@
       "delete": "Delete",
       "save": "Save",
       "cancel": "Cancel",
-      "makeOrgWide": "Make organization-wide",
-      "makeProjectOnly": "Make project-only"
+      "scope": "Change who sees this"
     },
     "deleteDialog": {
       "title": "Delete this memory entry?",
@@ -1007,10 +1011,18 @@
     },
     "errors": {
       "emptyContent": "Memory content cannot be empty.",
-      "updateFailed": "Failed to update the memory entry."
+      "updateFailed": "Failed to update the memory entry.",
+      "scopeFailed": "Failed to change who sees this entry."
     },
     "scope": {
-      "organization": "Organization"
+      "project": "This repository only",
+      "productLine": "Its product line",
+      "space": "Its whole space",
+      "menuLabel": "Shared with"
+    },
+    "filter": {
+      "label": "Filter by space",
+      "allSpaces": "All spaces"
     }
   },
   "sessionTree": {
@@ -1289,6 +1301,524 @@
         "toolOutputRatio": "Tool output seen",
         "evidenceRecall": "Evidence recall"
       }
+    }
+  },
+  "spaces": {
+    "title": "Spaces",
+    "subtitle": "Keep bodies of work apart. Memory shared inside a space never reaches another.",
+    "create": {
+      "title": "New space",
+      "name": "Name",
+      "namePlaceholder": "Acme",
+      "description": "Description",
+      "descriptionPlaceholder": "Client work for Acme Corp",
+      "color": "Colour",
+      "submit": "Create space"
+    },
+    "card": {
+      "default": "Default",
+      "makeDefault": "Make default",
+      "delete": "Delete space",
+      "counts": "Repositories: {{repositories}} · Memory entries: {{memory}}",
+      "edit": "Edit space",
+      "save": "Save"
+    },
+    "lines": {
+      "title": "Product lines",
+      "empty": "No product lines yet.",
+      "placeholder": "New product line",
+      "add": "Add",
+      "remove": "Remove {{name}}"
+    },
+    "rules": {
+      "title": "Rules",
+      "empty": "No rules. Repositories land here only when pinned.",
+      "placeholder": "/work/acme or github.com/acme/*",
+      "line": "Product line for matching repositories",
+      "noLine": "No product line",
+      "add": "Add rule",
+      "remove": "Remove rule"
+    },
+    "repositories": {
+      "title": "Repositories",
+      "empty": "No repositories yet. Add one from the control center.",
+      "repository": "Repository",
+      "space": "Space",
+      "line": "Product line",
+      "because": "Because",
+      "sourceAssignment": "Pinned",
+      "sourceRule": "Rule",
+      "sourceDefault": "Default space",
+      "pin": "Pin to space…",
+      "unpin": "Unpin so the rules apply"
+    },
+    "deleteDialog": {
+      "title": "Delete {{name}}?",
+      "description": "Its rules, pins and product lines are removed. Its repositories fall back to other rules or the default space.",
+      "confirm": "Delete space",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "actionFailed": "That change could not be saved. Try again."
+    },
+    "agent": {
+      "title": "Agent settings",
+      "customised": "Customised",
+      "inherits": "Inherits the host",
+      "claudeConfigDir": "Claude config directory",
+      "ghConfigDir": "gh config directory",
+      "gitName": "Git author name",
+      "gitEmail": "Git author email",
+      "awsProfile": "AWS profile",
+      "bedrock": "Amazon Bedrock",
+      "bedrockInherit": "Inherit from host",
+      "bedrockOn": "Route Claude through Bedrock",
+      "bedrockOff": "Never use Bedrock",
+      "loginHint": "Log in once with the directory set, for example CLAUDE_CONFIG_DIR=~/.claude-acme claude or GH_CONFIG_DIR=~/.config/gh-acme gh auth login. Shep never stores the credentials.",
+      "allowedAgents": "Allowed agents",
+      "allowedAgentsHint": "None selected allows every agent.",
+      "save": "Save agent settings",
+      "prComments": "Pull request comments",
+      "prCommentsHint": "Which review comments on shep's pull requests are answered without asking. Others can be addressed from the feature.",
+      "prTrigger": {
+        "Off": "Only when asked",
+        "Mention": "Comments mentioning #shep",
+        "All": "Every comment"
+      },
+      "resolveThreads": "Resolve threads it changed code for",
+      "autoActions": "Runs without asking on incidents",
+      "autoActionsHint": "Shep runs these on an incident’s workload without waiting for approval. Others wait for someone to approve them.",
+      "docsFirst": "Docs first",
+      "docsFirstHint": "Agents write the user-facing docs while planning and build to them. A change that touches no documentation waits for a person before it merges.",
+      "docsFirstOn": "Require docs first",
+      "docsPaths": "Documentation paths"
+    }
+  },
+  "trackers": {
+    "title": "Connections",
+    "subtitle": "Linear and Jira issues kept in shep projects, and Notion pages kept as team knowledge.",
+    "syncAll": "Sync now",
+    "empty": "No connections yet. Add your Linear API key, Jira token or Notion integration token above.",
+    "add": {
+      "title": "Add a connection",
+      "provider": "Tool",
+      "name": "Name",
+      "space": "Space",
+      "site": "Jira site",
+      "email": "Account email",
+      "linearSecret": "Linear API key",
+      "jiraSecret": "Jira API token",
+      "submit": "Connect",
+      "notionSecret": "Notion integration token"
+    },
+    "connection": {
+      "connected": "Connected",
+      "error": "Error",
+      "account": "as {{account}}",
+      "space": "space {{space}}",
+      "test": "Test",
+      "remove": "Remove connection",
+      "removeTitle": "Remove {{name}}?",
+      "removeDescription": "Its sync rules and knowledge sources stop and are removed. Work items it already synced stay in their projects.",
+      "cancel": "Cancel"
+    },
+    "rules": {
+      "title": "Sync rules",
+      "empty": "No rules yet. Add one to start importing issues.",
+      "noProjects": "Create a project first; rules write issues into a project.",
+      "scope": "Linear team key or Jira JQL",
+      "project": "Project",
+      "twoWay": "Two-way",
+      "import": "Import",
+      "every": "every",
+      "minutes": "min",
+      "everyShort": "every {{minutes}} min",
+      "paused": "Paused",
+      "summary": "{{created}} created, {{updated}} updated, {{pushed}} pushed, {{conflicts}} conflicts, {{failed}} failed",
+      "never": "Not run yet",
+      "add": "Add rule",
+      "pause": "Pause",
+      "resume": "Resume",
+      "runNow": "Run now",
+      "remove": "Remove rule"
+    },
+    "errors": {
+      "actionFailed": "That change could not be saved. Try again."
+    },
+    "badge": {
+      "open": "Open {{key}} in the tracker"
+    }
+  },
+  "bugLoop": {
+    "title": "Investigation",
+    "intro": "An agent reads the repository in a throwaway read-only copy and ranks the likely root causes. Your checkout is never touched.",
+    "repository": "Repository",
+    "noRepositories": "Add a repository to shep to investigate this item.",
+    "investigate": "Investigate",
+    "investigateAgain": "Investigate again",
+    "running": "The agent is reading a read-only copy of {{repository}}…",
+    "approved": "Hypothesis {{number}} is being fixed.",
+    "openFeature": "Open the fix feature",
+    "fullSpec": "Fix through the full spec pipeline instead of Fast mode",
+    "status": {
+      "Pending": "Starting",
+      "Running": "Investigating",
+      "Completed": "Hypotheses ready",
+      "Failed": "Failed"
+    },
+    "confidence": {
+      "High": "High confidence",
+      "Medium": "Medium confidence",
+      "Low": "Low confidence"
+    },
+    "hypothesis": {
+      "evidence": "Evidence",
+      "test": "Failing test",
+      "fix": "Fix",
+      "fixThis": "Fix this",
+      "fixing": "Starting fix…",
+      "approved": "Being fixed"
+    }
+  },
+  "prComments": {
+    "title": "Review comments",
+    "refresh": "Read comments from GitHub",
+    "address": "Address {{count}} pending",
+    "running": "An agent is addressing {{count}} comments in the feature's worktree…",
+    "roundPushed": "Last round pushed {{sha}} and replied.",
+    "roundAnswered": "Last round replied without changing code.",
+    "roundFailed": "Last round failed: {{error}}",
+    "empty": "No review comments on the pull request yet.",
+    "openOnGitHub": "Open on GitHub",
+    "status": {
+      "Pending": "Pending",
+      "Addressing": "Addressing",
+      "Addressed": "Addressed",
+      "Declined": "Declined",
+      "Failed": "Failed"
+    },
+    "kind": {
+      "Inline": "On a line",
+      "Conversation": "Conversation",
+      "Review": "Review"
+    },
+    "addressNone": "Nothing to address"
+  },
+  "knowledge": {
+    "sources": {
+      "title": "Knowledge sources",
+      "empty": "No sources yet. Share a Notion page or database with the integration, then add its link.",
+      "kind": {
+        "Page": "Page tree",
+        "Database": "Database"
+      },
+      "productLine": "{{name}} only",
+      "wholeSpace": "Whole space",
+      "productLineLabel": "Product line",
+      "scope": "Notion page or database link",
+      "documents_one": "{{count}} document",
+      "documents_few": "{{count}} documents",
+      "documents_many": "{{count}} documents",
+      "documents_other": "{{count}} documents",
+      "summary": "{{added}} added, {{updated}} updated, {{removed}} removed, {{failed}} failed",
+      "never": "Not synced yet",
+      "add": "Add source",
+      "syncNow": "Sync now",
+      "remove": "Remove source"
+    },
+    "documents": {
+      "title": "Team knowledge",
+      "subtitle": "Notion pages agents in each space read when they match the task.",
+      "empty": "No team knowledge yet. Add a Notion connection and its pages on",
+      "connections": "Connections"
+    }
+  },
+  "opportunities": {
+    "title": "Opportunities",
+    "subtitle": "Bets backed by evidence, ranked by value per review hour.",
+    "space": "Space",
+    "empty": "No open opportunities in this space. Shape one above.",
+    "errors": {
+      "actionFailed": "That change could not be saved. Try again."
+    },
+    "capacity": {
+      "title": "This week's review capacity",
+      "used": "{{used}} of {{capacity}} review hours",
+      "waiting_one": "{{count}} accepted bet waits for capacity",
+      "waiting_few": "{{count}} accepted bets wait for capacity",
+      "waiting_many": "{{count}} accepted bets wait for capacity",
+      "waiting_other": "{{count}} accepted bets wait for capacity"
+    },
+    "row": {
+      "inLine": "In this week’s line",
+      "outOfLine": "Not in the line",
+      "strategic": "Strategic",
+      "cost": "{{hours}} h · {{confidence}}% confidence",
+      "evidenceParts": {
+        "signals_one": "{{count}} signal",
+        "signals_few": "{{count}} signals",
+        "signals_many": "{{count}} signals",
+        "signals_other": "{{count}} signals",
+        "customers_one": "{{count}} customer",
+        "customers_few": "{{count}} customers",
+        "customers_many": "{{count}} customers",
+        "customers_other": "{{count}} customers",
+        "urgent_one": "{{count}} urgent",
+        "urgent_few": "{{count}} urgent",
+        "urgent_many": "{{count}} urgent",
+        "urgent_other": "{{count}} urgent",
+        "revenue": "{{revenue}}/month"
+      }
+    },
+    "status": {
+      "Proposed": "Proposed",
+      "Accepted": "Accepted",
+      "Building": "Building",
+      "Shipped": "Shipped",
+      "Dropped": "Dropped"
+    },
+    "kind": {
+      "Feedback": "Feedback",
+      "Incident": "Incident",
+      "Tracker": "Tracker",
+      "Discovery": "Discovery",
+      "Manual": "Note"
+    },
+    "actions": {
+      "accept": "Accept",
+      "build": "Build",
+      "drop": "Drop",
+      "cancel": "Cancel",
+      "reason": "Why drop it?",
+      "project": "Project",
+      "noProjects": "Create a project first; building creates a work item in one.",
+      "ship": "Mark shipped"
+    },
+    "inbox": {
+      "title": "Signals to link ({{count}})",
+      "empty": "Every signal supports an opportunity.",
+      "urgent": "Urgent",
+      "customerRevenue": "{{customer}} · {{revenue}}/month",
+      "link": "Link to…",
+      "remove": "Remove signal"
+    },
+    "signalForm": {
+      "title": "Record a signal",
+      "signal": "Signal",
+      "placeholder": "What did a user ask for, or what broke?",
+      "kind": "Kind",
+      "customer": "Customer",
+      "revenue": "Revenue/month",
+      "urgent": "Urgent",
+      "submit": "Record"
+    },
+    "opportunityForm": {
+      "title": "Shape an opportunity",
+      "name": "Opportunity",
+      "placeholder": "A bet worth building",
+      "hours": "review h",
+      "confidence": "% confident",
+      "productLine": "Product line",
+      "anyLine": "Whole space",
+      "strategic": "Strategic",
+      "submit": "Add"
+    },
+    "weights": {
+      "title": "Weights and capacity",
+      "formula": "Value = reach × customers + revenue × (revenue at stake ÷ 1,000) + urgency × urgent signals + strategic. Score = value × confidence ÷ review hours.",
+      "reach": "Reach",
+      "revenue": "Revenue",
+      "urgency": "Urgency",
+      "strategic": "Strategic",
+      "weeklyReviewHours": "Review h/week",
+      "save": "Save"
+    },
+    "themes": {
+      "title": "Themes in unlinked signals",
+      "empty": "No themes yet: no two unlinked signals share enough words.",
+      "promote": "Promote",
+      "hours": "Review hours"
+    },
+    "feedbackKeys": {
+      "title": "Feedback keys",
+      "subtitle": "Tools post feedback with a key: {{endpoint}} with \"Authorization: Bearer <key>\".",
+      "empty": "No keys yet.",
+      "name": "Tool",
+      "namePlaceholder": "Zendesk, widget, script…",
+      "create": "Create key",
+      "secretOnce": "Copy this key now; it is not shown again.",
+      "revoke": "Revoke",
+      "revoked": "Revoked",
+      "lastUsed": "Last used {{when}}",
+      "neverUsed": "Never used"
+    },
+    "source": {
+      "Manual": "Manual",
+      "Theme": "From theme",
+      "Discovery": "Discovered"
+    },
+    "discovery": {
+      "title": "Discovery",
+      "run": "Discover now",
+      "discovering": "Discovering…",
+      "schedule": "Schedule",
+      "off": "Off",
+      "everyHours": "Every {{hours}} h",
+      "never": "Discovery has not run in this space.",
+      "running": "Discovery is running…",
+      "failed": "The last run failed: {{error}}",
+      "succeeded": "Last run: {{proposed}} proposed from {{read}} signals, {{when}}"
+    },
+    "outcomes": {
+      "title": "Outcomes",
+      "check": "Check now",
+      "empty": "Nothing has shipped in this space yet.",
+      "judgedOn": "Judged on {{date}}",
+      "counts": "{{before}} similar reports before, {{after}} after",
+      "hours": "Review hours",
+      "saveHours": "Save",
+      "hoursTaken": "Took {{actual}} h of {{estimated}} h estimated",
+      "note": "Tell them “{{title}}” shipped:",
+      "markTold": "Mark told",
+      "hoursRatio": "Actual review hours are {{ratio}}× the estimates ({{timed}} recorded)",
+      "noHours": "No actual review hours recorded yet",
+      "solvedShare": "{{solved}} of {{judged}} judged outcomes solved",
+      "noVerdicts": "No outcomes judged yet",
+      "verdict": {
+        "Pending": "Pending",
+        "Solved": "Solved",
+        "Persisting": "Persisting"
+      }
+    }
+  },
+  "incidents": {
+    "title": "Incidents",
+    "subtitle": "Production problems, their triage, the restarts, rollbacks and scales that fix them, and the postmortem.",
+    "space": "Space",
+    "list": "Incidents",
+    "empty": "No incidents in this space.",
+    "timeline": "Timeline",
+    "actions": "Runtime actions",
+    "approve": "Approve",
+    "reject": "Reject",
+    "recovered": "Recovered",
+    "notRecovered": "Not recovered",
+    "scaleTo": "Scale to {{replicas}} replicas",
+    "showEvidence": "Show evidence",
+    "triage": "Triage",
+    "triaging": "Triaging…",
+    "workload": "deployment/{{workload}} in {{namespace}} ({{context}})",
+    "currentContext": "current context",
+    "noWorkload": "No workload — runtime actions are off.",
+    "openLink": "Open the alert",
+    "errors": {
+      "actionFailed": "The action failed."
+    },
+    "form": {
+      "title": "Open an incident",
+      "incident": "Incident",
+      "placeholder": "What is wrong?",
+      "severity": "Severity",
+      "workload": "Workload",
+      "namespace": "Namespace",
+      "context": "Context",
+      "submit": "Open"
+    },
+    "act": {
+      "title": "Run a runtime action",
+      "kind": "Action",
+      "replicas": "Replicas",
+      "reason": "Why?",
+      "submit": "Run",
+      "running": "Running…"
+    },
+    "note": {
+      "title": "Note",
+      "placeholder": "Add a note to the timeline",
+      "submit": "Add"
+    },
+    "resolve": {
+      "title": "Resolve",
+      "postmortem": "Postmortem",
+      "placeholder": "Write the postmortem, or leave empty for a draft from the timeline",
+      "submit": "Resolve"
+    },
+    "severity": {
+      "Critical": "Critical",
+      "Major": "Major",
+      "Minor": "Minor"
+    },
+    "status": {
+      "Open": "Open",
+      "Mitigated": "Mitigated",
+      "Resolved": "Resolved"
+    },
+    "actionKind": {
+      "Restart": "Restart",
+      "Rollback": "Roll back",
+      "Scale": "Scale"
+    },
+    "actionStatus": {
+      "Proposed": "Waiting for approval",
+      "Approved": "Approved",
+      "Rejected": "Rejected",
+      "Succeeded": "Done",
+      "Failed": "Failed"
+    },
+    "proposedBy": {
+      "Agent": "proposed by the agent",
+      "Person": "asked by a person"
+    },
+    "eventKind": {
+      "Opened": "Opened",
+      "Note": "Note",
+      "Evidence": "Evidence",
+      "Hypothesis": "Hypothesis",
+      "ActionProposed": "Action proposed",
+      "ActionApproved": "Action approved",
+      "ActionRejected": "Action rejected",
+      "ActionSucceeded": "Action done",
+      "ActionFailed": "Action failed",
+      "Recovered": "Recovered",
+      "NotRecovered": "Not recovered",
+      "Resolved": "Resolved"
+    }
+  },
+  "factory": {
+    "title": "Factory",
+    "subtitle": "What the space's software factory is doing, and what waits on people.",
+    "space": "Space",
+    "errors": {
+      "actionFailed": "The action failed."
+    },
+    "cards": {
+      "line": "Review hours this week",
+      "building": "Building",
+      "incidents": "Open incidents",
+      "actions": "Actions awaiting approval",
+      "outcomes": "Outcomes pending",
+      "customers": "Customers to tell",
+      "features": "Features in flight",
+      "approval": "Waiting for approval"
+    },
+    "runs": {
+      "title": "Autopilot passes",
+      "none": "Autopilot has not run in this space.",
+      "pass": "investigated {{investigated}} · fixed {{fixed}} · built {{built}}"
+    },
+    "autopilot": {
+      "title": "Autopilot",
+      "hint": "What shep starts on its own here, every hour. Everything is off until you turn it on.",
+      "investigate": "Investigate open Urgent work items",
+      "fix": "Fix when the top hypothesis is High",
+      "mergeFixes": "Let those fixes merge without a person",
+      "fillLine": "Build the accepted opportunities in the line",
+      "budget": "Fixes a day",
+      "project": "Build into",
+      "noProject": "No project",
+      "save": "Save",
+      "run": "Run now",
+      "running": "Running…"
     }
   }
 }

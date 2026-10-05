@@ -2929,3 +2929,90 @@ Real-model runs find these; scripted ones did not.
 A demo repo's `node --test test/` failed on Node 22 ("Cannot find module …/test") while my check
 only tailed the summary lines, so a real agent was asked to run tests that could never pass.
 Grep for `# pass N` / `# fail 0` (or the runner's equivalent) before calling a suite green.
+
+## A TypeSpec change also regenerates `apis/json-schema/` — commit it with the model
+
+`pnpm tsp:compile` (run by the pre-commit hook) emits a YAML schema per model and enum into
+`apis/json-schema/`, and those files are tracked. Adding `Space` and two `MemoryScope` members
+left eight untracked/modified schema files behind the commit that changed the `.tsp`. After any
+`tsp/` edit, run `git status apis/` and stage the schemas in the same commit.
+
+## A core module the web bundle reaches takes extensionless relative imports
+
+`web-auth-token.service.ts` is imported by the Next middleware, so Turbopack compiles it from
+raw `.ts` and cannot resolve `../filesystem/shep-directory.service.js`.
+`tests/unit/presentation/web/core-bundle-imports.test.ts` caught it. Before adding a relative
+value import to a core file, grep `src/presentation/web` for that file. If web imports it, drop
+the `.js`, as `domain/` files do.
+
+## Never `pkill -f <pattern>` from the shell that contains the pattern
+
+`pkill -f "http.server 6107"` matches the Bash tool's own `bash -c` command line, which contains
+the same text, so it kills the calling shell (exit 144) and every command after it in that
+call silently never runs — a commit was skipped this way, twice in one session. Stop a
+background server by its pid (`kill $(cat server.pid)`), or use a bracketed pattern that cannot
+match itself (`pkill -f "[h]ttp.server 6107"`), and never chain other work after it.
+
+## The pre-commit hook type-checks the whole working tree, not only what is staged
+
+lint-staged stashes unstaged edits, but `tsc --noEmit` still sees untracked files. Committing
+a rename in slices failed twice: staged `git mv`s without their content, then an untracked test
+that imported a module not yet written. Commit a slice only when the working tree type-checks
+as a whole — stage every file the slice touches, and keep work-in-progress files that import
+missing modules out of the tree (or finish them) before `git commit`.
+
+## Read `tsp:compile` warnings, not just its exit code
+
+A duplicated `@doc` on an enum member (spec 129) compiled with exit 0 and four
+`duplicate-decorator` warnings, and was committed. `pnpm tsp:compile` must end with
+"Compilation completed successfully." and no warnings; treat any warning as a failure to fix
+before committing.
+
+## Parse enum options inside the command action, not with a throwing Commander parser
+
+An option parser that throws `InvalidArgumentError` makes Commander call `process.exit(1)`,
+which kills the test runner and skips the command's own error path. Read the raw string and
+validate it in the action (print `messages.error`, set `process.exitCode = 1`, return), like
+`parseNumberOption` and the incident `read*` helpers.
+
+## A new field on a persisted entity is not done until it round-trips the database
+
+`SpaceAgentSettings.autoRuntimeActions` (spec 129) and `docsFirst`/`docsPaths` (spec 131) were
+validated, shown by the CLI and unit-tested — but the space mapper and SQL never stored them,
+so the policies vanished on the next read. The CLI echoed the in-memory result, which hid it;
+only the web page, which re-reads the space, showed the truth. For every field added to an
+entity a repository stores: add the column (migration), the mapper both ways, the INSERT and
+UPDATE SQL, and a repository integration test that writes and reads the field back.
+
+## Read every user-facing string a feature produces from a real run before calling it done
+
+A scripted end-to-end run of specs 120–132 (dev agent, stub kubectl) found a dozen defects that
+green unit tests had missed: enum values used as sentences ("Manual opened a Minor incident"),
+a label printed twice ("the Acme space allows restart: restart"), "about 0 minutes",
+"1 signals", UUIDs where titles belonged, multi-line evidence breaking a Markdown list, and a
+caller's feature name overwritten by generated metadata. Tests asserted kinds and counts, never
+the text a person reads. For timeline, summary and postmortem text: assert the exact sentence in
+a test, and never interpolate a raw enum value into prose — map it through a `Record` of words.
+
+## `pnpm tsp:compile` rewrites the generated output unformatted — run `pnpm generate` last
+
+`tsp compile tsp/` also runs the TypeScript emitter, so after a compile check the committed
+`output.ts` comes back with double quotes and `format:check` fails on 750 lines. Always finish
+with `pnpm generate` (which runs prettier) and confirm `git diff --stat` on the generated folder
+shows only the intended change.
+
+## Fake credentials in demos and transcripts must contain an allowlisted word
+
+Gitleaks' `curl-auth-header` rule flagged `-H 'Authorization: Bearer shep_fb_wrong'` in a demo
+script and its recorded transcript, and CI scans the full git history, so fixing the file in a
+later commit is not enough. Name every deliberately fake token with a word `.gitleaks.toml`
+allowlists (`fake`, `placeholder`, `dummy`, `example`), run
+`gitleaks detect --log-opts "origin/main..HEAD"` before pushing, and if a flagged value was
+already committed on an unmerged branch, replace that commit rather than adding a fingerprint
+that a squash merge would invalidate.
+
+## Normalize `path.relative()` output before comparing it with a literal path
+
+`relative(ROOT, file)` returns backslashes on Windows, so a test comparing it with
+`'packages/core/src/...'` passed on Linux and failed on `windows-latest`. Always
+`.replace(/\\/g, '/')` a computed path before comparing or printing it in a test.

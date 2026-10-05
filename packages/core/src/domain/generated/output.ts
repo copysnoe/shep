@@ -4047,6 +4047,8 @@ export enum MemoryCategory {
 export enum MemoryScope {
   Project = 'Project',
   Organization = 'Organization',
+  Space = 'Space',
+  ProductLine = 'ProductLine',
 }
 
 /**
@@ -4074,9 +4076,491 @@ export type ProjectMemory = BaseEntity & {
    */
   sourceFeatureId?: string;
   /**
-   * Reach of this entry: Project (default) or Organization-wide
+   * Reach of this entry: Project (default), ProductLine, or Space; Organization is legacy Space
    */
   scope?: MemoryScope;
+  /**
+   * Space the entry belongs to, stamped from the repository's resolved space
+   */
+  spaceId?: string;
+  /**
+   * Product line the entry belongs to, when its repository has one
+   */
+  productLineId?: string;
+};
+export enum PrCommentTrigger {
+  Off = 'Off',
+  Mention = 'Mention',
+  All = 'All',
+}
+export enum RuntimeActionKind {
+  Restart = 'Restart',
+  Rollback = 'Rollback',
+  Scale = 'Scale',
+}
+
+/**
+ * Agent credentials, identity and allowed agents for the repositories of a space
+ */
+export type SpaceAgentSettings = {
+  /**
+   * Absolute path used as CLAUDE_CONFIG_DIR, giving the space its own Claude login
+   */
+  claudeConfigDir?: string;
+  /**
+   * Absolute path used as GH_CONFIG_DIR, giving the space its own GitHub CLI login
+   */
+  ghConfigDir?: string;
+  /**
+   * Git author and committer name for commits made by agents
+   */
+  gitAuthorName?: string;
+  /**
+   * Git author and committer email for commits made by agents
+   */
+  gitAuthorEmail?: string;
+  /**
+   * AWS profile used as AWS_PROFILE, for example for Bedrock
+   */
+  awsProfile?: string;
+  /**
+   * Route Claude Code through Amazon Bedrock (true), never (false), or inherit the host (unset)
+   */
+  useBedrock?: boolean;
+  /**
+   * Agent types allowed to run for this space; empty or unset allows every agent
+   */
+  allowedAgentTypes?: AgentType[];
+  /**
+   * Which pull request comments shep addresses without being asked (spec 124); unset means Mention
+   */
+  prCommentTrigger?: PrCommentTrigger;
+  /**
+   * Resolve an inline review thread after changing code for it (spec 124); unset means no
+   */
+  prCommentResolveThreads?: boolean;
+  /**
+   * Runtime action kinds shep may run on an incident without asking (spec 129); unset means none
+   */
+  autoRuntimeActions?: RuntimeActionKind[];
+  /**
+   * Agents write user-facing docs while planning and a change without docs waits for a person before merging (spec 131)
+   */
+  docsFirst?: boolean;
+  /**
+   * Repository path prefixes that hold documentation, such as docs/ or README.md; docs/ and README.md when unset
+   */
+  docsPaths?: string[];
+};
+
+/**
+ * A hard knowledge boundary such as a company or personal context
+ */
+export type Space = BaseEntity & {
+  /**
+   * Display name
+   */
+  name: string;
+  /**
+   * URL- and CLI-friendly identifier, unique across spaces
+   */
+  slug: string;
+  /**
+   * Optional description
+   */
+  description?: string;
+  /**
+   * Optional display colour as a CSS hex value
+   */
+  color?: string;
+  /**
+   * Whether repositories that match nothing fall back to this space; exactly one space is the default
+   */
+  isDefault: boolean;
+  /**
+   * How agents run for the space's repositories (spec 121); unset inherits the host
+   */
+  agentSettings?: SpaceAgentSettings;
+};
+
+/**
+ * A group of related repositories inside one space
+ */
+export type ProductLine = BaseEntity & {
+  /**
+   * The space this product line belongs to
+   */
+  spaceId: string;
+  /**
+   * Display name
+   */
+  name: string;
+  /**
+   * Identifier unique within its space
+   */
+  slug: string;
+  /**
+   * Optional description
+   */
+  description?: string;
+};
+export enum SpaceRuleKind {
+  Path = 'Path',
+  Remote = 'Remote',
+}
+
+/**
+ * Maps repositories to a space, and optionally a product line, by path or remote pattern
+ */
+export type SpaceRule = BaseEntity & {
+  /**
+   * Space the matching repositories belong to
+   */
+  spaceId: string;
+  /**
+   * Optional product line inside that space
+   */
+  productLineId?: string;
+  /**
+   * Whether the pattern matches the repository path or its git remote
+   */
+  kind: SpaceRuleKind;
+  /**
+   * Path prefix or remote pattern, stored normalised
+   */
+  pattern: string;
+  /**
+   * Tie-breaker between equally specific rules; lower wins
+   */
+  priority: number;
+};
+
+/**
+ * An explicit repository placement that overrides every space rule
+ */
+export type RepositorySpaceAssignment = {
+  /**
+   * Normalised repository path (forward slashes, no trailing slash)
+   */
+  repositoryPath: string;
+  /**
+   * Space the repository belongs to
+   */
+  spaceId: string;
+  /**
+   * Optional product line inside that space
+   */
+  productLineId?: string;
+  /**
+   * When the assignment was created
+   */
+  createdAt: any;
+  /**
+   * When the assignment was last changed
+   */
+  updatedAt: any;
+};
+export enum PrCommentKind {
+  Inline = 'Inline',
+  Conversation = 'Conversation',
+  Review = 'Review',
+}
+export enum PrCommentStatus {
+  Pending = 'Pending',
+  Addressing = 'Addressing',
+  Addressed = 'Addressed',
+  Declined = 'Declined',
+  Failed = 'Failed',
+}
+
+/**
+ * A review comment on the pull request a feature opened
+ */
+export type PrComment = BaseEntity & {
+  /**
+   * The feature whose pull request it is on
+   */
+  featureId: string;
+  /**
+   * GitHub's id for the comment, unique per kind
+   */
+  githubId: string;
+  /**
+   * Where it was written
+   */
+  kind: PrCommentKind;
+  /**
+   * GitHub login of the author
+   */
+  author: string;
+  /**
+   * Markdown body
+   */
+  body: string;
+  /**
+   * File the comment is on (inline comments)
+   */
+  path?: string;
+  /**
+   * Line the comment is on (inline comments)
+   */
+  line?: number;
+  /**
+   * The diff around the line (inline comments)
+   */
+  diffHunk?: string;
+  /**
+   * GraphQL id of the review thread (inline comments)
+   */
+  threadId?: string;
+  /**
+   * Link to the comment
+   */
+  url: string;
+  /**
+   * When it was written on GitHub
+   */
+  writtenAt: any;
+  /**
+   * What has happened to it
+   */
+  status: PrCommentStatus;
+  /**
+   * The reply shep posted
+   */
+  reply?: string;
+  /**
+   * Link to that reply
+   */
+  replyUrl?: string;
+  /**
+   * The round that last handled it
+   */
+  roundId?: string;
+  /**
+   * Why the last round could not address it
+   */
+  error?: string;
+};
+export enum PrCommentRoundStatus {
+  Running = 'Running',
+  Completed = 'Completed',
+  Failed = 'Failed',
+}
+
+/**
+ * One agent turn addressing a feature's pending pull request comments
+ */
+export type PrCommentRound = BaseEntity & {
+  /**
+   * The feature
+   */
+  featureId: string;
+  /**
+   * The comments addressed
+   */
+  commentIds: string[];
+  /**
+   * Where the round is
+   */
+  status: PrCommentRoundStatus;
+  /**
+   * The agent used
+   */
+  agentType?: AgentType;
+  /**
+   * The commit pushed, when code changed
+   */
+  commitSha?: string;
+  /**
+   * The agent's summary of what it did
+   */
+  summary?: string;
+  /**
+   * Why the round failed
+   */
+  error?: string;
+  /**
+   * When the round finished
+   */
+  finishedAt?: any;
+};
+export enum IncidentSeverity {
+  Critical = 'Critical',
+  Major = 'Major',
+  Minor = 'Minor',
+}
+export enum IncidentStatus {
+  Open = 'Open',
+  Mitigated = 'Mitigated',
+  Resolved = 'Resolved',
+}
+export enum IncidentSource {
+  Manual = 'Manual',
+  Alert = 'Alert',
+}
+
+/**
+ * Something broke in production
+ */
+export type Incident = BaseEntity & {
+  /**
+   * The space the incident belongs to
+   */
+  spaceId: string;
+  /**
+   * One-line summary
+   */
+  title: string;
+  /**
+   * How bad it is
+   */
+  severity: IncidentSeverity;
+  /**
+   * Where it stands
+   */
+  status: IncidentStatus;
+  /**
+   * Who opened it
+   */
+  source: IncidentSource;
+  /**
+   * The alert text or a person's description
+   */
+  detail?: string;
+  /**
+   * Link to the alert, dashboard or report
+   */
+  url?: string;
+  /**
+   * The alerting tool's id; a repeat while open adds a note
+   */
+  externalId?: string;
+  /**
+   * Kubernetes context of the workload; the current context when unset
+   */
+  runtimeContext?: string;
+  /**
+   * Kubernetes namespace of the workload
+   */
+  runtimeNamespace?: string;
+  /**
+   * The deployment the incident concerns
+   */
+  runtimeWorkload?: string;
+  /**
+   * The Incident signal it raised
+   */
+  signalId?: string;
+  /**
+   * When the workload recovered
+   */
+  mitigatedAt?: any;
+  /**
+   * When it was closed
+   */
+  resolvedAt?: any;
+  /**
+   * The postmortem, Markdown
+   */
+  postmortem?: string;
+};
+export enum IncidentEventKind {
+  Opened = 'Opened',
+  Note = 'Note',
+  Evidence = 'Evidence',
+  Hypothesis = 'Hypothesis',
+  ActionProposed = 'ActionProposed',
+  ActionApproved = 'ActionApproved',
+  ActionRejected = 'ActionRejected',
+  ActionSucceeded = 'ActionSucceeded',
+  ActionFailed = 'ActionFailed',
+  Recovered = 'Recovered',
+  NotRecovered = 'NotRecovered',
+  Resolved = 'Resolved',
+}
+
+/**
+ * One entry on an incident's timeline
+ */
+export type IncidentEvent = {
+  /**
+   * Unique id
+   */
+  id: string;
+  /**
+   * The incident
+   */
+  incidentId: string;
+  /**
+   * What it records
+   */
+  kind: IncidentEventKind;
+  /**
+   * What happened, in words
+   */
+  text: string;
+  /**
+   * When
+   */
+  createdAt: any;
+};
+export enum RuntimeActionStatus {
+  Proposed = 'Proposed',
+  Approved = 'Approved',
+  Rejected = 'Rejected',
+  Succeeded = 'Succeeded',
+  Failed = 'Failed',
+}
+export enum ActionProposer {
+  Agent = 'Agent',
+  Person = 'Person',
+}
+
+/**
+ * A restart, rollback or scale of an incident's workload
+ */
+export type RuntimeAction = BaseEntity & {
+  /**
+   * The incident it answers
+   */
+  incidentId: string;
+  /**
+   * What it does
+   */
+  kind: RuntimeActionKind;
+  /**
+   * Replica count, for a scale
+   */
+  replicas?: number;
+  /**
+   * Where it stands
+   */
+  status: RuntimeActionStatus;
+  /**
+   * Who proposed it
+   */
+  proposedBy: ActionProposer;
+  /**
+   * Why
+   */
+  reason: string;
+  /**
+   * The command's output or error
+   */
+  output?: string;
+  /**
+   * Whether the workload's rollout was ready afterwards
+   */
+  recovered?: boolean;
+  /**
+   * When it was approved or rejected
+   */
+  decidedAt?: any;
+  /**
+   * When it ran
+   */
+  executedAt?: any;
 };
 
 /**
@@ -6367,6 +6851,819 @@ export type PermissionGrant = BaseEntity & {
    */
   consumed: boolean;
 };
+export enum ConnectionProvider {
+  Linear = 'Linear',
+  Jira = 'Jira',
+  Notion = 'Notion',
+}
+export enum ConnectionStatus {
+  Connected = 'Connected',
+  Error = 'Error',
+}
+
+/**
+ * An account in an outside tool shep can read and write; the secret is stored encrypted outside the entity
+ */
+export type Connection = BaseEntity & {
+  /**
+   * Which tool
+   */
+  provider: ConnectionProvider;
+  /**
+   * Display name
+   */
+  name: string;
+  /**
+   * CLI-friendly identifier, unique across connections
+   */
+  slug: string;
+  /**
+   * The space the connection belongs to
+   */
+  spaceId: string;
+  /**
+   * Jira site URL such as https://acme.atlassian.net; unset for other tools
+   */
+  siteUrl?: string;
+  /**
+   * Jira account email used with the API token; unset for other tools
+   */
+  accountEmail?: string;
+  /**
+   * The account name reported by the last successful check
+   */
+  accountName?: string;
+  /**
+   * Whether the credentials last worked
+   */
+  status: ConnectionStatus;
+  /**
+   * Why the last check or sync failed
+   */
+  lastError?: string;
+  /**
+   * When the credentials were last checked
+   */
+  lastCheckedAt?: any;
+};
+
+/**
+ * What one sync of a knowledge source did
+ */
+export type KnowledgeSyncSummary = {
+  /**
+   * Documents created from new pages
+   */
+  added: number;
+  /**
+   * Documents refreshed from edited pages
+   */
+  updated: number;
+  /**
+   * Documents deleted because their pages are gone
+   */
+  removed: number;
+  /**
+   * Pages that could not be read this run
+   */
+  failed: number;
+};
+export enum KnowledgeScopeKind {
+  Page = 'Page',
+  Database = 'Database',
+}
+
+/**
+ * A page tree or database of a knowledge tool kept in sync as a space's knowledge
+ */
+export type KnowledgeSource = BaseEntity & {
+  /**
+   * The knowledge connection to read
+   */
+  connectionId: string;
+  /**
+   * The space the documents belong to (the connection's space)
+   */
+  spaceId: string;
+  /**
+   * Limit the documents to one product line of the space; unset makes them space-wide
+   */
+  productLineId?: string;
+  /**
+   * The tool's id of the page or database
+   */
+  scopeId: string;
+  /**
+   * Whether the scope is a page tree or a database
+   */
+  scopeKind: KnowledgeScopeKind;
+  /**
+   * The page or database title when the source was added
+   */
+  scopeTitle: string;
+  /**
+   * Minutes between automatic syncs
+   */
+  intervalMinutes: number;
+  /**
+   * Whether the daemon syncs this source
+   */
+  enabled: boolean;
+  /**
+   * When the source last synced
+   */
+  lastRunAt?: any;
+  /**
+   * What the last sync did
+   */
+  lastRun?: KnowledgeSyncSummary;
+  /**
+   * Why the last sync failed, when it did
+   */
+  lastError?: string;
+};
+
+/**
+ * One page of a knowledge source, as Markdown
+ */
+export type KnowledgeDocument = BaseEntity & {
+  /**
+   * The source it was synced by
+   */
+  sourceId: string;
+  /**
+   * The space it belongs to
+   */
+  spaceId: string;
+  /**
+   * The product line it is limited to; unset when space-wide
+   */
+  productLineId?: string;
+  /**
+   * The tool's id of the page; unique per source
+   */
+  pageId: string;
+  /**
+   * Page title
+   */
+  title: string;
+  /**
+   * Link to the page
+   */
+  url: string;
+  /**
+   * The page as Markdown
+   */
+  content: string;
+  /**
+   * When the page was last edited in the tool
+   */
+  pageEditedAt: any;
+};
+export enum SignalKind {
+  Feedback = 'Feedback',
+  Incident = 'Incident',
+  Tracker = 'Tracker',
+  Discovery = 'Discovery',
+  Manual = 'Manual',
+}
+
+/**
+ * One piece of evidence of what users need: a request, an incident, an issue or a finding
+ */
+export type Signal = BaseEntity & {
+  /**
+   * The space the signal belongs to
+   */
+  spaceId: string;
+  /**
+   * The product line it concerns, if known
+   */
+  productLineId?: string;
+  /**
+   * Where the signal came from
+   */
+  kind: SignalKind;
+  /**
+   * One-line summary
+   */
+  title: string;
+  /**
+   * Longer text: the request, the error, the finding
+   */
+  detail?: string;
+  /**
+   * The customer (account) behind it, if any
+   */
+  customer?: string;
+  /**
+   * Revenue at stake per month for that customer, in the team's currency
+   */
+  monthlyRevenue?: float64;
+  /**
+   * Whether it needs attention soon
+   */
+  urgent: boolean;
+  /**
+   * Link to the original: ticket, message, issue, dashboard
+   */
+  url?: string;
+  /**
+   * The opportunity this signal supports, if linked
+   */
+  opportunityId?: string;
+  /**
+   * The sending tool's id for it; a second signal with the same id in a space is refused
+   */
+  externalId?: string;
+  /**
+   * When its customer was told the opportunity it supports shipped
+   */
+  toldAt?: any;
+};
+export enum OpportunityStatus {
+  Proposed = 'Proposed',
+  Accepted = 'Accepted',
+  Building = 'Building',
+  Shipped = 'Shipped',
+  Dropped = 'Dropped',
+}
+export enum OpportunitySource {
+  Manual = 'Manual',
+  Theme = 'Theme',
+  Discovery = 'Discovery',
+}
+
+/**
+ * A bet worth building, backed by signals and scored by value per review hour
+ */
+export type Opportunity = BaseEntity & {
+  /**
+   * The space the opportunity belongs to
+   */
+  spaceId: string;
+  /**
+   * The product line it concerns, if any
+   */
+  productLineId?: string;
+  /**
+   * One-line name of the bet
+   */
+  title: string;
+  /**
+   * The problem it solves, in the users' terms
+   */
+  problem?: string;
+  /**
+   * Where the opportunity stands
+   */
+  status: OpportunityStatus;
+  /**
+   * Estimated hours of human review to merge it
+   */
+  reviewHours: float64;
+  /**
+   * Confidence that it delivers the value, from 0 to 1
+   */
+  confidence: float64;
+  /**
+   * Whether it advances a strategic goal of the space
+   */
+  strategic: boolean;
+  /**
+   * The work item it became when built
+   */
+  workItemId?: string;
+  /**
+   * When it was accepted, dropped or built
+   */
+  decidedAt?: any;
+  /**
+   * Why it was dropped
+   */
+  dropReason?: string;
+  /**
+   * How it came to be; Manual when unset
+   */
+  source?: OpportunitySource;
+  /**
+   * What the discovery agent suggested building, and why now
+   */
+  brief?: string;
+  /**
+   * When it shipped
+   */
+  shippedAt?: any;
+};
+
+/**
+ * How a space values evidence, and how many review hours it has each week
+ */
+export type OpportunityWeights = {
+  /**
+   * The space these weights belong to
+   */
+  spaceId: string;
+  /**
+   * Value of each customer behind an opportunity
+   */
+  reach: float64;
+  /**
+   * Value of each 1,000 a month of revenue at stake
+   */
+  revenue: float64;
+  /**
+   * Value of each urgent signal
+   */
+  urgency: float64;
+  /**
+   * Value added once for a strategic opportunity
+   */
+  strategic: float64;
+  /**
+   * Hours of human review available each week
+   */
+  weeklyReviewHours: float64;
+  /**
+   * Hours between automatic discovery runs; unset turns discovery off
+   */
+  discoveryEveryHours?: float64;
+};
+
+/**
+ * A key that lets a tool post feedback into one space; only its hash is stored
+ */
+export type FeedbackKey = BaseEntity & {
+  /**
+   * The space feedback posted with this key lands in
+   */
+  spaceId: string;
+  /**
+   * Which tool or script uses it
+   */
+  name: string;
+  /**
+   * The first characters of the key, to recognise it
+   */
+  prefix: string;
+  /**
+   * SHA-256 of the key, hex
+   */
+  keyHash: string;
+  /**
+   * When feedback was last posted with it
+   */
+  lastUsedAt?: any;
+  /**
+   * When it was revoked; a revoked key is refused
+   */
+  revokedAt?: any;
+};
+export enum DiscoveryRunStatus {
+  Running = 'Running',
+  Succeeded = 'Succeeded',
+  Failed = 'Failed',
+}
+
+/**
+ * One discovery pass over a space's evidence
+ */
+export type DiscoveryRun = BaseEntity & {
+  /**
+   * The space whose evidence was read
+   */
+  spaceId: string;
+  /**
+   * Where the run stands
+   */
+  status: DiscoveryRunStatus;
+  /**
+   * The agent that read the evidence
+   */
+  agentType?: AgentType;
+  /**
+   * Unlinked signals the agent was shown
+   */
+  signalsRead: number;
+  /**
+   * Opportunities created from the agent's proposals
+   */
+  proposed: number;
+  /**
+   * Proposals dropped because they cited no real signal or repeated an open title
+   */
+  dropped: number;
+  /**
+   * When the run ended
+   */
+  finishedAt?: any;
+  /**
+   * Why the run failed
+   */
+  error?: string;
+};
+export enum OutcomeVerdict {
+  Pending = 'Pending',
+  Solved = 'Solved',
+  Persisting = 'Persisting',
+}
+
+/**
+ * The outcome of one shipped opportunity
+ */
+export type OpportunityOutcome = BaseEntity & {
+  /**
+   * The opportunity that shipped
+   */
+  opportunityId: string;
+  /**
+   * Its space
+   */
+  spaceId: string;
+  /**
+   * When it shipped
+   */
+  shippedAt: any;
+  /**
+   * When the window after shipping ends and the outcome is judged
+   */
+  reviewAt: any;
+  /**
+   * Where the outcome stands
+   */
+  verdict: OutcomeVerdict;
+  /**
+   * Similar signals in the window before shipping
+   */
+  signalsBefore?: number;
+  /**
+   * Similar signals in the window after shipping
+   */
+  signalsAfter?: number;
+  /**
+   * When it was judged
+   */
+  judgedAt?: any;
+  /**
+   * Hours of human review it really took, when someone recorded them
+   */
+  actualReviewHours?: float64;
+};
+
+/**
+ * What shep starts on its own in a space; everything is off by default
+ */
+export type AutopilotPolicy = {
+  /**
+   * The space
+   */
+  spaceId: string;
+  /**
+   * Investigate open Urgent work items of the space's projects that have no investigation
+   */
+  investigateUrgent: boolean;
+  /**
+   * Start the fix when an investigation's most likely hypothesis has High confidence
+   */
+  fixConfident: boolean;
+  /**
+   * Let fixes started by autopilot merge without a person
+   */
+  mergeFixes: boolean;
+  /**
+   * Build the accepted opportunities inside the week's line
+   */
+  fillLine: boolean;
+  /**
+   * The project the line is built into
+   */
+  projectId?: string;
+  /**
+   * Most fixes autopilot starts in the space in 24 hours
+   */
+  dailyFixBudget: number;
+  /**
+   * When the policy last changed
+   */
+  updatedAt: any;
+};
+
+/**
+ * One autopilot pass over a space: what it started and what failed
+ */
+export type AutopilotRun = BaseEntity & {
+  /**
+   * The space
+   */
+  spaceId: string;
+  /**
+   * Keys of the work items it started investigating
+   */
+  investigated: string[];
+  /**
+   * Keys of the work items it started fixing
+   */
+  fixed: string[];
+  /**
+   * Titles of the opportunities it built
+   */
+  built: string[];
+  /**
+   * What failed, one line each
+   */
+  errors: string[];
+};
+
+/**
+ * What one run of a tracker sync rule did
+ */
+export type TrackerSyncRunSummary = {
+  /**
+   * Work items created from new issues
+   */
+  created: number;
+  /**
+   * Work items updated from tracker changes
+   */
+  updated: number;
+  /**
+   * Issues updated from shep changes (two-way rules)
+   */
+  pushed: number;
+  /**
+   * Fields changed on both sides; the tracker's value was kept
+   */
+  conflicts: number;
+  /**
+   * Issues that could not be synced this run
+   */
+  failed: number;
+  /**
+   * Whether the tracker rate-limited the run before it finished
+   */
+  rateLimited: boolean;
+};
+export enum TrackerSyncDirection {
+  Import = 'Import',
+  TwoWay = 'TwoWay',
+}
+
+/**
+ * Keeps one tracker scope (Linear team or Jira JQL) in one shep project
+ */
+export type TrackerSyncRule = BaseEntity & {
+  /**
+   * The connection to read and write
+   */
+  connectionId: string;
+  /**
+   * The shep project issues become work items in
+   */
+  projectId: string;
+  /**
+   * Linear team key (for example ENG) or Jira JQL query
+   */
+  scope: string;
+  /**
+   * Import only, or two-way
+   */
+  direction: TrackerSyncDirection;
+  /**
+   * Minutes between automatic runs
+   */
+  intervalMinutes: number;
+  /**
+   * Whether the daemon runs this rule
+   */
+  enabled: boolean;
+  /**
+   * Newest tracker update time applied; the next run asks for issues updated after it
+   */
+  cursor?: any;
+  /**
+   * When the rule last ran
+   */
+  lastRunAt?: any;
+  /**
+   * What the last run did
+   */
+  lastRun?: TrackerSyncRunSummary;
+  /**
+   * Why the last run failed, when it did
+   */
+  lastError?: string;
+};
+
+/**
+ * Links a work item to a tracker issue, with the values both sides had at the last sync
+ */
+export type TrackerIssueLink = {
+  /**
+   * The linked work item; one link per work item
+   */
+  workItemId: string;
+  /**
+   * The rule that created the link
+   */
+  ruleId: string;
+  /**
+   * The connection of that rule
+   */
+  connectionId: string;
+  /**
+   * The tracker's id for the issue
+   */
+  externalId: string;
+  /**
+   * The human key such as ENG-42 or PAY-7
+   */
+  externalKey: string;
+  /**
+   * Link to the issue in the tracker
+   */
+  externalUrl: string;
+  /**
+   * Title at the last sync
+   */
+  syncedTitle: string;
+  /**
+   * Description at the last sync
+   */
+  syncedDescription?: string;
+  /**
+   * Status group at the last sync
+   */
+  syncedStateGroup: StateGroup;
+  /**
+   * Priority at the last sync
+   */
+  syncedPriority: Priority;
+  /**
+   * The tracker's update time at the last sync
+   */
+  remoteUpdatedAt: any;
+  /**
+   * When the link was created
+   */
+  createdAt: any;
+  /**
+   * When the link was last synced
+   */
+  updatedAt: any;
+};
+
+/**
+ * A tracker issue in shep's terms, whichever tracker it came from
+ */
+export type ExternalIssue = {
+  /**
+   * The tracker's id
+   */
+  externalId: string;
+  /**
+   * The human key such as ENG-42
+   */
+  key: string;
+  /**
+   * Link to the issue
+   */
+  url: string;
+  title: string;
+  /**
+   * Markdown description
+   */
+  description?: string;
+  /**
+   * The tracker status, mapped to shep's status group
+   */
+  stateGroup: StateGroup;
+  /**
+   * The tracker's own status name
+   */
+  stateName: string;
+  priority: Priority;
+  /**
+   * When the tracker last changed the issue
+   */
+  updatedAt: any;
+};
+
+/**
+ * A place in the code that supports a hypothesis
+ */
+export type HypothesisEvidence = {
+  /**
+   * Repository-relative path with forward slashes
+   */
+  file: string;
+  /**
+   * 1-based line, when the evidence is a specific line
+   */
+  line?: number;
+  /**
+   * What this place shows
+   */
+  note: string;
+};
+export enum HypothesisConfidence {
+  High = 'High',
+  Medium = 'Medium',
+  Low = 'Low',
+}
+
+/**
+ * One candidate root cause for a bug, with its evidence and how to fix it
+ */
+export type Hypothesis = {
+  /**
+   * Rank from 1 (most likely)
+   */
+  number: number;
+  /**
+   * Short name of the cause
+   */
+  title: string;
+  /**
+   * What goes wrong and why
+   */
+  rootCause: string;
+  /**
+   * How strongly the evidence supports it
+   */
+  confidence: HypothesisConfidence;
+  /**
+   * Places in the code that support it
+   */
+  evidence: HypothesisEvidence[];
+  /**
+   * The failing test that would prove it
+   */
+  testPlan: string;
+  /**
+   * How to fix it
+   */
+  fixPlan: string;
+};
+export enum InvestigationStatus {
+  Pending = 'Pending',
+  Running = 'Running',
+  Completed = 'Completed',
+  Failed = 'Failed',
+}
+
+/**
+ * An agent's investigation of a work item in one repository, and the fix it led to
+ */
+export type WorkItemInvestigation = BaseEntity & {
+  /**
+   * The work item investigated
+   */
+  workItemId: string;
+  /**
+   * The repository read
+   */
+  repositoryPath: string;
+  /**
+   * The commit read
+   */
+  commitSha?: string;
+  /**
+   * Where the investigation is
+   */
+  status: InvestigationStatus;
+  /**
+   * The agent's overall reading of the bug
+   */
+  summary?: string;
+  /**
+   * Candidate root causes, most likely first
+   */
+  hypotheses: Hypothesis[];
+  /**
+   * The agent that investigated
+   */
+  agentType?: AgentType;
+  /**
+   * Why the investigation failed
+   */
+  error?: string;
+  /**
+   * When the agent started
+   */
+  startedAt?: any;
+  /**
+   * When the investigation completed or failed
+   */
+  finishedAt?: any;
+  /**
+   * The hypothesis approved for fixing
+   */
+  approvedHypothesisNumber?: number;
+  /**
+   * The feature created to fix it
+   */
+  featureId?: string;
+};
 
 /**
  * Single installation suggestion for a tool
@@ -7954,6 +9251,19 @@ export enum ApplicationStarter {
 export enum WhatsAppThreadTargetKind {
   Feature = 'feature',
   Application = 'application',
+}
+export enum SpaceResolutionSource {
+  Assignment = 'Assignment',
+  Rule = 'Rule',
+  Default = 'Default',
+}
+export enum ConnectionKind {
+  Tracker = 'Tracker',
+  Knowledge = 'Knowledge',
+}
+export enum IntakeRejection {
+  Unauthorized = 'Unauthorized',
+  Invalid = 'Invalid',
 }
 export enum BedrockLifecycleAction {
   Init = 'init',

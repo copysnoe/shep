@@ -27,21 +27,32 @@ import "../../common/base.tsp";
 /**
  * The reach of a ProjectMemory entry.
  *
- * `Project` entries apply only to their own repository. `Organization` entries
- * are company-wide: every project's agents read them at the start of every
- * feature, in addition to that project's own memory. This lets knowledge that
- * holds across related projects (shared conventions, org-wide tooling, recurring
- * CI fixes) be authored once and reused everywhere.
+ * `Project` entries apply only to their own repository. `ProductLine` entries
+ * apply to every repository of the entry's product line, and `Space` entries
+ * to every repository of the entry's space (spec 120). Nothing crosses a space:
+ * an agent never reads another space's entries. `Organization` is the
+ * pre-spaces name for space-wide and is read as `Space`.
  */
-@doc("Reach of a project-memory entry: a single project or the whole organization")
+@doc("Reach of a project-memory entry: its repository, its product line, or its whole space")
 enum MemoryScope {
   /** Applies only to the entry's own repository. */
   @doc("Applies only to the entry's own repository")
   Project,
 
-  /** Applies across every project in the organization. */
-  @doc("Applies across every project in the organization")
+  /**
+   * Legacy space-wide scope from before spaces existed (spec 120). Read as
+   * `Space`, restricted to the entry's `spaceId`; new promotions write `Space`.
+   */
+  @doc("Legacy space-wide scope; read as Space within the entry's space")
   Organization,
+
+  /** Applies to every repository of the entry's space (spec 120). */
+  @doc("Applies to every repository of the entry's space")
+  Space,
+
+  /** Applies to every repository of the entry's product line (spec 120). */
+  @doc("Applies to every repository of the entry's product line")
+  ProductLine,
 }
 
 /**
@@ -156,9 +167,23 @@ model ProjectMemory extends BaseEntity {
 
   /**
    * Reach of this entry. Defaults to `Project` (own repository only) when
-   * absent. `Organization` entries are injected into every project's agents.
-   * Optional so existing rows and fixtures default to project scope.
+   * absent. `ProductLine` and `Space` entries reach the other repositories of
+   * the entry's line or space, never another space (spec 120). Optional so existing rows and fixtures default to project scope.
    */
-  @doc("Reach of this entry: Project (default) or Organization-wide")
+  @doc("Reach of this entry: Project (default), ProductLine, or Space; Organization is legacy Space")
   scope?: MemoryScope;
+
+  /**
+   * Space the entry belongs to (spec 120). Stamped from the repository's
+   * resolved space when the entry is written; Space- and ProductLine-scoped
+   * entries are only ever read inside this space.
+   */
+  @doc("Space the entry belongs to, stamped from the repository's resolved space")
+  spaceId?: string;
+
+  /**
+   * Product line the entry belongs to, when its repository has one.
+   */
+  @doc("Product line the entry belongs to, when its repository has one")
+  productLineId?: string;
 }

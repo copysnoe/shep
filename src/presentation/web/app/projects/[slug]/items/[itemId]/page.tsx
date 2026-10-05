@@ -6,6 +6,9 @@ import type { ManageWorkItemStatesUseCase } from '@shepai/core/application/use-c
 import type { ListWorkItemRelationsUseCase } from '@shepai/core/application/use-cases/work-item-relations/list-work-item-relations.use-case';
 import type { ListAttachmentsUseCase } from '@shepai/core/application/use-cases/pm-attachments/list-attachments.use-case';
 import type { ListTimeEntriesUseCase } from '@shepai/core/application/use-cases/time-entries/list-time-entries.use-case';
+import type { GetTrackerIssueLinkUseCase } from '@shepai/core/application/use-cases/trackers/get-tracker-issue-link.use-case';
+import type { GetWorkItemInvestigationsUseCase } from '@shepai/core/application/use-cases/bug-loop/get-work-item-investigations.use-case';
+import type { ListRepositoriesUseCase } from '@shepai/core/application/use-cases/repositories/list-repositories.use-case';
 import { WorkItemDetailClient } from './work-item-detail-client';
 
 export const dynamic = 'force-dynamic';
@@ -43,14 +46,30 @@ export default async function WorkItemDetailPage({ params }: WorkItemDetailPageP
 
   const workItem = workItemResult.workItem;
 
-  const [allWorkItems, states, relationsResult, attachmentsResult, timeEntriesResult] =
-    await Promise.all([
-      resolve<ListWorkItemsUseCase>('ListWorkItemsUseCase').execute(project.id),
-      resolve<ManageWorkItemStatesUseCase>('ManageWorkItemStatesUseCase').list(project.id),
-      resolve<ListWorkItemRelationsUseCase>('ListWorkItemRelationsUseCase').execute(workItem.id),
-      resolve<ListAttachmentsUseCase>('ListAttachmentsUseCase').execute(workItem.id),
-      resolve<ListTimeEntriesUseCase>('ListTimeEntriesUseCase').execute(workItem.id),
-    ]);
+  const [
+    allWorkItems,
+    states,
+    relationsResult,
+    attachmentsResult,
+    timeEntriesResult,
+    trackerLink,
+    investigationsResult,
+    repositories,
+  ] = await Promise.all([
+    resolve<ListWorkItemsUseCase>('ListWorkItemsUseCase').execute(project.id),
+    resolve<ManageWorkItemStatesUseCase>('ManageWorkItemStatesUseCase').list(project.id),
+    resolve<ListWorkItemRelationsUseCase>('ListWorkItemRelationsUseCase').execute(workItem.id),
+    resolve<ListAttachmentsUseCase>('ListAttachmentsUseCase').execute(workItem.id),
+    resolve<ListTimeEntriesUseCase>('ListTimeEntriesUseCase').execute(workItem.id),
+    resolve<GetTrackerIssueLinkUseCase>('GetTrackerIssueLinkUseCase').execute(workItem.id),
+    resolve<GetWorkItemInvestigationsUseCase>('GetWorkItemInvestigationsUseCase').execute(
+      workItem.id
+    ),
+    resolve<ListRepositoriesUseCase>('ListRepositoriesUseCase').execute(),
+  ]);
+  const investigation = investigationsResult.ok
+    ? investigationsResult.investigations[0]
+    : undefined;
 
   return (
     <div className="flex h-full flex-col p-6">
@@ -63,6 +82,14 @@ export default async function WorkItemDetailPage({ params }: WorkItemDetailPageP
         attachments={attachmentsResult.attachments}
         timeEntries={timeEntriesResult.timeEntries}
         totalMinutes={timeEntriesResult.totalMinutes}
+        {...(trackerLink
+          ? { trackerLink: { key: trackerLink.externalKey, url: trackerLink.externalUrl } }
+          : {})}
+        repositories={repositories.map((repository) => ({
+          path: repository.path,
+          name: repository.name,
+        }))}
+        {...(investigation ? { investigation } : {})}
       />
     </div>
   );

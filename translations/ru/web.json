@@ -444,7 +444,12 @@
     "clusters": "Кластеры",
     "plugins": "Plugins",
     "projectMemory": "Project Memory",
-    "harness": "Harness"
+    "harness": "Harness",
+    "spaces": "Пространства",
+    "trackers": "Подключения",
+    "opportunities": "Возможности",
+    "incidents": "Инциденты",
+    "factory": "Фабрика"
   },
   "sidebar": {
     "features": "Функции",
@@ -998,8 +1003,7 @@
       "delete": "Delete",
       "save": "Save",
       "cancel": "Cancel",
-      "makeOrgWide": "Make organization-wide",
-      "makeProjectOnly": "Make project-only"
+      "scope": "Изменить, кто это видит"
     },
     "deleteDialog": {
       "title": "Delete this memory entry?",
@@ -1007,10 +1011,18 @@
     },
     "errors": {
       "emptyContent": "Memory content cannot be empty.",
-      "updateFailed": "Failed to update the memory entry."
+      "updateFailed": "Failed to update the memory entry.",
+      "scopeFailed": "Не удалось изменить, кто видит эту запись."
     },
     "scope": {
-      "organization": "Organization"
+      "project": "Только этот репозиторий",
+      "productLine": "Его продуктовая линейка",
+      "space": "Всё его пространство",
+      "menuLabel": "Доступно для"
+    },
+    "filter": {
+      "label": "Фильтр по пространству",
+      "allSpaces": "Все пространства"
     }
   },
   "sessionTree": {
@@ -1289,6 +1301,524 @@
         "toolOutputRatio": "Видимый вывод инструментов",
         "evidenceRecall": "Полнота доказательств"
       }
+    }
+  },
+  "spaces": {
+    "title": "Пространства",
+    "subtitle": "Разделяйте области работы. Память, общая в пространстве, никогда не попадает в другое.",
+    "create": {
+      "title": "Новое пространство",
+      "name": "Имя",
+      "namePlaceholder": "Acme",
+      "description": "Описание",
+      "descriptionPlaceholder": "Работа для клиента Acme Corp",
+      "color": "Цвет",
+      "submit": "Создать пространство"
+    },
+    "card": {
+      "default": "По умолчанию",
+      "makeDefault": "Сделать основным",
+      "delete": "Удалить пространство",
+      "counts": "Репозитории: {{repositories}} · Записи памяти: {{memory}}",
+      "edit": "Изменить пространство",
+      "save": "Сохранить"
+    },
+    "lines": {
+      "title": "Продуктовые линейки",
+      "empty": "Линеек пока нет.",
+      "placeholder": "Новая линейка",
+      "add": "Добавить",
+      "remove": "Удалить {{name}}"
+    },
+    "rules": {
+      "title": "Правила",
+      "empty": "Правил нет. Репозитории попадают сюда только при закреплении.",
+      "placeholder": "/work/acme или github.com/acme/*",
+      "line": "Линейка для подходящих репозиториев",
+      "noLine": "Без линейки",
+      "add": "Добавить правило",
+      "remove": "Удалить правило"
+    },
+    "repositories": {
+      "title": "Репозитории",
+      "empty": "Репозиториев пока нет. Добавьте их в центре управления.",
+      "repository": "Репозиторий",
+      "space": "Пространство",
+      "line": "Линейка",
+      "because": "Причина",
+      "sourceAssignment": "Закреплён",
+      "sourceRule": "Правило",
+      "sourceDefault": "Пространство по умолчанию",
+      "pin": "Закрепить за пространством…",
+      "unpin": "Открепить, чтобы действовали правила"
+    },
+    "deleteDialog": {
+      "title": "Удалить {{name}}?",
+      "description": "Правила, закрепления и линейки удаляются. Репозитории переходят под другие правила или в пространство по умолчанию.",
+      "confirm": "Удалить пространство",
+      "cancel": "Отмена"
+    },
+    "errors": {
+      "actionFailed": "Не удалось сохранить изменение. Попробуйте ещё раз."
+    },
+    "agent": {
+      "title": "Настройки агентов",
+      "customised": "Настроено",
+      "inherits": "Наследует от хоста",
+      "claudeConfigDir": "Каталог конфигурации Claude",
+      "ghConfigDir": "Каталог конфигурации gh",
+      "gitName": "Имя автора git",
+      "gitEmail": "Email автора git",
+      "awsProfile": "Профиль AWS",
+      "bedrock": "Amazon Bedrock",
+      "bedrockInherit": "Наследовать от хоста",
+      "bedrockOn": "Направлять Claude через Bedrock",
+      "bedrockOff": "Никогда не использовать Bedrock",
+      "loginHint": "Войдите один раз с заданным каталогом, например CLAUDE_CONFIG_DIR=~/.claude-acme claude или GH_CONFIG_DIR=~/.config/gh-acme gh auth login. Shep никогда не хранит учётные данные.",
+      "allowedAgents": "Разрешённые агенты",
+      "allowedAgentsHint": "Если ничего не выбрано, разрешены все агенты.",
+      "save": "Сохранить настройки агентов",
+      "prComments": "Комментарии к pull requests",
+      "prCommentsHint": "На какие комментарии ревью к pull requests shep отвечает без запроса. Остальные можно обработать из функции.",
+      "prTrigger": {
+        "Off": "Только по запросу",
+        "Mention": "Комментарии с #shep",
+        "All": "Все комментарии"
+      },
+      "resolveThreads": "Закрывать ветки, где изменён код",
+      "autoActions": "Выполняются без вопросов при инцидентах",
+      "autoActionsHint": "Shep выполняет их на нагрузке инцидента без одобрения. Остальные ждут, пока их кто-то одобрит.",
+      "docsFirst": "Docs first",
+      "docsFirstHint": "Агенты пишут пользовательскую документацию при планировании и строят по ней. Изменение без документации ждёт человека перед слиянием.",
+      "docsFirstOn": "Требовать docs first",
+      "docsPaths": "Пути документации"
+    }
+  },
+  "trackers": {
+    "title": "Подключения",
+    "subtitle": "Задачи Linear и Jira в проектах shep и страницы Notion как знания команды.",
+    "syncAll": "Синхронизировать",
+    "empty": "Подключений пока нет. Добавьте выше API-ключ Linear, токен Jira или токен интеграции Notion.",
+    "add": {
+      "title": "Добавить подключение",
+      "provider": "Сервис",
+      "name": "Имя",
+      "space": "Пространство",
+      "site": "Сайт Jira",
+      "email": "Email аккаунта",
+      "linearSecret": "API-ключ Linear",
+      "jiraSecret": "API-токен Jira",
+      "submit": "Подключить",
+      "notionSecret": "Токен интеграции Notion"
+    },
+    "connection": {
+      "connected": "Подключено",
+      "error": "Ошибка",
+      "account": "как {{account}}",
+      "space": "пространство {{space}}",
+      "test": "Проверить",
+      "remove": "Удалить подключение",
+      "removeTitle": "Удалить {{name}}?",
+      "removeDescription": "Его правила синхронизации и источники знаний остановятся и будут удалены. Уже синхронизированные задачи останутся в проектах.",
+      "cancel": "Отмена"
+    },
+    "rules": {
+      "title": "Правила синхронизации",
+      "empty": "Правил пока нет. Добавьте правило, чтобы импортировать задачи.",
+      "noProjects": "Сначала создайте проект: правила записывают задачи в проект.",
+      "scope": "Ключ команды Linear или JQL Jira",
+      "project": "Проект",
+      "twoWay": "В обе стороны",
+      "import": "Импорт",
+      "every": "каждые",
+      "minutes": "мин",
+      "everyShort": "каждые {{minutes}} мин",
+      "paused": "Приостановлено",
+      "summary": "создано {{created}}, обновлено {{updated}}, отправлено {{pushed}}, конфликтов {{conflicts}}, ошибок {{failed}}",
+      "never": "Ещё не запускалось",
+      "add": "Добавить правило",
+      "pause": "Приостановить",
+      "resume": "Возобновить",
+      "runNow": "Запустить сейчас",
+      "remove": "Удалить правило"
+    },
+    "errors": {
+      "actionFailed": "Не удалось сохранить изменение. Попробуйте ещё раз."
+    },
+    "badge": {
+      "open": "Открыть {{key}} в трекере"
+    }
+  },
+  "bugLoop": {
+    "title": "Исследование",
+    "intro": "Агент читает репозиторий во временной копии только для чтения и ранжирует вероятные причины. Ваша рабочая копия не затрагивается.",
+    "repository": "Репозиторий",
+    "noRepositories": "Добавьте репозиторий в shep, чтобы исследовать этот элемент.",
+    "investigate": "Исследовать",
+    "investigateAgain": "Исследовать снова",
+    "running": "Агент читает копию {{repository}} только для чтения…",
+    "approved": "Гипотеза {{number}} исправляется.",
+    "openFeature": "Открыть исправление",
+    "fullSpec": "Исправлять через полный конвейер спецификации, а не в быстром режиме",
+    "status": {
+      "Pending": "Запуск",
+      "Running": "Идёт исследование",
+      "Completed": "Гипотезы готовы",
+      "Failed": "Ошибка"
+    },
+    "confidence": {
+      "High": "Высокая уверенность",
+      "Medium": "Средняя уверенность",
+      "Low": "Низкая уверенность"
+    },
+    "hypothesis": {
+      "evidence": "Доказательства",
+      "test": "Падающий тест",
+      "fix": "Исправление",
+      "fixThis": "Исправить",
+      "fixing": "Запуск исправления…",
+      "approved": "Исправляется"
+    }
+  },
+  "prComments": {
+    "title": "Комментарии ревью",
+    "refresh": "Прочитать комментарии с GitHub",
+    "address": "Обработать ожидающие: {{count}}",
+    "running": "Агент обрабатывает комментарии ({{count}}) в worktree функции…",
+    "roundPushed": "Последний раунд отправил {{sha}} и ответил.",
+    "roundAnswered": "Последний раунд ответил без изменения кода.",
+    "roundFailed": "Последний раунд завершился ошибкой: {{error}}",
+    "empty": "Комментариев ревью к pull request пока нет.",
+    "openOnGitHub": "Открыть на GitHub",
+    "status": {
+      "Pending": "Ожидает",
+      "Addressing": "В работе",
+      "Addressed": "Обработан",
+      "Declined": "Отклонён",
+      "Failed": "Ошибка"
+    },
+    "kind": {
+      "Inline": "К строке",
+      "Conversation": "Обсуждение",
+      "Review": "Ревью"
+    },
+    "addressNone": "Нечего обрабатывать"
+  },
+  "knowledge": {
+    "sources": {
+      "title": "Источники знаний",
+      "empty": "Источников пока нет. Откройте доступ к странице или базе Notion для интеграции и добавьте ссылку.",
+      "kind": {
+        "Page": "Дерево страниц",
+        "Database": "База данных"
+      },
+      "productLine": "только {{name}}",
+      "wholeSpace": "Всё пространство",
+      "productLineLabel": "Продуктовая линия",
+      "scope": "Ссылка на страницу или базу Notion",
+      "documents_one": "{{count}} документ",
+      "documents_few": "{{count}} документа",
+      "documents_many": "{{count}} документов",
+      "documents_other": "{{count}} документа",
+      "summary": "{{added}} добавлено, {{updated}} обновлено, {{removed}} удалено, {{failed}} с ошибкой",
+      "never": "Ещё не синхронизирован",
+      "add": "Добавить источник",
+      "syncNow": "Синхронизировать",
+      "remove": "Удалить источник"
+    },
+    "documents": {
+      "title": "Знания команды",
+      "subtitle": "Страницы Notion, которые агенты каждого пространства читают, если они подходят к задаче.",
+      "empty": "Знаний команды пока нет. Добавьте подключение Notion и его страницы на странице",
+      "connections": "Подключения"
+    }
+  },
+  "opportunities": {
+    "title": "Возможности",
+    "subtitle": "Ставки, подкреплённые свидетельствами, по ценности на час ревью.",
+    "space": "Пространство",
+    "empty": "В этом пространстве нет открытых возможностей. Создайте выше.",
+    "errors": {
+      "actionFailed": "Не удалось сохранить изменение. Попробуйте ещё раз."
+    },
+    "capacity": {
+      "title": "Ёмкость ревью на этой неделе",
+      "used": "{{used}} из {{capacity}} часов ревью",
+      "waiting_one": "{{count}} принятая ставка ждёт ёмкости",
+      "waiting_few": "{{count}} принятые ставки ждут ёмкости",
+      "waiting_many": "{{count}} принятых ставок ждут ёмкости",
+      "waiting_other": "{{count}} принятой ставки ждут ёмкости"
+    },
+    "row": {
+      "inLine": "В линии этой недели",
+      "outOfLine": "Вне линии",
+      "strategic": "Стратегическая",
+      "cost": "{{hours}} ч · уверенность {{confidence}}%",
+      "evidenceParts": {
+        "signals_one": "{{count}} сигнал",
+        "signals_few": "{{count}} сигнала",
+        "signals_many": "{{count}} сигналов",
+        "signals_other": "{{count}} сигнала",
+        "customers_one": "{{count}} клиент",
+        "customers_few": "{{count}} клиента",
+        "customers_many": "{{count}} клиентов",
+        "customers_other": "{{count}} клиента",
+        "urgent_one": "{{count}} срочный",
+        "urgent_few": "{{count}} срочных",
+        "urgent_many": "{{count}} срочных",
+        "urgent_other": "{{count}} срочных",
+        "revenue": "{{revenue}}/мес."
+      }
+    },
+    "status": {
+      "Proposed": "Предложена",
+      "Accepted": "Принята",
+      "Building": "Строится",
+      "Shipped": "Выпущена",
+      "Dropped": "Отклонена"
+    },
+    "kind": {
+      "Feedback": "Отзыв",
+      "Incident": "Инцидент",
+      "Tracker": "Трекер",
+      "Discovery": "Находка",
+      "Manual": "Заметка"
+    },
+    "actions": {
+      "accept": "Принять",
+      "build": "Строить",
+      "drop": "Отклонить",
+      "cancel": "Отмена",
+      "reason": "Почему отклонить?",
+      "project": "Проект",
+      "noProjects": "Сначала создайте проект; при строительстве в нём создаётся рабочий элемент.",
+      "ship": "Отметить выпущенной"
+    },
+    "inbox": {
+      "title": "Сигналы для связи ({{count}})",
+      "empty": "Каждый сигнал поддерживает возможность.",
+      "urgent": "Срочно",
+      "customerRevenue": "{{customer}} · {{revenue}}/мес.",
+      "link": "Связать с…",
+      "remove": "Удалить сигнал"
+    },
+    "signalForm": {
+      "title": "Записать сигнал",
+      "signal": "Сигнал",
+      "placeholder": "Что попросил пользователь или что сломалось?",
+      "kind": "Тип",
+      "customer": "Клиент",
+      "revenue": "Выручка/мес.",
+      "urgent": "Срочно",
+      "submit": "Записать"
+    },
+    "opportunityForm": {
+      "title": "Сформировать возможность",
+      "name": "Возможность",
+      "placeholder": "Ставка, которую стоит строить",
+      "hours": "ч ревью",
+      "confidence": "% уверенности",
+      "productLine": "Продуктовая линия",
+      "anyLine": "Всё пространство",
+      "strategic": "Стратегическая",
+      "submit": "Добавить"
+    },
+    "weights": {
+      "title": "Веса и ёмкость",
+      "formula": "Ценность = охват × клиенты + выручка × (выручка под угрозой ÷ 1000) + срочность × срочные сигналы + стратегия. Оценка = ценность × уверенность ÷ часы ревью.",
+      "reach": "Охват",
+      "revenue": "Выручка",
+      "urgency": "Срочность",
+      "strategic": "Стратегия",
+      "weeklyReviewHours": "Ч ревью/нед.",
+      "save": "Сохранить"
+    },
+    "themes": {
+      "title": "Темы в несвязанных сигналах",
+      "empty": "Тем пока нет: никакие два несвязанных сигнала не имеют достаточно общих слов.",
+      "promote": "Продвинуть",
+      "hours": "Часы ревью"
+    },
+    "feedbackKeys": {
+      "title": "Ключи для отзывов",
+      "subtitle": "Сервисы присылают отзывы с ключом: {{endpoint}} с \"Authorization: Bearer <ключ>\".",
+      "empty": "Ключей пока нет.",
+      "name": "Сервис",
+      "namePlaceholder": "Zendesk, виджет, скрипт…",
+      "create": "Создать ключ",
+      "secretOnce": "Скопируйте ключ сейчас — он больше не будет показан.",
+      "revoke": "Отозвать",
+      "revoked": "Отозван",
+      "lastUsed": "Использован {{when}}",
+      "neverUsed": "Не использовался"
+    },
+    "source": {
+      "Manual": "Вручную",
+      "Theme": "Из темы",
+      "Discovery": "Найдена агентом"
+    },
+    "discovery": {
+      "title": "Поиск возможностей",
+      "run": "Найти сейчас",
+      "discovering": "Ищу…",
+      "schedule": "Расписание",
+      "off": "Выкл.",
+      "everyHours": "Каждые {{hours}} ч",
+      "never": "В этом пространстве поиск ещё не запускался.",
+      "running": "Идёт поиск…",
+      "failed": "Последний запуск завершился ошибкой: {{error}}",
+      "succeeded": "Последний запуск: предложено {{proposed}} из {{read}} сигналов, {{when}}"
+    },
+    "outcomes": {
+      "title": "Итоги",
+      "check": "Проверить сейчас",
+      "empty": "В этом пространстве ещё ничего не выпущено.",
+      "judgedOn": "Оценка {{date}}",
+      "counts": "Похожих сообщений до: {{before}}, после: {{after}}",
+      "hours": "Часы ревью",
+      "saveHours": "Сохранить",
+      "hoursTaken": "Заняло {{actual}} ч из {{estimated}} ч по оценке",
+      "note": "Сообщите им, что «{{title}}» выпущено:",
+      "markTold": "Отметить извещёнными",
+      "hoursRatio": "Фактические часы ревью — {{ratio}}× от оценок (записано: {{timed}})",
+      "noHours": "Фактические часы ревью ещё не записаны",
+      "solvedShare": "Решено итогов: {{solved}} из {{judged}}",
+      "noVerdicts": "Итоги ещё не оценены",
+      "verdict": {
+        "Pending": "Ожидает",
+        "Solved": "Решено",
+        "Persisting": "Сохраняется"
+      }
+    }
+  },
+  "incidents": {
+    "title": "Инциденты",
+    "subtitle": "Проблемы в продакшене, их разбор, перезапуски, откаты и масштабирование, которые их устраняют, и постмортем.",
+    "space": "Пространство",
+    "list": "Инциденты",
+    "empty": "В этом пространстве нет инцидентов.",
+    "timeline": "Хронология",
+    "actions": "Действия в среде",
+    "approve": "Одобрить",
+    "reject": "Отклонить",
+    "recovered": "Восстановлено",
+    "notRecovered": "Не восстановлено",
+    "scaleTo": "Масштабировать до {{replicas}} реплик",
+    "showEvidence": "Показать данные",
+    "triage": "Разобрать",
+    "triaging": "Разбор…",
+    "workload": "deployment/{{workload}} в {{namespace}} ({{context}})",
+    "currentContext": "текущий контекст",
+    "noWorkload": "Нет нагрузки — действия выключены.",
+    "openLink": "Открыть оповещение",
+    "errors": {
+      "actionFailed": "Действие не удалось."
+    },
+    "form": {
+      "title": "Открыть инцидент",
+      "incident": "Инцидент",
+      "placeholder": "Что сломалось?",
+      "severity": "Серьёзность",
+      "workload": "Нагрузка",
+      "namespace": "Namespace",
+      "context": "Контекст",
+      "submit": "Открыть"
+    },
+    "act": {
+      "title": "Выполнить действие",
+      "kind": "Действие",
+      "replicas": "Реплики",
+      "reason": "Почему?",
+      "submit": "Выполнить",
+      "running": "Выполняется…"
+    },
+    "note": {
+      "title": "Заметка",
+      "placeholder": "Добавить заметку в хронологию",
+      "submit": "Добавить"
+    },
+    "resolve": {
+      "title": "Закрыть",
+      "postmortem": "Постмортем",
+      "placeholder": "Напишите постмортем или оставьте пустым для черновика по хронологии",
+      "submit": "Закрыть"
+    },
+    "severity": {
+      "Critical": "Критический",
+      "Major": "Серьёзный",
+      "Minor": "Незначительный"
+    },
+    "status": {
+      "Open": "Открыт",
+      "Mitigated": "Смягчён",
+      "Resolved": "Закрыт"
+    },
+    "actionKind": {
+      "Restart": "Перезапуск",
+      "Rollback": "Откат",
+      "Scale": "Масштабирование"
+    },
+    "actionStatus": {
+      "Proposed": "Ждёт одобрения",
+      "Approved": "Одобрено",
+      "Rejected": "Отклонено",
+      "Succeeded": "Выполнено",
+      "Failed": "Не удалось"
+    },
+    "proposedBy": {
+      "Agent": "предложено агентом",
+      "Person": "запрошено человеком"
+    },
+    "eventKind": {
+      "Opened": "Открыт",
+      "Note": "Заметка",
+      "Evidence": "Данные",
+      "Hypothesis": "Гипотеза",
+      "ActionProposed": "Действие предложено",
+      "ActionApproved": "Действие одобрено",
+      "ActionRejected": "Действие отклонено",
+      "ActionSucceeded": "Действие выполнено",
+      "ActionFailed": "Действие не удалось",
+      "Recovered": "Восстановлено",
+      "NotRecovered": "Не восстановлено",
+      "Resolved": "Закрыт"
+    }
+  },
+  "factory": {
+    "title": "Фабрика",
+    "subtitle": "Что делает фабрика ПО пространства и что ждёт людей.",
+    "space": "Пространство",
+    "errors": {
+      "actionFailed": "Действие не удалось."
+    },
+    "cards": {
+      "line": "Часы ревью на этой неделе",
+      "building": "В работе",
+      "incidents": "Открытые инциденты",
+      "actions": "Действия на одобрении",
+      "outcomes": "Итоги в ожидании",
+      "customers": "Клиенты, которых известить",
+      "features": "Фичи в работе",
+      "approval": "Ждут одобрения"
+    },
+    "runs": {
+      "title": "Проходы autopilot",
+      "none": "Autopilot ещё не запускался в этом пространстве.",
+      "pass": "расследовано {{investigated}} · исправлено {{fixed}} · построено {{built}}"
+    },
+    "autopilot": {
+      "title": "Autopilot",
+      "hint": "Что shep запускает здесь сам каждый час. Всё выключено, пока вы не включите.",
+      "investigate": "Расследовать открытые срочные задачи",
+      "fix": "Исправлять, когда главная гипотеза High",
+      "mergeFixes": "Разрешить этим исправлениям сливаться без человека",
+      "fillLine": "Строить принятые возможности из линии",
+      "budget": "Исправлений в день",
+      "project": "Строить в",
+      "noProject": "Без проекта",
+      "save": "Сохранить",
+      "run": "Запустить сейчас",
+      "running": "Выполняется…"
     }
   }
 }

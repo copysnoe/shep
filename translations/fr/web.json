@@ -444,7 +444,12 @@
     "clusters": "Clusters",
     "plugins": "Plugins",
     "projectMemory": "Project Memory",
-    "harness": "Harness"
+    "harness": "Harness",
+    "spaces": "Espaces",
+    "trackers": "Connexions",
+    "opportunities": "Opportunités",
+    "incidents": "Incidents",
+    "factory": "Usine"
   },
   "sidebar": {
     "features": "Fonctionnalités",
@@ -998,8 +1003,7 @@
       "delete": "Delete",
       "save": "Save",
       "cancel": "Cancel",
-      "makeOrgWide": "Make organization-wide",
-      "makeProjectOnly": "Make project-only"
+      "scope": "Modifier qui voit ceci"
     },
     "deleteDialog": {
       "title": "Delete this memory entry?",
@@ -1007,10 +1011,18 @@
     },
     "errors": {
       "emptyContent": "Memory content cannot be empty.",
-      "updateFailed": "Failed to update the memory entry."
+      "updateFailed": "Failed to update the memory entry.",
+      "scopeFailed": "Impossible de modifier qui voit cette entrée."
     },
     "scope": {
-      "organization": "Organization"
+      "project": "Ce dépôt uniquement",
+      "productLine": "Sa ligne de produits",
+      "space": "Tout son espace",
+      "menuLabel": "Partagé avec"
+    },
+    "filter": {
+      "label": "Filtrer par espace",
+      "allSpaces": "Tous les espaces"
     }
   },
   "sessionTree": {
@@ -1289,6 +1301,524 @@
         "toolOutputRatio": "Sortie d'outils vue",
         "evidenceRecall": "Couverture des preuves"
       }
+    }
+  },
+  "spaces": {
+    "title": "Espaces",
+    "subtitle": "Gardez vos domaines de travail séparés. La mémoire partagée dans un espace n'atteint jamais un autre.",
+    "create": {
+      "title": "Nouvel espace",
+      "name": "Nom",
+      "namePlaceholder": "Acme",
+      "description": "Description",
+      "descriptionPlaceholder": "Travail client pour Acme Corp",
+      "color": "Couleur",
+      "submit": "Créer l'espace"
+    },
+    "card": {
+      "default": "Par défaut",
+      "makeDefault": "Définir par défaut",
+      "delete": "Supprimer l'espace",
+      "counts": "Dépôts : {{repositories}} · Entrées de mémoire : {{memory}}",
+      "edit": "Modifier l'espace",
+      "save": "Enregistrer"
+    },
+    "lines": {
+      "title": "Lignes de produits",
+      "empty": "Aucune ligne de produits pour l'instant.",
+      "placeholder": "Nouvelle ligne de produits",
+      "add": "Ajouter",
+      "remove": "Supprimer {{name}}"
+    },
+    "rules": {
+      "title": "Règles",
+      "empty": "Aucune règle. Les dépôts n'arrivent ici que s'ils sont épinglés.",
+      "placeholder": "/work/acme ou github.com/acme/*",
+      "line": "Ligne de produits des dépôts correspondants",
+      "noLine": "Aucune ligne de produits",
+      "add": "Ajouter une règle",
+      "remove": "Supprimer la règle"
+    },
+    "repositories": {
+      "title": "Dépôts",
+      "empty": "Aucun dépôt pour l'instant. Ajoutez-en un depuis le centre de contrôle.",
+      "repository": "Dépôt",
+      "space": "Espace",
+      "line": "Ligne de produits",
+      "because": "Raison",
+      "sourceAssignment": "Épinglé",
+      "sourceRule": "Règle",
+      "sourceDefault": "Espace par défaut",
+      "pin": "Épingler à un espace…",
+      "unpin": "Désépingler pour appliquer les règles"
+    },
+    "deleteDialog": {
+      "title": "Supprimer {{name}} ?",
+      "description": "Ses règles, épinglages et lignes de produits sont supprimés. Ses dépôts relèvent alors d'autres règles ou de l'espace par défaut.",
+      "confirm": "Supprimer l'espace",
+      "cancel": "Annuler"
+    },
+    "errors": {
+      "actionFailed": "La modification n'a pas pu être enregistrée. Réessayez."
+    },
+    "agent": {
+      "title": "Paramètres des agents",
+      "customised": "Personnalisé",
+      "inherits": "Hérite de l'hôte",
+      "claudeConfigDir": "Répertoire de configuration Claude",
+      "ghConfigDir": "Répertoire de configuration gh",
+      "gitName": "Nom d'auteur git",
+      "gitEmail": "E-mail d'auteur git",
+      "awsProfile": "Profil AWS",
+      "bedrock": "Amazon Bedrock",
+      "bedrockInherit": "Hériter de l'hôte",
+      "bedrockOn": "Faire passer Claude par Bedrock",
+      "bedrockOff": "Ne jamais utiliser Bedrock",
+      "loginHint": "Connectez-vous une fois avec le répertoire défini, par exemple CLAUDE_CONFIG_DIR=~/.claude-acme claude ou GH_CONFIG_DIR=~/.config/gh-acme gh auth login. Shep ne stocke jamais les identifiants.",
+      "allowedAgents": "Agents autorisés",
+      "allowedAgentsHint": "Sans sélection, tous les agents sont autorisés.",
+      "save": "Enregistrer les paramètres des agents",
+      "prComments": "Commentaires de pull requests",
+      "prCommentsHint": "Quels commentaires de revue sur les pull requests de shep reçoivent une réponse sans demande. Les autres se traitent depuis la fonctionnalité.",
+      "prTrigger": {
+        "Off": "Seulement sur demande",
+        "Mention": "Commentaires mentionnant #shep",
+        "All": "Tous les commentaires"
+      },
+      "resolveThreads": "Résoudre les fils où le code a changé",
+      "autoActions": "Lancées sans demander sur les incidents",
+      "autoActionsHint": "Shep les lance sur la charge de travail d’un incident sans attendre d’approbation. Les autres attendent qu’on les approuve.",
+      "docsFirst": "Docs first",
+      "docsFirstHint": "Les agents écrivent la documentation utilisateur en planifiant et construisent d’après elle. Un changement qui ne touche aucune documentation attend une personne avant la fusion.",
+      "docsFirstOn": "Exiger docs first",
+      "docsPaths": "Chemins de documentation"
+    }
+  },
+  "trackers": {
+    "title": "Connexions",
+    "subtitle": "Tickets Linear et Jira gardés dans des projets shep, et pages Notion gardées comme connaissances d'équipe.",
+    "syncAll": "Synchroniser maintenant",
+    "empty": "Aucune connexion. Ajoutez ci-dessus votre clé API Linear, jeton Jira ou jeton d'intégration Notion.",
+    "add": {
+      "title": "Ajouter une connexion",
+      "provider": "Outil",
+      "name": "Nom",
+      "space": "Espace",
+      "site": "Site Jira",
+      "email": "E-mail du compte",
+      "linearSecret": "Clé d'API Linear",
+      "jiraSecret": "Jeton d'API Jira",
+      "submit": "Connecter",
+      "notionSecret": "Jeton d'intégration Notion"
+    },
+    "connection": {
+      "connected": "Connecté",
+      "error": "Erreur",
+      "account": "en tant que {{account}}",
+      "space": "espace {{space}}",
+      "test": "Tester",
+      "remove": "Supprimer la connexion",
+      "removeTitle": "Supprimer {{name}} ?",
+      "removeDescription": "Ses règles de synchronisation et sources de connaissances s'arrêtent et sont supprimées. Les éléments déjà synchronisés restent dans leurs projets.",
+      "cancel": "Annuler"
+    },
+    "rules": {
+      "title": "Règles de synchronisation",
+      "empty": "Aucune règle. Ajoutez-en une pour importer des tickets.",
+      "noProjects": "Créez d'abord un projet ; les règles écrivent les tickets dans un projet.",
+      "scope": "Clé d'équipe Linear ou JQL Jira",
+      "project": "Projet",
+      "twoWay": "Bidirectionnel",
+      "import": "Import",
+      "every": "toutes les",
+      "minutes": "min",
+      "everyShort": "toutes les {{minutes}} min",
+      "paused": "En pause",
+      "summary": "{{created}} créés, {{updated}} mis à jour, {{pushed}} envoyés, {{conflicts}} conflits, {{failed}} échecs",
+      "never": "Pas encore exécutée",
+      "add": "Ajouter une règle",
+      "pause": "Mettre en pause",
+      "resume": "Reprendre",
+      "runNow": "Exécuter maintenant",
+      "remove": "Supprimer la règle"
+    },
+    "errors": {
+      "actionFailed": "La modification n'a pas pu être enregistrée. Réessayez."
+    },
+    "badge": {
+      "open": "Ouvrir {{key}} dans l'outil"
+    }
+  },
+  "bugLoop": {
+    "title": "Investigation",
+    "intro": "Un agent lit le dépôt dans une copie jetable en lecture seule et classe les causes probables. Votre copie de travail n'est jamais modifiée.",
+    "repository": "Dépôt",
+    "noRepositories": "Ajoutez un dépôt à shep pour investiguer cet élément.",
+    "investigate": "Investiguer",
+    "investigateAgain": "Investiguer à nouveau",
+    "running": "L'agent lit une copie en lecture seule de {{repository}}…",
+    "approved": "L'hypothèse {{number}} est en cours de correction.",
+    "openFeature": "Ouvrir la fonctionnalité de correction",
+    "fullSpec": "Corriger via le pipeline de spécification complet au lieu du mode rapide",
+    "status": {
+      "Pending": "Démarrage",
+      "Running": "Investigation en cours",
+      "Completed": "Hypothèses prêtes",
+      "Failed": "Échec"
+    },
+    "confidence": {
+      "High": "Confiance élevée",
+      "Medium": "Confiance moyenne",
+      "Low": "Confiance faible"
+    },
+    "hypothesis": {
+      "evidence": "Preuves",
+      "test": "Test qui échoue",
+      "fix": "Correction",
+      "fixThis": "Corriger",
+      "fixing": "Lancement de la correction…",
+      "approved": "En correction"
+    }
+  },
+  "prComments": {
+    "title": "Commentaires de revue",
+    "refresh": "Lire les commentaires sur GitHub",
+    "address": "Traiter {{count}} en attente",
+    "running": "Un agent traite {{count}} commentaires dans le worktree de la fonctionnalité…",
+    "roundPushed": "Le dernier passage a poussé {{sha}} et répondu.",
+    "roundAnswered": "Le dernier passage a répondu sans modifier le code.",
+    "roundFailed": "Le dernier passage a échoué : {{error}}",
+    "empty": "Aucun commentaire de revue sur la pull request pour l'instant.",
+    "openOnGitHub": "Ouvrir sur GitHub",
+    "status": {
+      "Pending": "En attente",
+      "Addressing": "En cours",
+      "Addressed": "Traité",
+      "Declined": "Refusé",
+      "Failed": "Échec"
+    },
+    "kind": {
+      "Inline": "Sur une ligne",
+      "Conversation": "Conversation",
+      "Review": "Revue"
+    },
+    "addressNone": "Rien à traiter"
+  },
+  "knowledge": {
+    "sources": {
+      "title": "Sources de connaissances",
+      "empty": "Aucune source. Partagez une page ou base de données Notion avec l'intégration, puis ajoutez son lien.",
+      "kind": {
+        "Page": "Arborescence",
+        "Database": "Base de données"
+      },
+      "productLine": "{{name}} uniquement",
+      "wholeSpace": "Tout l'espace",
+      "productLineLabel": "Ligne de produits",
+      "scope": "Lien de page ou base de données Notion",
+      "documents_one": "{{count}} document",
+      "documents_few": "{{count}} documents",
+      "documents_many": "{{count}} documents",
+      "documents_other": "{{count}} documents",
+      "summary": "{{added}} ajoutés, {{updated}} mis à jour, {{removed}} supprimés, {{failed}} en échec",
+      "never": "Pas encore synchronisée",
+      "add": "Ajouter une source",
+      "syncNow": "Synchroniser",
+      "remove": "Supprimer la source"
+    },
+    "documents": {
+      "title": "Connaissances d'équipe",
+      "subtitle": "Pages Notion que les agents de chaque espace lisent quand elles correspondent à la tâche.",
+      "empty": "Aucune connaissance d'équipe. Ajoutez une connexion Notion et ses pages dans",
+      "connections": "Connexions"
+    }
+  },
+  "opportunities": {
+    "title": "Opportunités",
+    "subtitle": "Paris appuyés par des preuves, classés par valeur par heure de revue.",
+    "space": "Espace",
+    "empty": "Aucune opportunité ouverte dans cet espace. Formez-en une ci-dessus.",
+    "errors": {
+      "actionFailed": "La modification n'a pas pu être enregistrée. Réessayez."
+    },
+    "capacity": {
+      "title": "Capacité de revue de la semaine",
+      "used": "{{used}} sur {{capacity}} heures de revue",
+      "waiting_one": "{{count}} pari accepté attend de la capacité",
+      "waiting_few": "{{count}} paris acceptés attendent de la capacité",
+      "waiting_many": "{{count}} paris acceptés attendent de la capacité",
+      "waiting_other": "{{count}} paris acceptés attendent de la capacité"
+    },
+    "row": {
+      "inLine": "Dans la ligne de la semaine",
+      "outOfLine": "Hors de la ligne",
+      "strategic": "Stratégique",
+      "cost": "{{hours}} h · {{confidence}} % de confiance",
+      "evidenceParts": {
+        "signals_one": "{{count}} signal",
+        "signals_few": "{{count}} signaux",
+        "signals_many": "{{count}} signaux",
+        "signals_other": "{{count}} signaux",
+        "customers_one": "{{count}} client",
+        "customers_few": "{{count}} clients",
+        "customers_many": "{{count}} clients",
+        "customers_other": "{{count}} clients",
+        "urgent_one": "{{count}} urgent",
+        "urgent_few": "{{count}} urgents",
+        "urgent_many": "{{count}} urgents",
+        "urgent_other": "{{count}} urgents",
+        "revenue": "{{revenue}}/mois"
+      }
+    },
+    "status": {
+      "Proposed": "Proposée",
+      "Accepted": "Acceptée",
+      "Building": "En construction",
+      "Shipped": "Livrée",
+      "Dropped": "Abandonnée"
+    },
+    "kind": {
+      "Feedback": "Retour",
+      "Incident": "Incident",
+      "Tracker": "Tracker",
+      "Discovery": "Découverte",
+      "Manual": "Note"
+    },
+    "actions": {
+      "accept": "Accepter",
+      "build": "Construire",
+      "drop": "Abandonner",
+      "cancel": "Annuler",
+      "reason": "Pourquoi l'abandonner ?",
+      "project": "Projet",
+      "noProjects": "Créez d'abord un projet ; construire y crée un élément de travail.",
+      "ship": "Marquer livrée"
+    },
+    "inbox": {
+      "title": "Signaux à lier ({{count}})",
+      "empty": "Chaque signal appuie une opportunité.",
+      "urgent": "Urgent",
+      "customerRevenue": "{{customer}} · {{revenue}}/mois",
+      "link": "Lier à…",
+      "remove": "Supprimer le signal"
+    },
+    "signalForm": {
+      "title": "Enregistrer un signal",
+      "signal": "Signal",
+      "placeholder": "Qu'a demandé un utilisateur, ou qu'est-ce qui a cassé ?",
+      "kind": "Type",
+      "customer": "Client",
+      "revenue": "Revenu/mois",
+      "urgent": "Urgent",
+      "submit": "Enregistrer"
+    },
+    "opportunityForm": {
+      "title": "Former une opportunité",
+      "name": "Opportunité",
+      "placeholder": "Un pari qui vaut d'être construit",
+      "hours": "h de revue",
+      "confidence": "% de confiance",
+      "productLine": "Ligne de produits",
+      "anyLine": "Tout l'espace",
+      "strategic": "Stratégique",
+      "submit": "Ajouter"
+    },
+    "weights": {
+      "title": "Poids et capacité",
+      "formula": "Valeur = portée × clients + revenu × (revenu en jeu ÷ 1 000) + urgence × signaux urgents + stratégique. Score = valeur × confiance ÷ heures de revue.",
+      "reach": "Portée",
+      "revenue": "Revenu",
+      "urgency": "Urgence",
+      "strategic": "Stratégique",
+      "weeklyReviewHours": "h de revue/semaine",
+      "save": "Enregistrer"
+    },
+    "themes": {
+      "title": "Thèmes des signaux non liés",
+      "empty": "Pas encore de thèmes : aucune paire de signaux non liés ne partage assez de mots.",
+      "promote": "Promouvoir",
+      "hours": "Heures de revue"
+    },
+    "feedbackKeys": {
+      "title": "Clés de retours",
+      "subtitle": "Les outils envoient des retours avec une clé : {{endpoint}} avec \"Authorization: Bearer <clé>\".",
+      "empty": "Aucune clé.",
+      "name": "Outil",
+      "namePlaceholder": "Zendesk, widget, script…",
+      "create": "Créer une clé",
+      "secretOnce": "Copiez cette clé maintenant ; elle ne sera plus affichée.",
+      "revoke": "Révoquer",
+      "revoked": "Révoquée",
+      "lastUsed": "Utilisée {{when}}",
+      "neverUsed": "Jamais utilisée"
+    },
+    "source": {
+      "Manual": "Manuelle",
+      "Theme": "Issue d'un thème",
+      "Discovery": "Découverte"
+    },
+    "discovery": {
+      "title": "Découverte",
+      "run": "Découvrir maintenant",
+      "discovering": "Découverte en cours…",
+      "schedule": "Planification",
+      "off": "Arrêtée",
+      "everyHours": "Toutes les {{hours}} h",
+      "never": "Aucune découverte n'a encore tourné dans cet espace.",
+      "running": "Découverte en cours…",
+      "failed": "La dernière découverte a échoué : {{error}}",
+      "succeeded": "Dernière découverte : {{proposed}} proposées à partir de {{read}} signaux, {{when}}"
+    },
+    "outcomes": {
+      "title": "Résultats",
+      "check": "Vérifier maintenant",
+      "empty": "Rien n’a encore été livré dans cet espace.",
+      "judgedOn": "Jugé le {{date}}",
+      "counts": "{{before}} signalements similaires avant, {{after}} après",
+      "hours": "Heures de revue",
+      "saveHours": "Enregistrer",
+      "hoursTaken": "{{actual}} h pour {{estimated}} h estimées",
+      "note": "Dites-leur que « {{title}} » est livré :",
+      "markTold": "Marquer prévenus",
+      "hoursRatio": "Les heures de revue réelles valent {{ratio}}× les estimations ({{timed}} enregistrées)",
+      "noHours": "Aucune heure de revue réelle enregistrée",
+      "solvedShare": "{{solved}} résultats résolus sur {{judged}} jugés",
+      "noVerdicts": "Aucun résultat jugé pour l’instant",
+      "verdict": {
+        "Pending": "En attente",
+        "Solved": "Résolu",
+        "Persisting": "Persiste"
+      }
+    }
+  },
+  "incidents": {
+    "title": "Incidents",
+    "subtitle": "Les problèmes en production, leur triage, les redémarrages, retours arrière et mises à l’échelle qui les corrigent, et le postmortem.",
+    "space": "Espace",
+    "list": "Incidents",
+    "empty": "Aucun incident dans cet espace.",
+    "timeline": "Chronologie",
+    "actions": "Actions d’exécution",
+    "approve": "Approuver",
+    "reject": "Refuser",
+    "recovered": "Rétabli",
+    "notRecovered": "Non rétabli",
+    "scaleTo": "Passer à {{replicas}} réplicas",
+    "showEvidence": "Afficher les éléments",
+    "triage": "Triage",
+    "triaging": "Triage en cours…",
+    "workload": "deployment/{{workload}} dans {{namespace}} ({{context}})",
+    "currentContext": "contexte actuel",
+    "noWorkload": "Aucune charge de travail : les actions sont désactivées.",
+    "openLink": "Ouvrir l’alerte",
+    "errors": {
+      "actionFailed": "L’action a échoué."
+    },
+    "form": {
+      "title": "Ouvrir un incident",
+      "incident": "Incident",
+      "placeholder": "Qu’est-ce qui ne va pas ?",
+      "severity": "Gravité",
+      "workload": "Charge de travail",
+      "namespace": "Namespace",
+      "context": "Contexte",
+      "submit": "Ouvrir"
+    },
+    "act": {
+      "title": "Lancer une action",
+      "kind": "Action",
+      "replicas": "Réplicas",
+      "reason": "Pourquoi ?",
+      "submit": "Lancer",
+      "running": "En cours…"
+    },
+    "note": {
+      "title": "Note",
+      "placeholder": "Ajouter une note à la chronologie",
+      "submit": "Ajouter"
+    },
+    "resolve": {
+      "title": "Résoudre",
+      "postmortem": "Postmortem",
+      "placeholder": "Rédigez le postmortem, ou laissez vide pour un brouillon tiré de la chronologie",
+      "submit": "Résoudre"
+    },
+    "severity": {
+      "Critical": "Critique",
+      "Major": "Majeur",
+      "Minor": "Mineur"
+    },
+    "status": {
+      "Open": "Ouvert",
+      "Mitigated": "Atténué",
+      "Resolved": "Résolu"
+    },
+    "actionKind": {
+      "Restart": "Redémarrer",
+      "Rollback": "Revenir en arrière",
+      "Scale": "Mettre à l’échelle"
+    },
+    "actionStatus": {
+      "Proposed": "En attente d’approbation",
+      "Approved": "Approuvée",
+      "Rejected": "Refusée",
+      "Succeeded": "Faite",
+      "Failed": "Échouée"
+    },
+    "proposedBy": {
+      "Agent": "proposée par l’agent",
+      "Person": "demandée par une personne"
+    },
+    "eventKind": {
+      "Opened": "Ouvert",
+      "Note": "Note",
+      "Evidence": "Éléments",
+      "Hypothesis": "Hypothèse",
+      "ActionProposed": "Action proposée",
+      "ActionApproved": "Action approuvée",
+      "ActionRejected": "Action refusée",
+      "ActionSucceeded": "Action faite",
+      "ActionFailed": "Action échouée",
+      "Recovered": "Rétabli",
+      "NotRecovered": "Non rétabli",
+      "Resolved": "Résolu"
+    }
+  },
+  "factory": {
+    "title": "Usine",
+    "subtitle": "Ce que fait l’usine logicielle de l’espace, et ce qui attend des personnes.",
+    "space": "Espace",
+    "errors": {
+      "actionFailed": "L’action a échoué."
+    },
+    "cards": {
+      "line": "Heures de revue cette semaine",
+      "building": "En construction",
+      "incidents": "Incidents ouverts",
+      "actions": "Actions à approuver",
+      "outcomes": "Résultats en attente",
+      "customers": "Clients à prévenir",
+      "features": "Fonctionnalités en cours",
+      "approval": "En attente d’approbation"
+    },
+    "runs": {
+      "title": "Passages autopilot",
+      "none": "Autopilot n’a pas encore tourné dans cet espace.",
+      "pass": "investigués {{investigated}} · corrigés {{fixed}} · construits {{built}}"
+    },
+    "autopilot": {
+      "title": "Autopilot",
+      "hint": "Ce que shep lance seul ici, chaque heure. Tout est désactivé tant que vous ne l’activez pas.",
+      "investigate": "Investiguer les éléments urgents ouverts",
+      "fix": "Corriger quand l’hypothèse principale est High",
+      "mergeFixes": "Laisser ces correctifs fusionner sans personne",
+      "fillLine": "Construire les opportunités acceptées de la ligne",
+      "budget": "Correctifs par jour",
+      "project": "Construire dans",
+      "noProject": "Aucun projet",
+      "save": "Enregistrer",
+      "run": "Lancer maintenant",
+      "running": "En cours…"
     }
   }
 }

@@ -494,6 +494,22 @@
         "notWaitingForApproval": "الميزة \"{{name}}\" ليست في انتظار الموافقة (الحالة: {{status}})",
         "noFeaturesWaiting": "لا توجد ميزات في انتظار الموافقة في هذا المستودع",
         "multipleFeaturesWaiting": "ميزات متعددة في انتظار الموافقة. حدد واحدة:"
+      },
+      "comments": {
+        "description": "عرض تعليقات المراجعة على طلب الدمج الخاص بالميزة وما فعله shep بها",
+        "featureArg": "معرّف الميزة أو بادئته",
+        "noRefreshOption": "استخدام التعليقات المحفوظة بدلاً من القراءة من GitHub",
+        "failed": "فشل أمر تعليقات طلب الدمج",
+        "title": "تعليقات المراجعة على {{name}}",
+        "none": "لا توجد تعليقات مراجعة بعد.",
+        "next": "عالج المعلّقة باستخدام: shep feat address-comments {{feature}}",
+        "round": "آخر جولة: {{status}}، {{count}} تعليقات{{commit}}{{error}}",
+        "commit": "، تم دفع {{sha}}"
+      },
+      "addressComments": {
+        "description": "يعالج وكيل تعليقات المراجعة المعلّقة في مساحة عمل الميزة ويدفع التغييرات ويرد على كل تعليق",
+        "commentsArg": "معرّفات التعليقات أو بادئاتها (الافتراضي: كل المعلّقة)",
+        "spinner": "جارٍ معالجة {{count}} تعليقات"
       }
     },
     "repo": {
@@ -1098,6 +1114,684 @@
         "installed": "Installed",
         "available": "Available",
         "failed": "Failed to load plugin catalog"
+      }
+    },
+    "space": {
+      "description": "فصل مجالات العمل: المساحات وخطوط المنتجات والقواعد التي تضع المستودعات",
+      "failed": "فشل أمر المساحة",
+      "spaceArg": "اسم المساحة أو المعرّف المختصر أو المعرّف",
+      "pathArg": "مسار المستودع (افتراضيًا الدليل الحالي)",
+      "nameArg": "الاسم المعروض",
+      "lineArg": "اسم خط المنتج أو المعرّف المختصر أو المعرّف",
+      "lineOption": "خط منتج داخل المساحة",
+      "descriptionOption": "وصف قصير",
+      "colorOption": "لون سداسي عشري، مثل ‎#3456c4",
+      "ls": {
+        "description": "عرض المساحات مع خطوط منتجاتها ومستودعاتها وذاكرتها",
+        "title": "المساحات",
+        "nameColumn": "الاسم",
+        "slugColumn": "المعرّف المختصر",
+        "linesColumn": "خطوط المنتجات",
+        "reposColumn": "مستودعات",
+        "memoryColumn": "الذاكرة",
+        "defaultMarker": "(افتراضي)"
+      },
+      "show": {
+        "description": "عرض المساحة وخط المنتج الذي ينتمي إليه المستودع، ولماذا",
+        "space": "المساحة",
+        "productLine": "خط المنتج",
+        "source": "السبب",
+        "sourceAssignment": "مثبّت عبر shep space assign",
+        "sourceRule": "طابق قاعدة {{kind}} {{pattern}}",
+        "sourceDefault": "لم تطابق أي قاعدة، لذا تُطبّق المساحة الافتراضية"
+      },
+      "new": {
+        "description": "إنشاء مساحة",
+        "defaultOption": "جعلها المساحة الافتراضية",
+        "success": "تم إنشاء المساحة \"{{name}}\" ({{slug}})"
+      },
+      "edit": {
+        "description": "إعادة تسمية مساحة أو تغيير وصفها أو لونها",
+        "success": "تم تحديث المساحة \"{{name}}\""
+      },
+      "rm": {
+        "description": "حذف مساحة مع قواعدها وتعييناتها وخطوط منتجاتها",
+        "success": "تم حذف المساحة \"{{space}}\""
+      },
+      "default": {
+        "description": "تحديد المساحة التي تذهب إليها المستودعات غير المطابقة",
+        "success": "\"{{name}}\" هي الآن المساحة الافتراضية"
+      },
+      "line": {
+        "description": "إدارة خطوط المنتجات داخل مساحة",
+        "new": {
+          "description": "إضافة خط منتج إلى مساحة",
+          "success": "تم إنشاء خط المنتج \"{{name}}\" ({{slug}})"
+        },
+        "rm": {
+          "description": "إزالة خط منتج؛ تبقى مستودعاته في المساحة",
+          "success": "تمت إزالة خط المنتج \"{{line}}\""
+        }
+      },
+      "rule": {
+        "description": "إدارة قواعد المسار والمستودع البعيد في git التي تضع المستودعات",
+        "patternArg": "بادئة مسار مطلق، أو نمط بعيد مثل github.com/acme/*",
+        "idArg": "معرّف القاعدة (راجع shep space rule ls)",
+        "add": {
+          "description": "إضافة قاعدة تضع المستودعات المطابقة في مساحة",
+          "remoteOption": "معاملة النمط كمستودع git بعيد حتى لو بدا كمسار",
+          "priorityOption": "للفصل بين القواعد المتساوية في التحديد؛ الأقل يفوز (الافتراضي 100)",
+          "badPriority": "\"{{value}}\" ليس عددًا صحيحًا",
+          "success": "أُضيفت قاعدة {{kind}} لـ {{pattern}}"
+        },
+        "ls": {
+          "description": "عرض القواعد لمساحة واحدة أو للجميع",
+          "title": "قواعد المساحات",
+          "idColumn": "المعرّف",
+          "kindColumn": "النوع",
+          "patternColumn": "النمط",
+          "priorityColumn": "الأولوية",
+          "empty": "لا توجد قواعد بعد. أضف واحدة عبر shep space rule add."
+        },
+        "rm": {
+          "description": "إزالة قاعدة",
+          "success": "تمت إزالة القاعدة"
+        }
+      },
+      "assign": {
+        "description": "تثبيت مستودع في مساحة متجاوزًا كل القواعد",
+        "success": "تم تثبيت {{path}} في {{space}}"
+      },
+      "unassign": {
+        "description": "إزالة تثبيت المستودع لتُطبّق القواعد مجددًا",
+        "success": "{{path}} يتبع قواعد المساحات مجددًا"
+      },
+      "config": {
+        "description": "عرض أو تغيير تسجيلات دخول الوكلاء وهوية git والوكلاء المسموح بهم لمساحة",
+        "claudeOption": "دليل إعدادات Claude ‏(CLAUDE_CONFIG_DIR) الذي يحوي تسجيل دخول المساحة",
+        "ghOption": "دليل إعدادات gh ‏(GH_CONFIG_DIR) الذي يحوي تسجيل دخول GitHub للمساحة",
+        "gitNameOption": "اسم مؤلف git لعمليات إيداع الوكلاء",
+        "gitEmailOption": "بريد مؤلف git لعمليات إيداع الوكلاء",
+        "awsProfileOption": "ملف AWS ‏(AWS_PROFILE)، مثلًا لـ Bedrock",
+        "bedrockOption": "توجيه Claude عبر Amazon Bedrock",
+        "noBedrockOption": "عدم توجيه Claude عبر Bedrock أبدًا مهما كان إعداد المضيف",
+        "agentsOption": "أنواع الوكلاء المسموح بها مفصولة بفواصل",
+        "clearOption": "حقول تُمسح لتعود إلى الوراثة من المضيف",
+        "badClear": "\"{{field}}\" ليس حقلًا يمكن مسحه",
+        "title": "إعدادات وكلاء {{name}}",
+        "claudeConfigDir": "إعدادات Claude",
+        "ghConfigDir": "إعدادات gh",
+        "gitAuthorName": "اسم git",
+        "gitAuthorEmail": "بريد git",
+        "useBedrock": "Bedrock",
+        "awsProfile": "ملف AWS",
+        "allowedAgents": "الوكلاء المسموح بهم",
+        "inherit": "وراثة من المضيف",
+        "on": "مفعّل",
+        "off": "معطّل",
+        "any": "أي وكيل",
+        "environment": "بيئة عمليات الوكلاء",
+        "sets": "يضبط",
+        "removes": "يزيل",
+        "success": "تم حفظ إعدادات وكلاء {{name}}",
+        "prCommentsOption": "تعليقات المراجعة التي يرد عليها shep من تلقاء نفسه: off أو mention (#shep) أو all",
+        "resolveThreadsOption": "إغلاق سلسلة المراجعة بعد تعديل الشيفرة من أجلها",
+        "noResolveThreadsOption": "ترك إغلاق السلاسل للمراجع",
+        "prComments": "تعليقات طلب الدمج المُجاب عنها",
+        "resolveThreads": "إغلاق السلاسل",
+        "defaultValue": "{{value}} (افتراضي)",
+        "badTrigger": "\"{{value}}\" ليس وضعاً لتعليقات طلب الدمج. استخدم أحد: {{triggers}}",
+        "autoActions": "يعمل في الحوادث دون سؤال",
+        "autoActionsOption": "إجراءات ينفذها shep في حادث دون سؤال: restart وrollback وscale (مفصولة بفواصل)",
+        "none": "لا شيء",
+        "docsFirstOption": "يكتب الوكلاء توثيق المستخدم أثناء التخطيط؛ ينتظر التغيير بلا توثيق شخصًا قبل الدمج",
+        "noDocsFirstOption": "إيقاف docs first",
+        "docsPathsOption": "بادئات مسارات التوثيق مفصولة بفواصل (الافتراضي docs/,README.md)",
+        "docsFirst": "Docs first",
+        "docsFirstOn": "مفعّل ({{paths}})"
+      }
+    },
+    "connection": {
+      "description": "ربط حسابات Linear وJira التي يبقيها shep متزامنة، ومساحات Notion التي يقرأها",
+      "failed": "فشل أمر الاتصال",
+      "connectionArg": "المعرّف المختصر للاتصال أو معرّفه",
+      "add": {
+        "description": "ربط حساب Linear أو Jira أو Notion؛ يُختبر المفتاح قبل حفظه",
+        "providerArg": "linear أو jira أو notion",
+        "nameOption": "الاسم المعروض",
+        "spaceOption": "المساحة التي يتبع لها الاتصال (الافتراضية إن لم تُحدَّد)",
+        "siteOption": "عنوان موقع Jira، مثل https://acme.atlassian.net",
+        "emailOption": "بريد حساب Jira الذي يخصه الرمز",
+        "secretEnvOption": "قراءة المفتاح أو الرمز من متغير البيئة هذا بدلًا من السؤال",
+        "linearPrompt": "مفتاح واجهة Linear البرمجية",
+        "jiraPrompt": "رمز واجهة Jira البرمجية",
+        "badProvider": "\"{{provider}}\" غير مدعوم؛ استخدم linear أو jira أو notion",
+        "emptyEnv": "متغير البيئة {{variable}} فارغ أو غير معيّن",
+        "success": "تم ربط {{name}} ‏({{slug}}) باسم {{account}}",
+        "notionPrompt": "رمز تكامل Notion"
+      },
+      "ls": {
+        "description": "عرض الاتصالات",
+        "title": "الاتصالات",
+        "nameColumn": "الاسم",
+        "slugColumn": "المعرّف المختصر",
+        "providerColumn": "الأداة",
+        "accountColumn": "الحساب",
+        "statusColumn": "الحالة",
+        "empty": "لا توجد اتصالات بعد. أضف واحدًا عبر shep connection add."
+      },
+      "test": {
+        "description": "إعادة التحقق من بيانات اعتماد الاتصال",
+        "success": "{{name}} يعمل ({{account}})"
+      },
+      "rm": {
+        "description": "إزالة اتصال وقواعد مزامنته؛ تبقى عناصر العمل المتزامنة",
+        "success": "تمت إزالة الاتصال {{ref}}"
+      }
+    },
+    "sync": {
+      "description": "إبقاء فرق Linear واستعلامات Jira في مشاريع shep",
+      "failed": "فشل أمر المزامنة",
+      "connectionArg": "المعرّف المختصر للاتصال أو معرّفه",
+      "ruleArg": "معرّف القاعدة (راجع shep sync rule ls)",
+      "summary": "{{created}} أُنشئت، {{updated}} حُدّثت، {{pushed}} أُرسلت، {{conflicts}} تعارضات، {{failed}} فشلت",
+      "rule": {
+        "description": "إدارة قواعد المزامنة",
+        "add": {
+          "description": "إبقاء فريق Linear أو استعلام JQL من Jira في مشروع shep",
+          "projectOption": "المعرّف المختصر لمشروع shep أو معرّفه",
+          "scopeOption": "مفتاح فريق Linear ‏(ENG) أو استعلام JQL من Jira",
+          "twoWayOption": "إرسال تغييرات shep أيضًا إلى المتتبع",
+          "everyOption": "الدقائق بين التشغيلات التلقائية (الافتراضي 15)",
+          "success": "أُضيفت القاعدة {{id}} لـ {{scope}}"
+        },
+        "ls": {
+          "description": "عرض القواعد مع آخر تشغيل",
+          "title": "قواعد المزامنة",
+          "idColumn": "المعرّف",
+          "fromColumn": "من",
+          "intoColumn": "إلى",
+          "modeColumn": "الوضع",
+          "lastRunColumn": "آخر تشغيل",
+          "never": "لم يُشغَّل",
+          "off": "(معطّلة)",
+          "empty": "لا توجد قواعد بعد. أضف واحدة عبر shep sync rule add."
+        },
+        "enable": {
+          "description": "السماح للخدمة بتشغيل قاعدة",
+          "success": "تم تفعيل القاعدة {{id}}"
+        },
+        "disable": {
+          "description": "منع الخدمة من تشغيل قاعدة",
+          "success": "تم تعطيل القاعدة {{id}}"
+        },
+        "rm": {
+          "description": "إزالة قاعدة؛ تبقى العناصر المتزامنة",
+          "success": "تمت إزالة القاعدة {{id}}"
+        }
+      },
+      "run": {
+        "description": "تشغيل قاعدة واحدة أو كل القواعد المفعّلة الآن",
+        "nothing": "لا توجد قواعد مفعّلة",
+        "conflictsNote": "حقول تغيّرت في الجانبين: {{count}}؛ احتُفظ بقيمة المتتبّع"
+      }
+    },
+    "item": {
+      "itemArg": "مفتاح عنصر العمل (PAY-42) أو المعرّف",
+      "agentOption": "الوكيل المستخدم (الافتراضي: الوكيل المُهيّأ)",
+      "failed": "فشل أمر عنصر العمل",
+      "investigate": {
+        "description": "يقرأ وكيل الشيفرة ويرتّب فرضيات السبب الجذري للخطأ",
+        "repoOption": "المستودع المقروء (الافتراضي: آخر مستودع للعنصر، ثم تطبيق المشروع)",
+        "spinner": "جارٍ التحقيق في {{key}} (نسخة للقراءة فقط من {{repository}})",
+        "starting": "جارٍ التحقيق في {{key}} في {{repository}} باستخدام {{agent}}. نسختك العاملة لا تُمسّ."
+      },
+      "hypotheses": {
+        "description": "عرض آخر تحقيق لعنصر عمل"
+      },
+      "fix": {
+        "description": "بدء ميزة إصلاح من فرضية: اختبار فاشل أولاً ثم الإصلاح",
+        "numberArg": "رقم الفرضية (1 هي الأرجح)",
+        "specOption": "تشغيل مسار المواصفات الكامل بدلاً من الوضع السريع",
+        "agentOption": "وكيل الإصلاح (الافتراضي: الوكيل الذي حقّق)",
+        "spinner": "جارٍ بدء ميزة الإصلاح",
+        "created": "الميزة {{name}} ({{id}}) تصلح {{key}} بناءً على الفرضية {{number}}.",
+        "startFailed": "أُنشئت الميزة لكنها لم تبدأ: {{error}}"
+      },
+      "render": {
+        "none": "لم يُحقَّق في {{key}} بعد. شغّل: shep item investigate {{key}} --repo <المسار>",
+        "header": "تم التحقيق في {{repository}}{{commit}} باستخدام {{agent}} — {{status}}",
+        "running": "ما زال قيد التشغيل؛ تحقق مجدداً باستخدام: shep item hypotheses {{key}}",
+        "evidence": "الأدلة",
+        "test": "اختبار فاشل",
+        "fix": "الإصلاح",
+        "next": "ابدأ إصلاحاً باستخدام: shep item fix {{key}} <الرقم>",
+        "approved": "الميزة {{feature}} تصلح الفرضية {{number}}."
+      }
+    },
+    "agentOption": {
+      "unknown": "\"{{value}}\" ليس وكيلاً مدعوماً. استخدم أحد: {{supported}}"
+    },
+    "everyOption": {
+      "invalid": "\"{{value}}\" ليس عددًا صحيحًا من الدقائق"
+    },
+    "knowledge": {
+      "description": "معرفة الفريق من Notion التي يمكن لوكلاء المساحة قراءتها",
+      "failed": "فشل أمر المعرفة",
+      "connectionArg": "المعرّف المختصر أو معرّف اتصال Notion",
+      "sourceArg": "معرّف مصدر المعرفة (راجع shep knowledge source ls)",
+      "summary": "{{added}} مضاف، {{updated}} محدَّث، {{removed}} محذوف، {{failed}} فاشل",
+      "source": {
+        "description": "إدارة صفحات Notion وقواعد بياناته التي يبقيها shep متزامنة",
+        "add": {
+          "description": "إبقاء شجرة صفحات أو قاعدة بيانات في Notion متزامنة كمعرفة لمساحة الاتصال",
+          "scopeOption": "رابط أو معرّف صفحة أو قاعدة بيانات في Notion مشاركة مع التكامل",
+          "productLineOption": "فقط لمستودعات خط المنتجات هذا (المعرّف المختصر أو المعرّف)",
+          "everyOption": "الدقائق بين المزامنات التلقائية (الافتراضي 60)",
+          "success": "أُضيف مصدر المعرفة {{id}} لـ {{title}}؛ شغّل shep knowledge sync لقراءته الآن"
+        },
+        "ls": {
+          "description": "عرض مصادر المعرفة مع آخر مزامنة لها",
+          "title": "مصادر المعرفة",
+          "idColumn": "المعرّف",
+          "fromColumn": "من",
+          "documentsColumn": "مستندات",
+          "everyColumn": "كل",
+          "lastRunColumn": "آخر مزامنة",
+          "never": "لم تتم مزامنته قط",
+          "off": "(متوقف)",
+          "empty": "لا توجد مصادر معرفة بعد. أضف واحدًا باستخدام shep knowledge source add."
+        },
+        "enable": {
+          "description": "السماح للخدمة الخلفية بمزامنة مصدر",
+          "success": "تم تفعيل مصدر المعرفة {{id}}"
+        },
+        "disable": {
+          "description": "إيقاف مزامنة مصدر في الخدمة الخلفية",
+          "success": "تم تعطيل مصدر المعرفة {{id}}"
+        },
+        "rm": {
+          "description": "إزالة مصدر والمستندات التي زامنها",
+          "success": "تمت إزالة مصدر المعرفة {{id}}"
+        }
+      },
+      "sync": {
+        "description": "مزامنة مصدر معرفة واحد، أو كل المصادر المفعّلة، الآن",
+        "nothing": "لا توجد مصادر معرفة مفعّلة"
+      },
+      "ls": {
+        "description": "عرض مستندات المعرفة لمساحة",
+        "spaceOption": "المعرّف المختصر أو معرّف المساحة (الافتراضية إن لم تُحدَّد)",
+        "title": "معرفة {{space}}",
+        "titleColumn": "المستند",
+        "linkColumn": "الرابط",
+        "empty": "لا توجد مستندات معرفة في هذه المساحة بعد."
+      },
+      "search": {
+        "description": "عرض المقاطع التي سيقرؤها وكيل يعمل في مستودع لمهمة ما",
+        "queryArg": "نص المهمة للمطابقة",
+        "repoOption": "مسار المستودع (الدليل الحالي إن لم يُحدَّد)",
+        "none": "لا توجد معرفة فريق في مساحة هذا المستودع تطابق هذه المهمة."
+      }
+    },
+    "numberOption": {
+      "invalid": "يتوقع {{option}} رقمًا، وليس \"{{value}}\""
+    },
+    "signal": {
+      "description": "تسجيل أدلة على ما يحتاجه المستخدمون",
+      "failed": "فشل أمر الإشارة",
+      "spaceOption": "المعرّف المختصر أو معرّف المساحة (الافتراضية إن لم تُحدَّد)",
+      "signalArg": "معرّف الإشارة (راجع shep signal ls)",
+      "add": {
+        "description": "تسجيل إشارة: طلب أو حادث أو مشكلة أو اكتشاف",
+        "titleArg": "ملخص في سطر واحد",
+        "productLineOption": "خط المنتجات المعني (المعرّف المختصر أو المعرّف)",
+        "kindOption": "feedback أو incident أو tracker أو discovery أو manual (الافتراضي manual)",
+        "customerOption": "العميل أو الحساب المعني",
+        "revenueOption": "الإيراد الشهري المعرّض للخطر لهذا العميل",
+        "urgentOption": "يحتاج إلى اهتمام قريب",
+        "urlOption": "رابط المصدر",
+        "detailOption": "نص أطول",
+        "opportunityOption": "معرّف الفرصة لربطها بها",
+        "badKind": "\"{{kind}}\" ليس نوع إشارة؛ استخدم feedback أو incident أو tracker أو discovery أو manual",
+        "success": "تم تسجيل الإشارة {{id}}"
+      },
+      "ls": {
+        "description": "عرض الإشارات، الأحدث أولًا",
+        "unlinkedOption": "الإشارات غير المرتبطة بفرصة فقط",
+        "title": "الإشارات",
+        "idColumn": "المعرّف",
+        "titleColumn": "الإشارة",
+        "kindColumn": "النوع",
+        "customerColumn": "العميل",
+        "opportunityColumn": "الفرصة",
+        "unlinked": "غير مرتبطة",
+        "empty": "لا توجد إشارات بعد. سجّل واحدة باستخدام shep signal add."
+      },
+      "rm": {
+        "description": "إزالة إشارة",
+        "success": "تمت إزالة الإشارة {{id}}"
+      }
+    },
+    "opportunity": {
+      "description": "رهانات مدعومة بإشارات، مرتبة حسب القيمة لكل ساعة مراجعة",
+      "failed": "فشل أمر الفرصة",
+      "opportunityArg": "معرّف الفرصة (راجع shep opportunity ls)",
+      "signalArg": "معرّف الإشارة (راجع shep signal ls)",
+      "spaceOption": "المعرّف المختصر أو معرّف المساحة (الافتراضية إن لم تُحدَّد)",
+      "hoursOption": "الساعات المقدّرة للمراجعة البشرية حتى الدمج",
+      "confidenceOption": "الثقة في تحقيق القيمة، من 0 إلى 1 (الافتراضي 0.5)",
+      "strategicOption": "تخدم هدفًا استراتيجيًا للمساحة",
+      "problemOption": "المشكلة التي تحلها، بكلمات المستخدمين",
+      "add": {
+        "description": "صياغة فرصة جديدة",
+        "titleArg": "اسم الرهان في سطر واحد",
+        "productLineOption": "خط المنتجات المعني (المعرّف المختصر أو المعرّف)",
+        "success": "تم اقتراح الفرصة {{id}}"
+      },
+      "estimate": {
+        "description": "تغيير تقدير الفرصة أو الثقة أو المشكلة",
+        "success": "تم تحديث الفرصة {{id}}"
+      },
+      "link": {
+        "description": "ربط إشارة بفرصة في مساحتها",
+        "success": "الإشارة {{signal}} تدعم {{opportunity}}"
+      },
+      "unlink": {
+        "description": "فك ربط إشارة بفرصتها",
+        "success": "تم فك ربط الإشارة {{signal}}"
+      },
+      "accept": {
+        "description": "قبول فرصة: تتنافس على سعة المراجعة",
+        "success": "تم قبول {{title}}"
+      },
+      "drop": {
+        "description": "استبعاد فرصة مع ذكر السبب",
+        "reasonOption": "سبب الاستبعاد",
+        "success": "تم استبعاد {{title}}"
+      },
+      "build": {
+        "description": "تحويل فرصة إلى عنصر عمل في مشروع",
+        "projectOption": "المعرّف المختصر أو معرّف المشروع",
+        "success": "يجري بناء {{title}} كعنصر العمل {{workItem}}"
+      },
+      "ls": {
+        "description": "ترتيب الفرص المفتوحة وتمييز الخط (▶) الذي يتسع له هذا الأسبوع",
+        "title": "الفرص في {{space}} — {{used}} من {{capacity}} ساعة مراجعة في الخط",
+        "idColumn": "المعرّف",
+        "titleColumn": "الفرصة",
+        "statusColumn": "الحالة",
+        "scoreColumn": "القيمة/ساعة",
+        "hoursColumn": "الساعات",
+        "evidenceColumn": "الأدلة",
+        "empty": "لا توجد فرص مفتوحة. صغ واحدة باستخدام shep opportunity add.",
+        "unlinked": "إشارات غير مرتبطة بفرصة بعد: {{count}} (shep signal ls --unlinked)"
+      },
+      "show": {
+        "description": "عرض فرصة مع أدلتها ودرجتها",
+        "score": "{{score}} قيمة لكل ساعة مراجعة (القيمة {{value}}، {{hours}} ساعة، الثقة {{confidence}})",
+        "dropped": "مستبعدة: {{reason}}"
+      },
+      "weights": {
+        "description": "عرض أو ضبط أوزان المساحة وسعة المراجعة الأسبوعية",
+        "reachOption": "قيمة كل عميل",
+        "revenueOption": "قيمة كل 1000 شهريًا معرّضة للخطر",
+        "urgencyOption": "قيمة كل إشارة عاجلة",
+        "strategicOption": "قيمة مضافة للرهان الاستراتيجي",
+        "capacityOption": "ساعات المراجعة البشرية أسبوعيًا",
+        "current": "الانتشار {{reach}} · الإيراد {{revenue}} · الإلحاح {{urgency}} · استراتيجي {{strategic}} · السعة {{capacity}} ساعة/أسبوع"
+      },
+      "evidenceParts": {
+        "signals_one": "{{count}} إشارة",
+        "signals_few": "{{count}} إشارات",
+        "signals_many": "{{count}} إشارة",
+        "signals_other": "{{count}} إشارة",
+        "customers_one": "{{count}} عميل",
+        "customers_few": "{{count}} عملاء",
+        "customers_many": "{{count}} عميلًا",
+        "customers_other": "{{count}} عميل",
+        "urgent_one": "{{count}} عاجلة",
+        "urgent_few": "{{count}} عاجلة",
+        "urgent_many": "{{count}} عاجلة",
+        "urgent_other": "{{count}} عاجلة",
+        "revenue": "{{revenue}}/شهر"
+      }
+    },
+    "feedback": {
+      "description": "مفاتيح ترسل بها الأدوات الملاحظات، والمواضيع التي تشكّلها",
+      "failed": "فشل أمر الملاحظات",
+      "spaceOption": "المعرّف المختصر أو معرّف المساحة (الافتراضية إن لم تُحدَّد)",
+      "key": {
+        "description": "إدارة مفاتيح الملاحظات",
+        "keyArg": "معرّف المفتاح (راجع shep feedback key ls)",
+        "create": {
+          "description": "إنشاء مفتاح ترسله أداة لنشر الملاحظات في مساحة",
+          "nameOption": "أي أداة أو سكربت يستخدمه",
+          "success": "أُنشئ مفتاح ملاحظات لـ {{name}}. انسخه الآن؛ لن يُعرض مرة أخرى:",
+          "once": "أرسله بصيغة \"Authorization: Bearer <المفتاح>\" مع كل POST إلى {{path}} على خادم shep."
+        },
+        "ls": {
+          "description": "عرض مفاتيح الملاحظات",
+          "title": "مفاتيح الملاحظات",
+          "idColumn": "المعرّف",
+          "nameColumn": "الأداة",
+          "prefixColumn": "المفتاح",
+          "usedColumn": "آخر استخدام",
+          "revoked": "ملغى",
+          "never": "لم يُستخدم",
+          "empty": "لا توجد مفاتيح بعد. أنشئ واحدًا باستخدام shep feedback key create."
+        },
+        "revoke": {
+          "description": "إلغاء مفتاح: تُرفض الإرسالات به",
+          "success": "تم إلغاء مفتاح الملاحظات {{id}}"
+        }
+      },
+      "themes": {
+        "description": "تجميع الإشارات غير المرتبطة في مساحة إلى مواضيع",
+        "title": "المواضيع في {{space}}",
+        "keyColumn": "الموضوع",
+        "themeColumn": "الكلمات",
+        "evidenceColumn": "الأدلة",
+        "empty": "لا مواضيع: لا توجد إشارتان غير مرتبطتين تتشاركان كلمات كافية."
+      },
+      "promote": {
+        "description": "تحويل موضوع إلى فرصة مع ربط إشاراته",
+        "themeArg": "مفتاح الموضوع (راجع shep feedback themes)",
+        "titleOption": "عنوان الفرصة (كلمات الموضوع إن لم يُحدَّد)",
+        "success": "اقتُرحت {{title}} ({{id}})؛ الإشارات المرتبطة: {{count}}"
+      }
+    },
+    "discovery": {
+      "description": "وكيل يقرأ الإشارات غير المرتبطة في مساحة ويقترح فرصًا",
+      "failed": "فشل أمر الاكتشاف",
+      "spaceOption": "المعرّف المختصر أو معرّف المساحة (الافتراضية إن لم تُحدَّد)",
+      "run": {
+        "description": "تشغيل الاكتشاف في مساحة الآن",
+        "agentOption": "الوكيل المستخدم (تنطبق قواعد المساحة)",
+        "started": "جارٍ قراءة أدلة المساحة؛ قد يستغرق ذلك بضع دقائق…",
+        "success": "الإشارات المقروءة: {{read}} · الفرص المقترحة: {{proposed}} · الاقتراحات المستبعدة: {{dropped}}"
+      },
+      "ls": {
+        "description": "عرض عمليات الاكتشاف في مساحة",
+        "title": "عمليات الاكتشاف",
+        "whenColumn": "البدء",
+        "statusColumn": "الحالة",
+        "resultColumn": "النتيجة",
+        "result": "اقتُرحت {{proposed}} من {{read}} إشارة (استُبعد {{dropped}})",
+        "empty": "لم يعمل الاكتشاف في هذه المساحة بعد."
+      },
+      "schedule": {
+        "description": "تشغيل الاكتشاف في مساحة كل N ساعة، أو إيقافه",
+        "everyOption": "الساعات بين التشغيلات (1 إلى 720)",
+        "offOption": "إيقاف الاكتشاف المجدول",
+        "needEvery": "حدد --every <ساعات> أو --off",
+        "on": "يعمل الاكتشاف كل {{hours}} ساعة",
+        "off": "الاكتشاف المجدول متوقف"
+      }
+    },
+    "incident": {
+      "description": "حوادث الإنتاج: فتح وتحليل وتنفيذ إجراء على الحمل وإغلاق",
+      "failed": "فشل أمر الحادث",
+      "spaceOption": "المعرّف المختصر أو معرّف المساحة (الافتراضية إن لم تُحدَّد)",
+      "incidentArg": "معرّف الحادث (راجع shep incident ls)",
+      "actionIdArg": "معرّف الإجراء (راجع shep incident show)",
+      "badSeverity": "\"{{value}}\" ليست درجة خطورة؛ استخدم {{severities}}",
+      "badAction": "\"{{value}}\" ليس إجراءً؛ استخدم {{actions}}",
+      "recovered": "تعافى",
+      "notRecovered": "لم يتعافَ",
+      "awaiting": "بانتظار الموافقة: {{action}} — شغّل shep incident approve {{id}}",
+      "open": {
+        "description": "فتح حادث",
+        "titleArg": "ملخص في سطر واحد",
+        "severityOption": "critical أو major (الافتراضي) أو minor",
+        "detailOption": "ما الذي يحدث",
+        "urlOption": "رابط التنبيه أو لوحة المتابعة",
+        "workloadOption": "الـ deployment المعني في Kubernetes",
+        "namespaceOption": "مساحة الأسماء الخاصة به (الافتراضي: default)",
+        "contextOption": "سياق kubeconfig الخاص به (الافتراضي: الحالي)",
+        "success": "فُتح الحادث {{id}}: {{title}}"
+      },
+      "ls": {
+        "description": "عرض الحوادث، الأحدث أولًا",
+        "openOption": "الحوادث غير المحلولة فقط",
+        "title": "الحوادث",
+        "idColumn": "المعرّف",
+        "titleColumn": "الحادث",
+        "severityColumn": "الخطورة",
+        "statusColumn": "الحالة",
+        "workloadColumn": "الحمل",
+        "empty": "لا توجد حوادث."
+      },
+      "show": {
+        "description": "عرض حادث مع خطه الزمني وإجراءاته"
+      },
+      "note": {
+        "description": "إضافة ملاحظة إلى الخط الزمني",
+        "textArg": "الملاحظة",
+        "success": "أُضيفت الملاحظة"
+      },
+      "triage": {
+        "description": "قراءة الحمل وسؤال وكيل عن الأسباب وإجراء واحد",
+        "agentOption": "الوكيل المستخدم (تنطبق قواعد المساحة)",
+        "started": "جارٍ قراءة الحمل وسؤال الوكيل؛ قد يستغرق ذلك بضع دقائق…"
+      },
+      "act": {
+        "description": "إعادة تشغيل الحمل أو التراجع عنه أو تغيير حجمه الآن",
+        "actionArg": "restart أو rollback أو scale",
+        "replicasOption": "عدد النسخ، لـ scale",
+        "reasonOption": "السبب"
+      },
+      "approve": {
+        "description": "الموافقة على إجراء مقترح؛ يعمل فورًا"
+      },
+      "reject": {
+        "description": "رفض إجراء مقترح",
+        "reasonOption": "السبب",
+        "success": "رُفض الإجراء {{id}}"
+      },
+      "resolve": {
+        "description": "حل حادث؛ يُكتب تقرير ما بعد الحادث من الخط الزمني ما لم يُقدَّم",
+        "postmortemOption": "تقريرك (Markdown)",
+        "success": "حُل {{title}}"
+      }
+    },
+    "outcome": {
+      "description": "ما حدث بعد إطلاق الفرص: البلاغات قبلها وبعدها، العملاء الذين يجب إبلاغهم، والمعايرة",
+      "failed": "فشل أمر outcome",
+      "spaceOption": "المعرّف المختصر للمساحة أو معرّفها (المساحة الافتراضية إن لم يُحدَّد)",
+      "opportunityArg": "معرّف الفرصة",
+      "ls": {
+        "description": "عرض الفرص التي أُطلقت في مساحة ونتائجها",
+        "title": "النتائج — {{space}}",
+        "opportunityColumn": "الفرصة",
+        "shippedColumn": "أُطلقت",
+        "verdictColumn": "الحكم",
+        "reportsColumn": "البلاغات",
+        "tellColumn": "للإبلاغ",
+        "empty": "لم يُطلق شيء في هذه المساحة بعد."
+      },
+      "check": {
+        "description": "إطلاق الفرص التي اكتمل عنصر عملها الآن والحكم على النتائج المستحقة",
+        "summary": "أُطلقت {{shipped}}، أُعيد فتح {{reopened}}، حُكم على {{judged}}",
+        "shipped": "أُطلقت:",
+        "reopened": "عادت إلى مقبولة:"
+      },
+      "ship": {
+        "description": "وضع علامة إطلاق على فرصة يدويًا",
+        "success": "أُطلقت {{title}}؛ يُحكم على نتيجتها في {{date}}"
+      },
+      "tell": {
+        "description": "عرض العملاء الذين يجب إبلاغهم بالإطلاق، أو وضع علامة أنهم أُبلغوا",
+        "doneOption": "وضع علامة أن العملاء أُبلغوا",
+        "told": "العملاء الذين وُضعت لهم علامة الإبلاغ: {{told}}",
+        "nobody": "تم إبلاغ جميع العملاء.",
+        "note": "أخبرهم: «{{title}}» أُطلقت — شكرًا لإخبارنا بما تحتاجونه.",
+        "markHint": "عندما يعلمون: shep outcome tell {{id}} --done"
+      },
+      "hours": {
+        "description": "تسجيل ساعات المراجعة البشرية التي استغرقتها فرصة مُطلقة فعليًا",
+        "hoursArg": "الساعات، أكثر من 0",
+        "success": "سُجّلت {{hours}} ساعة مراجعة"
+      },
+      "calibration": {
+        "hours": "ساعات المراجعة الفعلية تساوي {{ratio}}× التقديرات (سُجّل {{timed}})",
+        "noHours": "لم تُسجَّل ساعات مراجعة فعلية بعد",
+        "solved": "حُلّت {{solved}} من {{judged}} نتيجة محكوم عليها",
+        "noVerdicts": "لم يُحكم على أي نتيجة بعد"
+      }
+    },
+    "autopilot": {
+      "description": "ما يبدؤه shep بنفسه في مساحة: التحقيقات والإصلاحات وخط الأسبوع",
+      "failed": "فشل أمر autopilot",
+      "spaceOption": "المعرّف المختصر للمساحة أو معرّفها (المساحة الافتراضية إن لم يُحدَّد)",
+      "on": "مفعّل",
+      "off": "متوقف",
+      "investigate": "التحقيق في العناصر العاجلة",
+      "fix": "إصلاح الفرضيات الموثوقة",
+      "mergeFixes": "تُدمج الإصلاحات دون شخص",
+      "budget": "إصلاحات في اليوم",
+      "fillLine": "بناء خط الأسبوع",
+      "project": "مشروع الخط",
+      "pass": "حُقّق في {{investigated}} · أُصلح {{fixed}} · بُني {{built}}",
+      "show": {
+        "description": "عرض سياسة autopilot لمساحة وآخر الجولات",
+        "title": "Autopilot — {{space}}",
+        "noRuns": "لا جولات بعد."
+      },
+      "set": {
+        "description": "تغيير سياسة autopilot لمساحة",
+        "investigateOption": "التحقيق في العناصر العاجلة المفتوحة بلا تحقيق",
+        "fixOption": "بدء الإصلاح عندما تكون الفرضية الأولى High",
+        "mergeFixesOption": "السماح بدمج هذه الإصلاحات دون شخص",
+        "fillLineOption": "بناء الفرص المقبولة داخل خط الأسبوع",
+        "offOption": "إيقاف هذا الجزء",
+        "projectOption": "المشروع الذي يُبنى فيه الخط (معرّف أو معرّف مختصر)",
+        "clearProjectOption": "التوقف عن بناء الخط في مشروع",
+        "budgetOption": "الحد الأقصى للإصلاحات خلال 24 ساعة (0 إلى 20)",
+        "success": "حُفظت سياسة autopilot"
+      },
+      "run": {
+        "description": "تشغيل جولة autopilot في مساحة الآن",
+        "started": "جارٍ تشغيل جولة autopilot؛ قد تستغرق التحقيقات دقائق كثيرة…"
+      }
+    },
+    "factory": {
+      "description": "مصنع البرمجيات في لمحة",
+      "failed": "فشل أمر factory",
+      "spaceOption": "المعرّف المختصر للمساحة أو معرّفها (المساحة الافتراضية إن لم يُحدَّد)",
+      "status": {
+        "description": "ما يفعله مصنع المساحة وما ينتظر الأشخاص",
+        "title": "المصنع — {{space}}",
+        "line": "الخط",
+        "lineValue": "{{used}}/{{capacity}} ساعة مراجعة، {{inLine}} في الخط، {{waiting}} منتظرة",
+        "building": "قيد البناء",
+        "incidents": "حوادث مفتوحة",
+        "actions": "إجراءات بانتظار الموافقة",
+        "outcomes": "نتائج معلّقة",
+        "customers": "عملاء للإبلاغ",
+        "autopilot": "Autopilot",
+        "features": "الميزات",
+        "featuresValue": "قيد التنفيذ: {{inFlight}}، بانتظار الموافقة: {{waiting}}"
       }
     }
   },

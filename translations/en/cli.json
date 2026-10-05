@@ -494,6 +494,22 @@
         "notWaitingForApproval": "Feature \"{{name}}\" is not waiting for approval (status: {{status}})",
         "noFeaturesWaiting": "No features waiting for approval in this repository",
         "multipleFeaturesWaiting": "Multiple features waiting for approval. Specify one:"
+      },
+      "comments": {
+        "description": "Show the review comments on a feature's pull request and what shep did about them",
+        "featureArg": "Feature id or id prefix",
+        "noRefreshOption": "Use the stored comments instead of reading GitHub",
+        "failed": "PR comment command failed",
+        "title": "Review comments on {{name}}",
+        "none": "No review comments yet.",
+        "next": "Address the pending ones with: shep feat address-comments {{feature}}",
+        "round": "Last round: {{status}}, {{count}} comments{{commit}}{{error}}",
+        "commit": ", pushed {{sha}}"
+      },
+      "addressComments": {
+        "description": "Have an agent address pending review comments in the feature's worktree, push, and reply on each",
+        "commentsArg": "Comment ids or id prefixes (default: every pending comment)",
+        "spinner": "Addressing {{count}} comments"
       }
     },
     "repo": {
@@ -1098,6 +1114,684 @@
         "installed": "Installed",
         "available": "Available",
         "failed": "Failed to load plugin catalog"
+      }
+    },
+    "space": {
+      "description": "Keep bodies of work apart: spaces, product lines and the rules that place repositories",
+      "failed": "Space command failed",
+      "spaceArg": "Space name, slug or id",
+      "pathArg": "Repository path (defaults to the current directory)",
+      "nameArg": "Display name",
+      "lineArg": "Product line name, slug or id",
+      "lineOption": "Product line inside the space",
+      "descriptionOption": "Short description",
+      "colorOption": "Hex colour, for example #3456c4",
+      "ls": {
+        "description": "List spaces with their product lines, repositories and memory",
+        "title": "Spaces",
+        "nameColumn": "Name",
+        "slugColumn": "Slug",
+        "linesColumn": "Product lines",
+        "reposColumn": "Repos",
+        "memoryColumn": "Memory",
+        "defaultMarker": "(default)"
+      },
+      "show": {
+        "description": "Show which space and product line a repository is in, and why",
+        "space": "Space",
+        "productLine": "Product line",
+        "source": "Because",
+        "sourceAssignment": "pinned with shep space assign",
+        "sourceRule": "matched {{kind}} rule {{pattern}}",
+        "sourceDefault": "no rule matched, so the default space applies"
+      },
+      "new": {
+        "description": "Create a space",
+        "defaultOption": "Make it the default space",
+        "success": "Space \"{{name}}\" created ({{slug}})"
+      },
+      "edit": {
+        "description": "Rename a space or change its description or colour",
+        "success": "Space \"{{name}}\" updated"
+      },
+      "rm": {
+        "description": "Delete a space with its rules, assignments and product lines",
+        "success": "Space \"{{space}}\" deleted"
+      },
+      "default": {
+        "description": "Make a space the one unmatched repositories land in",
+        "success": "\"{{name}}\" is now the default space"
+      },
+      "line": {
+        "description": "Manage product lines inside a space",
+        "new": {
+          "description": "Add a product line to a space",
+          "success": "Product line \"{{name}}\" created ({{slug}})"
+        },
+        "rm": {
+          "description": "Remove a product line; its repositories stay in the space",
+          "success": "Product line \"{{line}}\" removed"
+        }
+      },
+      "rule": {
+        "description": "Manage the path and git-remote rules that place repositories",
+        "patternArg": "Absolute path prefix, or remote pattern such as github.com/acme/*",
+        "idArg": "Rule id (see shep space rule ls)",
+        "add": {
+          "description": "Add a rule that places matching repositories in a space",
+          "remoteOption": "Treat the pattern as a git remote even if it looks like a path",
+          "priorityOption": "Tie-breaker between equally specific rules; lower wins (default 100)",
+          "badPriority": "\"{{value}}\" is not a whole number",
+          "success": "{{kind}} rule added for {{pattern}}"
+        },
+        "ls": {
+          "description": "List rules, for one space or all",
+          "title": "Space rules",
+          "idColumn": "Id",
+          "kindColumn": "Kind",
+          "patternColumn": "Pattern",
+          "priorityColumn": "Priority",
+          "empty": "No rules yet. Add one with shep space rule add."
+        },
+        "rm": {
+          "description": "Remove a rule",
+          "success": "Rule removed"
+        }
+      },
+      "assign": {
+        "description": "Pin a repository to a space, overriding every rule",
+        "success": "{{path}} pinned to {{space}}"
+      },
+      "unassign": {
+        "description": "Remove a repository's pin so the rules apply again",
+        "success": "{{path}} follows the space rules again"
+      },
+      "config": {
+        "description": "Show or change a space's agent logins, git identity and allowed agents",
+        "claudeOption": "Claude config directory (CLAUDE_CONFIG_DIR) holding the space's Claude login",
+        "ghOption": "gh config directory (GH_CONFIG_DIR) holding the space's GitHub login",
+        "gitNameOption": "Git author name for agent commits",
+        "gitEmailOption": "Git author email for agent commits",
+        "awsProfileOption": "AWS profile (AWS_PROFILE), for example for Bedrock",
+        "bedrockOption": "Route Claude through Amazon Bedrock",
+        "noBedrockOption": "Never route Claude through Bedrock, whatever the host sets",
+        "agentsOption": "Comma-separated agent types the space allows",
+        "clearOption": "Fields to clear so they inherit the host again",
+        "badClear": "\"{{field}}\" is not a field that can be cleared",
+        "title": "{{name}} agent settings",
+        "claudeConfigDir": "Claude config dir",
+        "ghConfigDir": "gh config dir",
+        "gitAuthorName": "Git name",
+        "gitAuthorEmail": "Git email",
+        "useBedrock": "Bedrock",
+        "awsProfile": "AWS profile",
+        "allowedAgents": "Allowed agents",
+        "inherit": "inherit from host",
+        "on": "on",
+        "off": "off",
+        "any": "any",
+        "environment": "Environment for agent processes",
+        "sets": "Sets",
+        "removes": "Removes",
+        "success": "Agent settings for {{name}} saved",
+        "prCommentsOption": "Which PR review comments shep answers on its own: off, mention (#shep) or all",
+        "resolveThreadsOption": "Resolve a review thread after changing code for it",
+        "noResolveThreadsOption": "Leave review threads for the reviewer to resolve",
+        "prComments": "PR comments answered",
+        "resolveThreads": "Resolve threads",
+        "defaultValue": "{{value}} (default)",
+        "badTrigger": "\"{{value}}\" is not a PR comment trigger. Use one of: {{triggers}}",
+        "autoActions": "Runs on incidents unasked",
+        "autoActionsOption": "Runtime actions shep runs on an incident without asking: restart, rollback, scale (comma-separated)",
+        "none": "none",
+        "docsFirstOption": "Agents write user-facing docs while planning; a change without docs waits for a person before merging",
+        "noDocsFirstOption": "Turn docs first off",
+        "docsPathsOption": "Documentation path prefixes, comma-separated (default docs/,README.md)",
+        "docsFirst": "Docs first",
+        "docsFirstOn": "On ({{paths}})"
+      }
+    },
+    "connection": {
+      "description": "Connect Linear and Jira accounts shep keeps in sync, and Notion workspaces it reads",
+      "failed": "Connection command failed",
+      "connectionArg": "Connection slug or id",
+      "add": {
+        "description": "Connect a Linear, Jira or Notion account; the key is tested before it is saved",
+        "providerArg": "linear, jira or notion",
+        "nameOption": "Display name",
+        "spaceOption": "Space the connection belongs to (default space if omitted)",
+        "siteOption": "Jira site URL, for example https://acme.atlassian.net",
+        "emailOption": "Jira account email the token belongs to",
+        "secretEnvOption": "Read the API key or token from this environment variable instead of prompting",
+        "linearPrompt": "Linear API key",
+        "jiraPrompt": "Jira API token",
+        "badProvider": "\"{{provider}}\" is not supported; use linear, jira or notion",
+        "emptyEnv": "The environment variable {{variable}} is empty or not set",
+        "success": "Connected {{name}} ({{slug}}) as {{account}}",
+        "notionPrompt": "Notion integration token"
+      },
+      "ls": {
+        "description": "List connections",
+        "title": "Connections",
+        "nameColumn": "Name",
+        "slugColumn": "Slug",
+        "providerColumn": "Tool",
+        "accountColumn": "Account",
+        "statusColumn": "Status",
+        "empty": "No connections yet. Add one with shep connection add."
+      },
+      "test": {
+        "description": "Check a connection's credentials again",
+        "success": "{{name}} works ({{account}})"
+      },
+      "rm": {
+        "description": "Remove a connection and its sync rules; synced work items stay",
+        "success": "Connection {{ref}} removed"
+      }
+    },
+    "sync": {
+      "description": "Keep Linear teams and Jira queries in shep projects",
+      "failed": "Sync command failed",
+      "connectionArg": "Connection slug or id",
+      "ruleArg": "Sync rule id (see shep sync rule ls)",
+      "summary": "{{created}} created, {{updated}} updated, {{pushed}} pushed, {{conflicts}} conflicts, {{failed}} failed",
+      "rule": {
+        "description": "Manage sync rules",
+        "add": {
+          "description": "Keep a Linear team or Jira JQL query in a shep project",
+          "projectOption": "shep project slug or id",
+          "scopeOption": "Linear team key (ENG) or Jira JQL query",
+          "twoWayOption": "Also push shep changes back to the tracker",
+          "everyOption": "Minutes between automatic runs (default 15)",
+          "success": "Sync rule {{id}} added for {{scope}}"
+        },
+        "ls": {
+          "description": "List sync rules with their last run",
+          "title": "Sync rules",
+          "idColumn": "Id",
+          "fromColumn": "From",
+          "intoColumn": "Into",
+          "modeColumn": "Mode",
+          "lastRunColumn": "Last run",
+          "never": "never ran",
+          "off": "(off)",
+          "empty": "No sync rules yet. Add one with shep sync rule add."
+        },
+        "enable": {
+          "description": "Let the daemon run a rule",
+          "success": "Sync rule {{id}} enabled"
+        },
+        "disable": {
+          "description": "Stop the daemon running a rule",
+          "success": "Sync rule {{id}} disabled"
+        },
+        "rm": {
+          "description": "Remove a sync rule; synced work items stay",
+          "success": "Sync rule {{id}} removed"
+        }
+      },
+      "run": {
+        "description": "Run one sync rule, or every enabled rule, now",
+        "nothing": "No enabled sync rules",
+        "conflictsNote": "Fields changed on both sides: {{count}}; the tracker's value was kept"
+      }
+    },
+    "item": {
+      "itemArg": "Work item key (PAY-42) or id",
+      "agentOption": "Agent to use (default: the configured agent)",
+      "failed": "Work item command failed",
+      "investigate": {
+        "description": "Have an agent read the code and rank root-cause hypotheses for a bug",
+        "repoOption": "Repository to read (default: the item's last one, then its project's application)",
+        "spinner": "Investigating {{key}} (read-only copy of {{repository}})",
+        "starting": "Investigating {{key}} in {{repository}} with {{agent}}. Your checkout is not touched."
+      },
+      "hypotheses": {
+        "description": "Show the latest investigation of a work item"
+      },
+      "fix": {
+        "description": "Start a fix feature from a hypothesis: failing test first, then the fix",
+        "numberArg": "Hypothesis number (1 is the most likely)",
+        "specOption": "Run the full spec pipeline instead of Fast mode",
+        "agentOption": "Agent for the fix (default: the investigating agent)",
+        "spinner": "Starting the fix feature",
+        "created": "Feature {{name}} ({{id}}) is fixing {{key}} from hypothesis {{number}}.",
+        "startFailed": "The feature was created but did not start: {{error}}"
+      },
+      "render": {
+        "none": "{{key}} has not been investigated. Run: shep item investigate {{key}} --repo <path>",
+        "header": "Investigated {{repository}}{{commit}} with {{agent}} — {{status}}",
+        "running": "Still running; check again with: shep item hypotheses {{key}}",
+        "evidence": "Evidence",
+        "test": "Failing test",
+        "fix": "Fix",
+        "next": "Start a fix with: shep item fix {{key}} <number>",
+        "approved": "Hypothesis {{number}} is being fixed by feature {{feature}}."
+      }
+    },
+    "agentOption": {
+      "unknown": "\"{{value}}\" is not a supported agent. Use one of: {{supported}}"
+    },
+    "everyOption": {
+      "invalid": "\"{{value}}\" is not a whole number of minutes"
+    },
+    "knowledge": {
+      "description": "Team knowledge from Notion that agents in a space can read",
+      "failed": "Knowledge command failed",
+      "connectionArg": "Notion connection slug or id",
+      "sourceArg": "Knowledge source id (see shep knowledge source ls)",
+      "summary": "{{added}} added, {{updated}} updated, {{removed}} removed, {{failed}} failed",
+      "source": {
+        "description": "Manage the Notion pages and databases shep keeps in sync",
+        "add": {
+          "description": "Keep a Notion page tree or database in sync as knowledge of the connection's space",
+          "scopeOption": "Link or id of a Notion page or database shared with the integration",
+          "productLineOption": "Only for repositories of this product line (slug or id)",
+          "everyOption": "Minutes between automatic syncs (default 60)",
+          "success": "Knowledge source {{id}} added for {{title}}; run shep knowledge sync to read it now"
+        },
+        "ls": {
+          "description": "List knowledge sources with their last sync",
+          "title": "Knowledge sources",
+          "idColumn": "Id",
+          "fromColumn": "From",
+          "documentsColumn": "Docs",
+          "everyColumn": "Every",
+          "lastRunColumn": "Last sync",
+          "never": "never synced",
+          "off": "(off)",
+          "empty": "No knowledge sources yet. Add one with shep knowledge source add."
+        },
+        "enable": {
+          "description": "Let the daemon sync a source",
+          "success": "Knowledge source {{id}} enabled"
+        },
+        "disable": {
+          "description": "Stop the daemon syncing a source",
+          "success": "Knowledge source {{id}} disabled"
+        },
+        "rm": {
+          "description": "Remove a source and the documents it synced",
+          "success": "Knowledge source {{id}} removed"
+        }
+      },
+      "sync": {
+        "description": "Sync one knowledge source, or every enabled one, now",
+        "nothing": "No enabled knowledge sources"
+      },
+      "ls": {
+        "description": "List the knowledge documents of a space",
+        "spaceOption": "Space slug or id (default space if omitted)",
+        "title": "Knowledge of {{space}}",
+        "titleColumn": "Document",
+        "linkColumn": "Link",
+        "empty": "No knowledge documents in this space yet."
+      },
+      "search": {
+        "description": "Show the passages an agent working in a repository would read for a task",
+        "queryArg": "Task text to match",
+        "repoOption": "Repository path (current directory if omitted)",
+        "none": "No team knowledge matches that task in this repository's space."
+      }
+    },
+    "numberOption": {
+      "invalid": "{{option}} expects a number, not \"{{value}}\""
+    },
+    "signal": {
+      "description": "Record evidence of what users need",
+      "failed": "Signal command failed",
+      "spaceOption": "Space slug or id (default space if omitted)",
+      "signalArg": "Signal id (see shep signal ls)",
+      "add": {
+        "description": "Record a signal: a request, an incident, an issue or a finding",
+        "titleArg": "One-line summary",
+        "productLineOption": "Product line it concerns (slug or id)",
+        "kindOption": "feedback, incident, tracker, discovery or manual (default manual)",
+        "customerOption": "Customer or account behind it",
+        "revenueOption": "Revenue at stake per month for that customer",
+        "urgentOption": "Needs attention soon",
+        "urlOption": "Link to the original",
+        "detailOption": "Longer text",
+        "opportunityOption": "Opportunity id to link it to",
+        "badKind": "\"{{kind}}\" is not a signal kind; use feedback, incident, tracker, discovery or manual",
+        "success": "Signal {{id}} recorded"
+      },
+      "ls": {
+        "description": "List signals, newest first",
+        "unlinkedOption": "Only signals not linked to an opportunity",
+        "title": "Signals",
+        "idColumn": "Id",
+        "titleColumn": "Signal",
+        "kindColumn": "Kind",
+        "customerColumn": "Customer",
+        "opportunityColumn": "Opportunity",
+        "unlinked": "not linked",
+        "empty": "No signals yet. Record one with shep signal add."
+      },
+      "rm": {
+        "description": "Remove a signal",
+        "success": "Signal {{id}} removed"
+      }
+    },
+    "opportunity": {
+      "description": "Bets backed by signals, ranked by value per review hour",
+      "failed": "Opportunity command failed",
+      "opportunityArg": "Opportunity id (see shep opportunity ls)",
+      "signalArg": "Signal id (see shep signal ls)",
+      "spaceOption": "Space slug or id (default space if omitted)",
+      "hoursOption": "Estimated hours of human review to merge it",
+      "confidenceOption": "Confidence it delivers the value, from 0 to 1 (default 0.5)",
+      "strategicOption": "It advances a strategic goal of the space",
+      "problemOption": "The problem it solves, in the users' terms",
+      "add": {
+        "description": "Shape a new opportunity",
+        "titleArg": "One-line name of the bet",
+        "productLineOption": "Product line it concerns (slug or id)",
+        "success": "Opportunity {{id}} proposed"
+      },
+      "estimate": {
+        "description": "Change an opportunity's estimate, confidence or problem",
+        "success": "Opportunity {{id}} updated"
+      },
+      "link": {
+        "description": "Link a signal to an opportunity of its space",
+        "success": "Signal {{signal}} supports {{opportunity}}"
+      },
+      "unlink": {
+        "description": "Unlink a signal from its opportunity",
+        "success": "Signal {{signal}} unlinked"
+      },
+      "accept": {
+        "description": "Accept an opportunity: it competes for review capacity",
+        "success": "Accepted {{title}}"
+      },
+      "drop": {
+        "description": "Drop an opportunity, saying why",
+        "reasonOption": "Why it is dropped",
+        "success": "Dropped {{title}}"
+      },
+      "build": {
+        "description": "Turn an opportunity into a work item of a project",
+        "projectOption": "Project slug or id",
+        "success": "Building {{title}} as work item {{workItem}}"
+      },
+      "ls": {
+        "description": "Rank open opportunities and mark the line (▶) that fits this week",
+        "title": "Opportunities in {{space}} — {{used}} of {{capacity}} review hours in the line",
+        "idColumn": "Id",
+        "titleColumn": "Opportunity",
+        "statusColumn": "Status",
+        "scoreColumn": "Value/h",
+        "hoursColumn": "Hours",
+        "evidenceColumn": "Evidence",
+        "empty": "No open opportunities. Shape one with shep opportunity add.",
+        "unlinked": "Signals not linked to an opportunity yet: {{count}} (shep signal ls --unlinked)"
+      },
+      "show": {
+        "description": "Show an opportunity with its evidence and score",
+        "score": "{{score}} value per review hour (value {{value}}, {{hours}} h, confidence {{confidence}})",
+        "dropped": "Dropped: {{reason}}"
+      },
+      "weights": {
+        "description": "Show or set a space's weights and weekly review capacity",
+        "reachOption": "Value of each customer",
+        "revenueOption": "Value of each 1,000 a month at stake",
+        "urgencyOption": "Value of each urgent signal",
+        "strategicOption": "Value added for a strategic bet",
+        "capacityOption": "Hours of human review each week",
+        "current": "reach {{reach}} · revenue {{revenue}} · urgency {{urgency}} · strategic {{strategic}} · capacity {{capacity}} h/week"
+      },
+      "evidenceParts": {
+        "signals_one": "{{count}} signal",
+        "signals_few": "{{count}} signals",
+        "signals_many": "{{count}} signals",
+        "signals_other": "{{count}} signals",
+        "customers_one": "{{count}} customer",
+        "customers_few": "{{count}} customers",
+        "customers_many": "{{count}} customers",
+        "customers_other": "{{count}} customers",
+        "urgent_one": "{{count}} urgent",
+        "urgent_few": "{{count}} urgent",
+        "urgent_many": "{{count}} urgent",
+        "urgent_other": "{{count}} urgent",
+        "revenue": "{{revenue}}/month"
+      }
+    },
+    "feedback": {
+      "description": "Keys tools use to post feedback, and the themes feedback forms",
+      "failed": "Feedback command failed",
+      "spaceOption": "Space slug or id (default space if omitted)",
+      "key": {
+        "description": "Manage feedback keys",
+        "keyArg": "Feedback key id (see shep feedback key ls)",
+        "create": {
+          "description": "Create a key a tool sends to post feedback into a space",
+          "nameOption": "Which tool or script uses it",
+          "success": "Feedback key for {{name}} created. Copy it now; it is not shown again:",
+          "once": "Send it as \"Authorization: Bearer <key>\" with each POST to {{path}} on your shep server."
+        },
+        "ls": {
+          "description": "List feedback keys",
+          "title": "Feedback keys",
+          "idColumn": "Id",
+          "nameColumn": "Tool",
+          "prefixColumn": "Key",
+          "usedColumn": "Last used",
+          "revoked": "revoked",
+          "never": "never used",
+          "empty": "No feedback keys yet. Create one with shep feedback key create."
+        },
+        "revoke": {
+          "description": "Revoke a key: posts with it are refused",
+          "success": "Feedback key {{id}} revoked"
+        }
+      },
+      "themes": {
+        "description": "Group unlinked signals of a space into themes",
+        "title": "Themes in {{space}}",
+        "keyColumn": "Theme",
+        "themeColumn": "Words",
+        "evidenceColumn": "Evidence",
+        "empty": "No themes: no two unlinked signals share enough words."
+      },
+      "promote": {
+        "description": "Turn a theme into an opportunity with its signals linked",
+        "themeArg": "Theme key (see shep feedback themes)",
+        "titleOption": "Opportunity title (the theme's words if omitted)",
+        "success": "{{title}} ({{id}}) proposed; signals linked: {{count}}"
+      }
+    },
+    "discovery": {
+      "description": "An agent reads a space's loose signals and proposes opportunities",
+      "failed": "Discovery command failed",
+      "spaceOption": "Space slug or id (default space if omitted)",
+      "run": {
+        "description": "Run discovery in a space now",
+        "agentOption": "Agent to use (the space's rules apply)",
+        "started": "Reading the space's evidence; this can take a few minutes…",
+        "success": "Signals read: {{read}} · opportunities proposed: {{proposed}} · proposals dropped: {{dropped}}"
+      },
+      "ls": {
+        "description": "List a space's discovery runs",
+        "title": "Discovery runs",
+        "whenColumn": "Started",
+        "statusColumn": "Status",
+        "resultColumn": "Result",
+        "result": "{{proposed}} proposed from {{read}} signals ({{dropped}} dropped)",
+        "empty": "Discovery has not run in this space."
+      },
+      "schedule": {
+        "description": "Run discovery in a space every N hours, or turn it off",
+        "everyOption": "Hours between runs (1 to 720)",
+        "offOption": "Turn scheduled discovery off",
+        "needEvery": "Give --every <hours> or --off",
+        "on": "Discovery runs every {{hours}} hours",
+        "off": "Scheduled discovery is off"
+      }
+    },
+    "incident": {
+      "description": "Production incidents: open, triage, act on the workload and resolve",
+      "failed": "Incident command failed",
+      "spaceOption": "Space slug or id (default space if omitted)",
+      "incidentArg": "Incident id (see shep incident ls)",
+      "actionIdArg": "Runtime action id (see shep incident show)",
+      "badSeverity": "\"{{value}}\" is not a severity; use {{severities}}",
+      "badAction": "\"{{value}}\" is not a runtime action; use {{actions}}",
+      "recovered": "recovered",
+      "notRecovered": "not recovered",
+      "awaiting": "Waiting for approval: {{action}} — run shep incident approve {{id}}",
+      "open": {
+        "description": "Open an incident",
+        "titleArg": "One-line summary",
+        "severityOption": "critical, major (default) or minor",
+        "detailOption": "What is happening",
+        "urlOption": "Link to the alert or dashboard",
+        "workloadOption": "The Kubernetes deployment it concerns",
+        "namespaceOption": "Its namespace (default: default)",
+        "contextOption": "Its kubeconfig context (default: current)",
+        "success": "Incident {{id}} opened: {{title}}"
+      },
+      "ls": {
+        "description": "List incidents, newest first",
+        "openOption": "Only unresolved incidents",
+        "title": "Incidents",
+        "idColumn": "Id",
+        "titleColumn": "Incident",
+        "severityColumn": "Severity",
+        "statusColumn": "Status",
+        "workloadColumn": "Workload",
+        "empty": "No incidents."
+      },
+      "show": {
+        "description": "Show an incident with its timeline and actions"
+      },
+      "note": {
+        "description": "Add a note to an incident's timeline",
+        "textArg": "The note",
+        "success": "Note added"
+      },
+      "triage": {
+        "description": "Read the workload and ask an agent for causes and one action",
+        "agentOption": "Agent to use (the space's rules apply)",
+        "started": "Reading the workload and asking the agent; this can take a few minutes…"
+      },
+      "act": {
+        "description": "Restart, roll back or scale the incident's workload now",
+        "actionArg": "restart, rollback or scale",
+        "replicasOption": "Replica count, for scale",
+        "reasonOption": "Why"
+      },
+      "approve": {
+        "description": "Approve a proposed action; it runs at once"
+      },
+      "reject": {
+        "description": "Turn down a proposed action",
+        "reasonOption": "Why",
+        "success": "Action {{id}} rejected"
+      },
+      "resolve": {
+        "description": "Resolve an incident; the postmortem is drafted from the timeline unless given",
+        "postmortemOption": "Your postmortem (Markdown)",
+        "success": "{{title}} resolved"
+      }
+    },
+    "outcome": {
+      "description": "What happened after opportunities shipped: reports before and after, customers to tell, calibration",
+      "failed": "Outcome command failed",
+      "spaceOption": "Space slug or id (default space if omitted)",
+      "opportunityArg": "Opportunity id",
+      "ls": {
+        "description": "List a space's shipped opportunities and their outcomes",
+        "title": "Outcomes — {{space}}",
+        "opportunityColumn": "Opportunity",
+        "shippedColumn": "Shipped",
+        "verdictColumn": "Verdict",
+        "reportsColumn": "Reports",
+        "tellColumn": "To tell",
+        "empty": "Nothing has shipped in this space yet."
+      },
+      "check": {
+        "description": "Ship opportunities whose work item is done and judge outcomes that are due, now",
+        "summary": "Shipped {{shipped}}, reopened {{reopened}}, judged {{judged}}",
+        "shipped": "shipped:",
+        "reopened": "back to accepted:"
+      },
+      "ship": {
+        "description": "Mark an opportunity shipped by hand",
+        "success": "{{title}} shipped; its outcome is judged on {{date}}"
+      },
+      "tell": {
+        "description": "Show the customers to tell that an opportunity shipped, or mark them told",
+        "doneOption": "Mark the customers told",
+        "told": "Customers marked told: {{told}}",
+        "nobody": "Every customer behind it has been told.",
+        "note": "Tell them: “{{title}}” has shipped — thank you for telling us what you needed.",
+        "markHint": "When they know: shep outcome tell {{id}} --done"
+      },
+      "hours": {
+        "description": "Record the hours of human review a shipped opportunity really took",
+        "hoursArg": "Hours, more than 0",
+        "success": "Recorded {{hours}} review hours"
+      },
+      "calibration": {
+        "hours": "Actual review hours are {{ratio}}× the estimates ({{timed}} recorded)",
+        "noHours": "No actual review hours recorded yet",
+        "solved": "{{solved}} of {{judged}} judged outcomes solved",
+        "noVerdicts": "No outcomes judged yet"
+      }
+    },
+    "autopilot": {
+      "description": "What shep starts on its own in a space: investigations, fixes and the week's line",
+      "failed": "Autopilot command failed",
+      "spaceOption": "Space slug or id (default space if omitted)",
+      "on": "on",
+      "off": "off",
+      "investigate": "Investigate urgent work items",
+      "fix": "Fix confident hypotheses",
+      "mergeFixes": "Fixes merge without a person",
+      "budget": "Fixes a day",
+      "fillLine": "Build the week's line",
+      "project": "Project for the line",
+      "pass": "investigated {{investigated}} · fixed {{fixed}} · built {{built}}",
+      "show": {
+        "description": "Show a space's autopilot policy and recent passes",
+        "title": "Autopilot — {{space}}",
+        "noRuns": "No passes yet."
+      },
+      "set": {
+        "description": "Change a space's autopilot policy",
+        "investigateOption": "Investigate open Urgent work items with no investigation",
+        "fixOption": "Start the fix when the top hypothesis has High confidence",
+        "mergeFixesOption": "Let those fixes merge without a person",
+        "fillLineOption": "Build accepted opportunities inside the week's line",
+        "offOption": "Turn this part off",
+        "projectOption": "Project to build the line into (id or slug)",
+        "clearProjectOption": "Stop building the line into a project",
+        "budgetOption": "Most fixes autopilot starts in 24 hours (0 to 20)",
+        "success": "Autopilot policy saved"
+      },
+      "run": {
+        "description": "Run an autopilot pass in a space now",
+        "started": "Running an autopilot pass; investigations can take many minutes…"
+      }
+    },
+    "factory": {
+      "description": "The software factory at a glance",
+      "failed": "Factory command failed",
+      "spaceOption": "Space slug or id (default space if omitted)",
+      "status": {
+        "description": "What a space's factory is doing and what waits on people",
+        "title": "Factory — {{space}}",
+        "line": "Line",
+        "lineValue": "{{used}}/{{capacity}} review hours, {{inLine}} in the line, {{waiting}} waiting",
+        "building": "Building",
+        "incidents": "Open incidents",
+        "actions": "Actions awaiting approval",
+        "outcomes": "Outcomes pending",
+        "customers": "Customers to tell",
+        "autopilot": "Autopilot",
+        "features": "Features",
+        "featuresValue": "{{inFlight}} in flight, {{waiting}} waiting for approval"
       }
     }
   },

@@ -11,6 +11,18 @@ This directory contains documentation about Shep AI CLI's system architecture an
 | [repository-pattern.md](./repository-pattern.md) | Data persistence and repository pattern                   |
 | [agent-system.md](./agent-system.md)             | LangGraph-based agent system design and implementation    |
 | [settings-service.md](./settings-service.md)     | Global settings service architecture                      |
+| [spaces.md](./spaces.md)                         | Spaces, product lines and memory isolation                |
+| [tracker-sync.md](./tracker-sync.md)             | Linear and Jira connections and two-way sync              |
+| [knowledge.md](./knowledge.md)                   | Notion knowledge sources and what agents read             |
+| [opportunities.md](./opportunities.md)           | Signals, opportunities, scoring and the capacity line     |
+| [feedback.md](./feedback.md)                     | Keyed feedback intake and lexical themes                  |
+| [discovery.md](./discovery.md)                   | The agent that proposes evidence-backed opportunities     |
+| [incidents.md](./incidents.md)                   | Incidents, triage, runtime actions and alert intake      |
+| [outcomes.md](./outcomes.md)                     | Ship tracking, outcome verdicts, telling customers       |
+| [docs-first.md](./docs-first.md)                 | Docs-first policy, phase instructions and the merge gate |
+| [autopilot.md](./autopilot.md)                   | Autopilot passes and factory status                      |
+| [bug-loop.md](./bug-loop.md)                     | Investigations, ranked hypotheses and test-first fixes    |
+| [pr-comment-loop.md](./pr-comment-loop.md)       | Review comments read, addressed and answered              |
 
 ## Quick Reference
 

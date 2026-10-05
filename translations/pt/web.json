@@ -444,7 +444,12 @@
     "clusters": "Clusters",
     "plugins": "Plugins",
     "projectMemory": "Project Memory",
-    "harness": "Harness"
+    "harness": "Harness",
+    "spaces": "Espaços",
+    "trackers": "Ligações",
+    "opportunities": "Oportunidades",
+    "incidents": "Incidentes",
+    "factory": "Fábrica"
   },
   "sidebar": {
     "features": "Recursos",
@@ -998,8 +1003,7 @@
       "delete": "Delete",
       "save": "Save",
       "cancel": "Cancel",
-      "makeOrgWide": "Make organization-wide",
-      "makeProjectOnly": "Make project-only"
+      "scope": "Alterar quem vê isto"
     },
     "deleteDialog": {
       "title": "Delete this memory entry?",
@@ -1007,10 +1011,18 @@
     },
     "errors": {
       "emptyContent": "Memory content cannot be empty.",
-      "updateFailed": "Failed to update the memory entry."
+      "updateFailed": "Failed to update the memory entry.",
+      "scopeFailed": "Não foi possível alterar quem vê esta entrada."
     },
     "scope": {
-      "organization": "Organization"
+      "project": "Apenas este repositório",
+      "productLine": "A sua linha de produto",
+      "space": "Todo o seu espaço",
+      "menuLabel": "Partilhado com"
+    },
+    "filter": {
+      "label": "Filtrar por espaço",
+      "allSpaces": "Todos os espaços"
     }
   },
   "sessionTree": {
@@ -1289,6 +1301,524 @@
         "toolOutputRatio": "Saída de ferramentas vista",
         "evidenceRecall": "Cobertura de evidências"
       }
+    }
+  },
+  "spaces": {
+    "title": "Espaços",
+    "subtitle": "Mantenha as áreas de trabalho separadas. A memória partilhada num espaço nunca chega a outro.",
+    "create": {
+      "title": "Novo espaço",
+      "name": "Nome",
+      "namePlaceholder": "Acme",
+      "description": "Descrição",
+      "descriptionPlaceholder": "Trabalho para o cliente Acme Corp",
+      "color": "Cor",
+      "submit": "Criar espaço"
+    },
+    "card": {
+      "default": "Predefinido",
+      "makeDefault": "Tornar predefinido",
+      "delete": "Eliminar espaço",
+      "counts": "Repositórios: {{repositories}} · Entradas de memória: {{memory}}",
+      "edit": "Editar espaço",
+      "save": "Guardar"
+    },
+    "lines": {
+      "title": "Linhas de produto",
+      "empty": "Ainda não há linhas de produto.",
+      "placeholder": "Nova linha de produto",
+      "add": "Adicionar",
+      "remove": "Remover {{name}}"
+    },
+    "rules": {
+      "title": "Regras",
+      "empty": "Sem regras. Os repositórios só chegam aqui quando fixados.",
+      "placeholder": "/work/acme ou github.com/acme/*",
+      "line": "Linha de produto dos repositórios correspondentes",
+      "noLine": "Sem linha de produto",
+      "add": "Adicionar regra",
+      "remove": "Remover regra"
+    },
+    "repositories": {
+      "title": "Repositórios",
+      "empty": "Ainda não há repositórios. Adicione um no centro de controlo.",
+      "repository": "Repositório",
+      "space": "Espaço",
+      "line": "Linha de produto",
+      "because": "Motivo",
+      "sourceAssignment": "Fixado",
+      "sourceRule": "Regra",
+      "sourceDefault": "Espaço predefinido",
+      "pin": "Fixar num espaço…",
+      "unpin": "Desafixar para aplicar as regras"
+    },
+    "deleteDialog": {
+      "title": "Eliminar {{name}}?",
+      "description": "As regras, fixações e linhas de produto são removidas. Os repositórios passam para outras regras ou para o espaço predefinido.",
+      "confirm": "Eliminar espaço",
+      "cancel": "Cancelar"
+    },
+    "errors": {
+      "actionFailed": "Não foi possível guardar a alteração. Tente novamente."
+    },
+    "agent": {
+      "title": "Definições de agentes",
+      "customised": "Personalizado",
+      "inherits": "Herda do host",
+      "claudeConfigDir": "Diretório de configuração do Claude",
+      "ghConfigDir": "Diretório de configuração do gh",
+      "gitName": "Nome de autor git",
+      "gitEmail": "Email de autor git",
+      "awsProfile": "Perfil AWS",
+      "bedrock": "Amazon Bedrock",
+      "bedrockInherit": "Herdar do host",
+      "bedrockOn": "Usar o Bedrock para o Claude",
+      "bedrockOff": "Nunca usar o Bedrock",
+      "loginHint": "Inicie sessão uma vez com o diretório definido, por exemplo CLAUDE_CONFIG_DIR=~/.claude-acme claude ou GH_CONFIG_DIR=~/.config/gh-acme gh auth login. O Shep nunca guarda as credenciais.",
+      "allowedAgents": "Agentes permitidos",
+      "allowedAgentsHint": "Sem seleção, qualquer agente é permitido.",
+      "save": "Guardar definições de agentes",
+      "prComments": "Comentários de pull requests",
+      "prCommentsHint": "Quais comentários de revisão nos pull requests do shep são respondidos sem pedir. Os outros podem ser tratados na funcionalidade.",
+      "prTrigger": {
+        "Off": "Só quando pedido",
+        "Mention": "Comentários que mencionam #shep",
+        "All": "Todos os comentários"
+      },
+      "resolveThreads": "Resolver as threads em que alterou código",
+      "autoActions": "Executadas sem perguntar em incidentes",
+      "autoActionsHint": "O Shep executa estas na carga de trabalho de um incidente sem esperar aprovação. As outras esperam alguém aprovar.",
+      "docsFirst": "Docs first",
+      "docsFirstHint": "Os agentes escrevem a documentação para usuários ao planejar e constroem a partir dela. Uma mudança que não toca a documentação espera uma pessoa antes do merge.",
+      "docsFirstOn": "Exigir docs first",
+      "docsPaths": "Caminhos de documentação"
+    }
+  },
+  "trackers": {
+    "title": "Ligações",
+    "subtitle": "Issues do Linear e Jira mantidas em projetos do shep, e páginas do Notion como conhecimento da equipe.",
+    "syncAll": "Sincronizar agora",
+    "empty": "Nenhuma conexão ainda. Adicione acima sua chave de API do Linear, token do Jira ou token de integração do Notion.",
+    "add": {
+      "title": "Adicionar uma ligação",
+      "provider": "Ferramenta",
+      "name": "Nome",
+      "space": "Espaço",
+      "site": "Site do Jira",
+      "email": "Email da conta",
+      "linearSecret": "Chave de API do Linear",
+      "jiraSecret": "Token de API do Jira",
+      "submit": "Ligar",
+      "notionSecret": "Token de integração do Notion"
+    },
+    "connection": {
+      "connected": "Ligado",
+      "error": "Erro",
+      "account": "como {{account}}",
+      "space": "espaço {{space}}",
+      "test": "Testar",
+      "remove": "Remover ligação",
+      "removeTitle": "Remover {{name}}?",
+      "removeDescription": "Suas regras de sincronização e fontes de conhecimento param e são removidas. Itens já sincronizados permanecem em seus projetos.",
+      "cancel": "Cancelar"
+    },
+    "rules": {
+      "title": "Regras de sincronização",
+      "empty": "Ainda não há regras. Adicione uma para importar issues.",
+      "noProjects": "Crie primeiro um projeto; as regras escrevem issues num projeto.",
+      "scope": "Chave de equipa Linear ou JQL do Jira",
+      "project": "Projeto",
+      "twoWay": "Bidirecional",
+      "import": "Importar",
+      "every": "a cada",
+      "minutes": "min",
+      "everyShort": "a cada {{minutes}} min",
+      "paused": "Em pausa",
+      "summary": "{{created}} criados, {{updated}} atualizados, {{pushed}} enviados, {{conflicts}} conflitos, {{failed}} falhados",
+      "never": "Ainda não executada",
+      "add": "Adicionar regra",
+      "pause": "Pausar",
+      "resume": "Retomar",
+      "runNow": "Executar agora",
+      "remove": "Remover regra"
+    },
+    "errors": {
+      "actionFailed": "Não foi possível guardar a alteração. Tente novamente."
+    },
+    "badge": {
+      "open": "Abrir {{key}} no gestor"
+    }
+  },
+  "bugLoop": {
+    "title": "Investigação",
+    "intro": "Um agente lê o repositório numa cópia descartável somente leitura e classifica as causas prováveis. Seu checkout nunca é alterado.",
+    "repository": "Repositório",
+    "noRepositories": "Adicione um repositório ao shep para investigar este item.",
+    "investigate": "Investigar",
+    "investigateAgain": "Investigar novamente",
+    "running": "O agente está lendo uma cópia somente leitura de {{repository}}…",
+    "approved": "A hipótese {{number}} está sendo corrigida.",
+    "openFeature": "Abrir a funcionalidade de correção",
+    "fullSpec": "Corrigir pelo pipeline completo de especificação em vez do modo rápido",
+    "status": {
+      "Pending": "Iniciando",
+      "Running": "Investigando",
+      "Completed": "Hipóteses prontas",
+      "Failed": "Falhou"
+    },
+    "confidence": {
+      "High": "Confiança alta",
+      "Medium": "Confiança média",
+      "Low": "Confiança baixa"
+    },
+    "hypothesis": {
+      "evidence": "Evidências",
+      "test": "Teste que falha",
+      "fix": "Correção",
+      "fixThis": "Corrigir isto",
+      "fixing": "Iniciando correção…",
+      "approved": "Em correção"
+    }
+  },
+  "prComments": {
+    "title": "Comentários de revisão",
+    "refresh": "Ler comentários do GitHub",
+    "address": "Tratar {{count}} pendentes",
+    "running": "Um agente está tratando {{count}} comentários no worktree da funcionalidade…",
+    "roundPushed": "A última rodada enviou {{sha}} e respondeu.",
+    "roundAnswered": "A última rodada respondeu sem alterar código.",
+    "roundFailed": "A última rodada falhou: {{error}}",
+    "empty": "Ainda não há comentários de revisão no pull request.",
+    "openOnGitHub": "Abrir no GitHub",
+    "status": {
+      "Pending": "Pendente",
+      "Addressing": "Em andamento",
+      "Addressed": "Tratado",
+      "Declined": "Recusado",
+      "Failed": "Falhou"
+    },
+    "kind": {
+      "Inline": "Numa linha",
+      "Conversation": "Conversa",
+      "Review": "Revisão"
+    },
+    "addressNone": "Nada a tratar"
+  },
+  "knowledge": {
+    "sources": {
+      "title": "Fontes de conhecimento",
+      "empty": "Nenhuma fonte ainda. Compartilhe uma página ou banco de dados do Notion com a integração e adicione o link.",
+      "kind": {
+        "Page": "Árvore de páginas",
+        "Database": "Banco de dados"
+      },
+      "productLine": "somente {{name}}",
+      "wholeSpace": "Espaço inteiro",
+      "productLineLabel": "Linha de produto",
+      "scope": "Link de página ou banco de dados do Notion",
+      "documents_one": "{{count}} documento",
+      "documents_few": "{{count}} documentos",
+      "documents_many": "{{count}} documentos",
+      "documents_other": "{{count}} documentos",
+      "summary": "{{added}} adicionados, {{updated}} atualizados, {{removed}} removidos, {{failed}} com falha",
+      "never": "Ainda não sincronizada",
+      "add": "Adicionar fonte",
+      "syncNow": "Sincronizar agora",
+      "remove": "Remover fonte"
+    },
+    "documents": {
+      "title": "Conhecimento da equipe",
+      "subtitle": "Páginas do Notion que os agentes de cada espaço leem quando combinam com a tarefa.",
+      "empty": "Nenhum conhecimento da equipe ainda. Adicione uma conexão do Notion e suas páginas em",
+      "connections": "Conexões"
+    }
+  },
+  "opportunities": {
+    "title": "Oportunidades",
+    "subtitle": "Apostas apoiadas por evidências, ordenadas por valor por hora de revisão.",
+    "space": "Espaço",
+    "empty": "Nenhuma oportunidade aberta neste espaço. Forme uma acima.",
+    "errors": {
+      "actionFailed": "Não foi possível salvar a alteração. Tente novamente."
+    },
+    "capacity": {
+      "title": "Capacidade de revisão desta semana",
+      "used": "{{used}} de {{capacity}} horas de revisão",
+      "waiting_one": "{{count}} aposta aceita aguarda capacidade",
+      "waiting_few": "{{count}} apostas aceitas aguardam capacidade",
+      "waiting_many": "{{count}} apostas aceitas aguardam capacidade",
+      "waiting_other": "{{count}} apostas aceitas aguardam capacidade"
+    },
+    "row": {
+      "inLine": "Na linha desta semana",
+      "outOfLine": "Fora da linha",
+      "strategic": "Estratégica",
+      "cost": "{{hours}} h · {{confidence}}% de confiança",
+      "evidenceParts": {
+        "signals_one": "{{count}} sinal",
+        "signals_few": "{{count}} sinais",
+        "signals_many": "{{count}} sinais",
+        "signals_other": "{{count}} sinais",
+        "customers_one": "{{count}} cliente",
+        "customers_few": "{{count}} clientes",
+        "customers_many": "{{count}} clientes",
+        "customers_other": "{{count}} clientes",
+        "urgent_one": "{{count}} urgente",
+        "urgent_few": "{{count}} urgentes",
+        "urgent_many": "{{count}} urgentes",
+        "urgent_other": "{{count}} urgentes",
+        "revenue": "{{revenue}}/mês"
+      }
+    },
+    "status": {
+      "Proposed": "Proposta",
+      "Accepted": "Aceita",
+      "Building": "Em construção",
+      "Shipped": "Entregue",
+      "Dropped": "Descartada"
+    },
+    "kind": {
+      "Feedback": "Feedback",
+      "Incident": "Incidente",
+      "Tracker": "Tracker",
+      "Discovery": "Descoberta",
+      "Manual": "Nota"
+    },
+    "actions": {
+      "accept": "Aceitar",
+      "build": "Construir",
+      "drop": "Descartar",
+      "cancel": "Cancelar",
+      "reason": "Por que descartar?",
+      "project": "Projeto",
+      "noProjects": "Crie um projeto primeiro; construir cria um item de trabalho nele.",
+      "ship": "Marcar entregue"
+    },
+    "inbox": {
+      "title": "Sinais a vincular ({{count}})",
+      "empty": "Todo sinal apoia uma oportunidade.",
+      "urgent": "Urgente",
+      "customerRevenue": "{{customer}} · {{revenue}}/mês",
+      "link": "Vincular a…",
+      "remove": "Remover sinal"
+    },
+    "signalForm": {
+      "title": "Registrar um sinal",
+      "signal": "Sinal",
+      "placeholder": "O que um usuário pediu, ou o que quebrou?",
+      "kind": "Tipo",
+      "customer": "Cliente",
+      "revenue": "Receita/mês",
+      "urgent": "Urgente",
+      "submit": "Registrar"
+    },
+    "opportunityForm": {
+      "title": "Formar uma oportunidade",
+      "name": "Oportunidade",
+      "placeholder": "Uma aposta que vale construir",
+      "hours": "h de revisão",
+      "confidence": "% de confiança",
+      "productLine": "Linha de produto",
+      "anyLine": "Espaço inteiro",
+      "strategic": "Estratégica",
+      "submit": "Adicionar"
+    },
+    "weights": {
+      "title": "Pesos e capacidade",
+      "formula": "Valor = alcance × clientes + receita × (receita em jogo ÷ 1.000) + urgência × sinais urgentes + estratégico. Pontuação = valor × confiança ÷ horas de revisão.",
+      "reach": "Alcance",
+      "revenue": "Receita",
+      "urgency": "Urgência",
+      "strategic": "Estratégico",
+      "weeklyReviewHours": "h de revisão/semana",
+      "save": "Salvar"
+    },
+    "themes": {
+      "title": "Temas nos sinais não vinculados",
+      "empty": "Nenhum tema ainda: nenhum par de sinais não vinculados compartilha palavras suficientes.",
+      "promote": "Promover",
+      "hours": "Horas de revisão"
+    },
+    "feedbackKeys": {
+      "title": "Chaves de feedback",
+      "subtitle": "Ferramentas enviam feedback com uma chave: {{endpoint}} com \"Authorization: Bearer <chave>\".",
+      "empty": "Nenhuma chave ainda.",
+      "name": "Ferramenta",
+      "namePlaceholder": "Zendesk, widget, script…",
+      "create": "Criar chave",
+      "secretOnce": "Copie esta chave agora; ela não será mostrada de novo.",
+      "revoke": "Revogar",
+      "revoked": "Revogada",
+      "lastUsed": "Último uso {{when}}",
+      "neverUsed": "Nunca usada"
+    },
+    "source": {
+      "Manual": "Manual",
+      "Theme": "De um tema",
+      "Discovery": "Descoberta"
+    },
+    "discovery": {
+      "title": "Descoberta",
+      "run": "Descobrir agora",
+      "discovering": "Descobrindo…",
+      "schedule": "Agendamento",
+      "off": "Desligado",
+      "everyHours": "A cada {{hours}} h",
+      "never": "A descoberta ainda não rodou neste espaço.",
+      "running": "Descoberta em andamento…",
+      "failed": "A última execução falhou: {{error}}",
+      "succeeded": "Última execução: {{proposed}} propostas a partir de {{read}} sinais, {{when}}"
+    },
+    "outcomes": {
+      "title": "Resultados",
+      "check": "Verificar agora",
+      "empty": "Nada foi entregue neste espaço ainda.",
+      "judgedOn": "Julgado em {{date}}",
+      "counts": "{{before}} relatos semelhantes antes, {{after}} depois",
+      "hours": "Horas de revisão",
+      "saveHours": "Salvar",
+      "hoursTaken": "Levou {{actual}} h de {{estimated}} h estimadas",
+      "note": "Diga a eles que “{{title}}” foi entregue:",
+      "markTold": "Marcar avisados",
+      "hoursRatio": "As horas reais de revisão são {{ratio}}× as estimativas ({{timed}} registradas)",
+      "noHours": "Nenhuma hora real de revisão registrada ainda",
+      "solvedShare": "{{solved}} de {{judged}} resultados julgados resolvidos",
+      "noVerdicts": "Nenhum resultado julgado ainda",
+      "verdict": {
+        "Pending": "Pendente",
+        "Solved": "Resolvido",
+        "Persisting": "Persiste"
+      }
+    }
+  },
+  "incidents": {
+    "title": "Incidentes",
+    "subtitle": "Problemas em produção, a triagem, os reinícios, reversões e escalonamentos que os resolvem, e o postmortem.",
+    "space": "Espaço",
+    "list": "Incidentes",
+    "empty": "Nenhum incidente neste espaço.",
+    "timeline": "Linha do tempo",
+    "actions": "Ações em execução",
+    "approve": "Aprovar",
+    "reject": "Rejeitar",
+    "recovered": "Recuperado",
+    "notRecovered": "Não recuperado",
+    "scaleTo": "Escalar para {{replicas}} réplicas",
+    "showEvidence": "Mostrar evidências",
+    "triage": "Triagem",
+    "triaging": "Fazendo triagem…",
+    "workload": "deployment/{{workload}} em {{namespace}} ({{context}})",
+    "currentContext": "contexto atual",
+    "noWorkload": "Sem carga de trabalho — as ações estão desligadas.",
+    "openLink": "Abrir o alerta",
+    "errors": {
+      "actionFailed": "A ação falhou."
+    },
+    "form": {
+      "title": "Abrir um incidente",
+      "incident": "Incidente",
+      "placeholder": "O que está errado?",
+      "severity": "Gravidade",
+      "workload": "Carga de trabalho",
+      "namespace": "Namespace",
+      "context": "Contexto",
+      "submit": "Abrir"
+    },
+    "act": {
+      "title": "Executar uma ação",
+      "kind": "Ação",
+      "replicas": "Réplicas",
+      "reason": "Por quê?",
+      "submit": "Executar",
+      "running": "Executando…"
+    },
+    "note": {
+      "title": "Nota",
+      "placeholder": "Adicionar uma nota à linha do tempo",
+      "submit": "Adicionar"
+    },
+    "resolve": {
+      "title": "Resolver",
+      "postmortem": "Postmortem",
+      "placeholder": "Escreva o postmortem ou deixe vazio para um rascunho da linha do tempo",
+      "submit": "Resolver"
+    },
+    "severity": {
+      "Critical": "Crítico",
+      "Major": "Grave",
+      "Minor": "Leve"
+    },
+    "status": {
+      "Open": "Aberto",
+      "Mitigated": "Mitigado",
+      "Resolved": "Resolvido"
+    },
+    "actionKind": {
+      "Restart": "Reiniciar",
+      "Rollback": "Reverter",
+      "Scale": "Escalar"
+    },
+    "actionStatus": {
+      "Proposed": "Aguardando aprovação",
+      "Approved": "Aprovada",
+      "Rejected": "Rejeitada",
+      "Succeeded": "Feita",
+      "Failed": "Falhou"
+    },
+    "proposedBy": {
+      "Agent": "proposta pelo agente",
+      "Person": "pedida por uma pessoa"
+    },
+    "eventKind": {
+      "Opened": "Aberto",
+      "Note": "Nota",
+      "Evidence": "Evidências",
+      "Hypothesis": "Hipótese",
+      "ActionProposed": "Ação proposta",
+      "ActionApproved": "Ação aprovada",
+      "ActionRejected": "Ação rejeitada",
+      "ActionSucceeded": "Ação feita",
+      "ActionFailed": "Ação falhou",
+      "Recovered": "Recuperado",
+      "NotRecovered": "Não recuperado",
+      "Resolved": "Resolvido"
+    }
+  },
+  "factory": {
+    "title": "Fábrica",
+    "subtitle": "O que a fábrica de software do espaço está fazendo e o que espera por pessoas.",
+    "space": "Espaço",
+    "errors": {
+      "actionFailed": "A ação falhou."
+    },
+    "cards": {
+      "line": "Horas de revisão nesta semana",
+      "building": "Em construção",
+      "incidents": "Incidentes abertos",
+      "actions": "Ações aguardando aprovação",
+      "outcomes": "Resultados pendentes",
+      "customers": "Clientes a avisar",
+      "features": "Funcionalidades em andamento",
+      "approval": "Aguardando aprovação"
+    },
+    "runs": {
+      "title": "Passagens de autopilot",
+      "none": "O autopilot não rodou neste espaço.",
+      "pass": "investigados {{investigated}} · corrigidos {{fixed}} · construídos {{built}}"
+    },
+    "autopilot": {
+      "title": "Autopilot",
+      "hint": "O que o shep inicia sozinho aqui, a cada hora. Tudo fica desligado até você ligar.",
+      "investigate": "Investigar itens urgentes abertos",
+      "fix": "Corrigir quando a hipótese principal for High",
+      "mergeFixes": "Deixar essas correções fazerem merge sem uma pessoa",
+      "fillLine": "Construir as oportunidades aceitas da linha",
+      "budget": "Correções por dia",
+      "project": "Construir em",
+      "noProject": "Sem projeto",
+      "save": "Salvar",
+      "run": "Executar agora",
+      "running": "Executando…"
     }
   }
 }

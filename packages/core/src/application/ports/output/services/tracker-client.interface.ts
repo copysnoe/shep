@@ -1,0 +1,49 @@
+/**
+ * Tracker client port (spec 122): what the sync needs from Linear or Jira,
+ * whichever it is. Implementations live in infrastructure/services/trackers.
+ */
+
+import type { ConnectionAccount, ConnectionCredentials } from './connection-verifier.interface.js';
+import type { ExternalIssue, Priority, StateGroup } from '../../../../domain/generated/output.js';
+
+export interface TrackerIssuePage {
+  issues: ExternalIssue[];
+  /** Pass back to get the next page; absent on the last page. */
+  nextPage?: string;
+}
+
+/** Fields to change on a tracker issue. */
+export interface TrackerIssueChanges {
+  title?: string;
+  description?: string;
+  stateGroup?: StateGroup;
+  priority?: Priority;
+}
+
+export interface ITrackerClient {
+  /** Checks the credentials and names the account. */
+  testConnection(): Promise<ConnectionAccount>;
+  /**
+   * One page of the issues in `scope` (Linear team key or Jira JQL) updated
+   * after `since` (every issue when unset).
+   */
+  searchUpdatedSince(
+    scope: string,
+    since: Date | undefined,
+    page?: string
+  ): Promise<TrackerIssuePage>;
+  /** Writes the changes; a status goes through the tracker's own workflow. */
+  updateIssue(scope: string, externalId: string, changes: TrackerIssueChanges): Promise<void>;
+}
+
+export interface ITrackerClientFactory {
+  create(credentials: ConnectionCredentials): ITrackerClient;
+}
+
+/** The tracker has no state or transition for a requested status group. */
+export class TrackerStatusUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TrackerStatusUnavailableError';
+  }
+}

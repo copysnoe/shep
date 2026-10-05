@@ -444,7 +444,12 @@
     "clusters": "אשכולות",
     "plugins": "Plugins",
     "projectMemory": "Project Memory",
-    "harness": "Harness"
+    "harness": "Harness",
+    "spaces": "מרחבים",
+    "trackers": "חיבורים",
+    "opportunities": "הזדמנויות",
+    "incidents": "תקלות",
+    "factory": "מפעל"
   },
   "sidebar": {
     "features": "פיצ'רים",
@@ -998,8 +1003,7 @@
       "delete": "Delete",
       "save": "Save",
       "cancel": "Cancel",
-      "makeOrgWide": "Make organization-wide",
-      "makeProjectOnly": "Make project-only"
+      "scope": "שינוי מי רואה את זה"
     },
     "deleteDialog": {
       "title": "Delete this memory entry?",
@@ -1007,10 +1011,18 @@
     },
     "errors": {
       "emptyContent": "Memory content cannot be empty.",
-      "updateFailed": "Failed to update the memory entry."
+      "updateFailed": "Failed to update the memory entry.",
+      "scopeFailed": "לא ניתן היה לשנות מי רואה רשומה זו."
     },
     "scope": {
-      "organization": "Organization"
+      "project": "מאגר זה בלבד",
+      "productLine": "קו המוצר שלו",
+      "space": "כל המרחב שלו",
+      "menuLabel": "משותף עם"
+    },
+    "filter": {
+      "label": "סינון לפי מרחב",
+      "allSpaces": "כל המרחבים"
     }
   },
   "sessionTree": {
@@ -1289,6 +1301,524 @@
         "toolOutputRatio": "פלט כלים שהוצג",
         "evidenceRecall": "כיסוי ראיות"
       }
+    }
+  },
+  "spaces": {
+    "title": "מרחבים",
+    "subtitle": "שמרו על הפרדה בין תחומי עבודה. זיכרון שמשותף במרחב אחד לעולם לא מגיע לאחר.",
+    "create": {
+      "title": "מרחב חדש",
+      "name": "שם",
+      "namePlaceholder": "Acme",
+      "description": "תיאור",
+      "descriptionPlaceholder": "עבודה עבור הלקוח Acme Corp",
+      "color": "צבע",
+      "submit": "יצירת מרחב"
+    },
+    "card": {
+      "default": "ברירת מחדל",
+      "makeDefault": "הגדרה כברירת מחדל",
+      "delete": "מחיקת מרחב",
+      "counts": "מאגרים: {{repositories}} · רשומות זיכרון: {{memory}}",
+      "edit": "עריכת מרחב",
+      "save": "שמירה"
+    },
+    "lines": {
+      "title": "קווי מוצר",
+      "empty": "אין עדיין קווי מוצר.",
+      "placeholder": "קו מוצר חדש",
+      "add": "הוספה",
+      "remove": "הסרת {{name}}"
+    },
+    "rules": {
+      "title": "כללים",
+      "empty": "אין כללים. מאגרים מגיעים לכאן רק כשהם מוצמדים.",
+      "placeholder": "‎/work/acme או github.com/acme/*",
+      "line": "קו מוצר למאגרים תואמים",
+      "noLine": "ללא קו מוצר",
+      "add": "הוספת כלל",
+      "remove": "הסרת כלל"
+    },
+    "repositories": {
+      "title": "מאגרים",
+      "empty": "אין עדיין מאגרים. הוסיפו אחד ממרכז הבקרה.",
+      "repository": "מאגר",
+      "space": "מרחב",
+      "line": "קו מוצר",
+      "because": "סיבה",
+      "sourceAssignment": "מוצמד",
+      "sourceRule": "כלל",
+      "sourceDefault": "מרחב ברירת מחדל",
+      "pin": "הצמדה למרחב…",
+      "unpin": "ביטול הצמדה כדי שהכללים יחולו"
+    },
+    "deleteDialog": {
+      "title": "למחוק את {{name}}?",
+      "description": "הכללים, ההצמדות וקווי המוצר שלו יוסרו. המאגרים שלו יעברו לכללים אחרים או למרחב ברירת המחדל.",
+      "confirm": "מחיקת מרחב",
+      "cancel": "ביטול"
+    },
+    "errors": {
+      "actionFailed": "לא ניתן היה לשמור את השינוי. נסו שוב."
+    },
+    "agent": {
+      "title": "הגדרות סוכנים",
+      "customised": "מותאם",
+      "inherits": "יורש מהמארח",
+      "claudeConfigDir": "תיקיית התצורה של Claude",
+      "ghConfigDir": "תיקיית התצורה של gh",
+      "gitName": "שם מחבר git",
+      "gitEmail": "דוא\"ל מחבר git",
+      "awsProfile": "פרופיל AWS",
+      "bedrock": "Amazon Bedrock",
+      "bedrockInherit": "ירושה מהמארח",
+      "bedrockOn": "ניתוב Claude דרך Bedrock",
+      "bedrockOff": "לעולם לא להשתמש ב-Bedrock",
+      "loginHint": "התחברו פעם אחת עם התיקייה מוגדרת, למשל CLAUDE_CONFIG_DIR=~/.claude-acme claude או GH_CONFIG_DIR=~/.config/gh-acme gh auth login. ‏Shep לעולם לא שומר את פרטי ההתחברות.",
+      "allowedAgents": "סוכנים מותרים",
+      "allowedAgentsHint": "ללא בחירה, כל הסוכנים מותרים.",
+      "save": "שמירת הגדרות הסוכנים",
+      "prComments": "הערות על pull requests",
+      "prCommentsHint": "על אילו הערות סקירה ב-pull requests של shep עונים בלי לבקש. בשאר אפשר לטפל מהפיצ׳ר.",
+      "prTrigger": {
+        "Off": "רק לפי בקשה",
+        "Mention": "הערות שמזכירות #shep",
+        "All": "כל הערה"
+      },
+      "resolveThreads": "סגירת שרשורים שבהם שונה קוד",
+      "autoActions": "רצות בלי לשאול בתקלות",
+      "autoActionsHint": "Shep מריץ את אלה על עומס העבודה של תקלה בלי לחכות לאישור. האחרות ממתינות שמישהו יאשר.",
+      "docsFirst": "Docs first",
+      "docsFirstHint": "הסוכנים כותבים את התיעוד למשתמשים בזמן התכנון ובונים לפיו. שינוי שלא נוגע בתיעוד ממתין לאדם לפני המיזוג.",
+      "docsFirstOn": "לדרוש docs first",
+      "docsPaths": "נתיבי תיעוד"
+    }
+  },
+  "trackers": {
+    "title": "חיבורים",
+    "subtitle": "משימות Linear ו-Jira נשמרות בפרויקטים של shep, ודפי Notion נשמרים כידע צוות.",
+    "syncAll": "סנכרון עכשיו",
+    "empty": "אין עדיין חיבורים. הוסיפו למעלה מפתח API של Linear, אסימון Jira או אסימון אינטגרציה של Notion.",
+    "add": {
+      "title": "הוספת חיבור",
+      "provider": "כלי",
+      "name": "שם",
+      "space": "מרחב",
+      "site": "אתר Jira",
+      "email": "דוא\"ל החשבון",
+      "linearSecret": "מפתח API של Linear",
+      "jiraSecret": "אסימון API של Jira",
+      "submit": "חיבור",
+      "notionSecret": "אסימון אינטגרציה של Notion"
+    },
+    "connection": {
+      "connected": "מחובר",
+      "error": "שגיאה",
+      "account": "בתור {{account}}",
+      "space": "מרחב {{space}}",
+      "test": "בדיקה",
+      "remove": "הסרת החיבור",
+      "removeTitle": "להסיר את {{name}}?",
+      "removeDescription": "כללי הסנכרון ומקורות הידע שלו ייעצרו ויוסרו. פריטי עבודה שכבר סונכרנו יישארו בפרויקטים שלהם.",
+      "cancel": "ביטול"
+    },
+    "rules": {
+      "title": "כללי סנכרון",
+      "empty": "אין עדיין כללים. הוסיפו כלל כדי לייבא משימות.",
+      "noProjects": "צרו קודם פרויקט; כללים כותבים משימות לתוך פרויקט.",
+      "scope": "מפתח צוות Linear או JQL של Jira",
+      "project": "פרויקט",
+      "twoWay": "דו-כיווני",
+      "import": "ייבוא",
+      "every": "כל",
+      "minutes": "דק׳",
+      "everyShort": "כל {{minutes}} דק׳",
+      "paused": "מושהה",
+      "summary": "{{created}} נוצרו, {{updated}} עודכנו, {{pushed}} נשלחו, {{conflicts}} התנגשויות, {{failed}} נכשלו",
+      "never": "טרם הורץ",
+      "add": "הוספת כלל",
+      "pause": "השהיה",
+      "resume": "המשך",
+      "runNow": "הרצה עכשיו",
+      "remove": "הסרת כלל"
+    },
+    "errors": {
+      "actionFailed": "לא ניתן היה לשמור את השינוי. נסו שוב."
+    },
+    "badge": {
+      "open": "פתיחת {{key}} במערכת המעקב"
+    }
+  },
+  "bugLoop": {
+    "title": "חקירה",
+    "intro": "סוכן קורא את המאגר בעותק זמני לקריאה בלבד ומדרג את הסיבות הסבירות. עותק העבודה שלכם לא משתנה לעולם.",
+    "repository": "מאגר",
+    "noRepositories": "הוסיפו מאגר ל-shep כדי לחקור את הפריט הזה.",
+    "investigate": "חקירה",
+    "investigateAgain": "חקירה מחדש",
+    "running": "הסוכן קורא עותק לקריאה בלבד של {{repository}}…",
+    "approved": "השערה {{number}} בתיקון.",
+    "openFeature": "פתיחת פיצ׳ר התיקון",
+    "fullSpec": "תיקון דרך צינור המפרט המלא במקום המצב המהיר",
+    "status": {
+      "Pending": "מתחיל",
+      "Running": "בחקירה",
+      "Completed": "ההשערות מוכנות",
+      "Failed": "נכשל"
+    },
+    "confidence": {
+      "High": "ביטחון גבוה",
+      "Medium": "ביטחון בינוני",
+      "Low": "ביטחון נמוך"
+    },
+    "hypothesis": {
+      "evidence": "ראיות",
+      "test": "בדיקה שנכשלת",
+      "fix": "תיקון",
+      "fixThis": "לתקן את זה",
+      "fixing": "מתחילים תיקון…",
+      "approved": "בתיקון"
+    }
+  },
+  "prComments": {
+    "title": "הערות סקירה",
+    "refresh": "קריאת הערות מ-GitHub",
+    "address": "טיפול ב-{{count}} ממתינות",
+    "running": "סוכן מטפל ב-{{count}} הערות ב-worktree של הפיצ׳ר…",
+    "roundPushed": "הסבב האחרון דחף את {{sha}} והשיב.",
+    "roundAnswered": "הסבב האחרון השיב בלי לשנות קוד.",
+    "roundFailed": "הסבב האחרון נכשל: {{error}}",
+    "empty": "אין עדיין הערות סקירה על ה-pull request.",
+    "openOnGitHub": "פתיחה ב-GitHub",
+    "status": {
+      "Pending": "ממתינה",
+      "Addressing": "בטיפול",
+      "Addressed": "טופלה",
+      "Declined": "נדחתה",
+      "Failed": "נכשלה"
+    },
+    "kind": {
+      "Inline": "על שורה",
+      "Conversation": "שיחה",
+      "Review": "סקירה"
+    },
+    "addressNone": "אין במה לטפל"
+  },
+  "knowledge": {
+    "sources": {
+      "title": "מקורות ידע",
+      "empty": "אין עדיין מקורות. שתפו דף או מסד נתונים ב-Notion עם האינטגרציה, ואז הוסיפו את הקישור.",
+      "kind": {
+        "Page": "עץ דפים",
+        "Database": "מסד נתונים"
+      },
+      "productLine": "רק {{name}}",
+      "wholeSpace": "כל המרחב",
+      "productLineLabel": "קו מוצרים",
+      "scope": "קישור לדף או מסד נתונים ב-Notion",
+      "documents_one": "מסמך {{count}}",
+      "documents_few": "{{count}} מסמכים",
+      "documents_many": "{{count}} מסמכים",
+      "documents_other": "{{count}} מסמכים",
+      "summary": "{{added}} נוספו, {{updated}} עודכנו, {{removed}} הוסרו, {{failed}} נכשלו",
+      "never": "עדיין לא סונכרן",
+      "add": "הוספת מקור",
+      "syncNow": "סנכרון עכשיו",
+      "remove": "הסרת מקור"
+    },
+    "documents": {
+      "title": "ידע צוות",
+      "subtitle": "דפי Notion שסוכנים בכל מרחב קוראים כשהם מתאימים למשימה.",
+      "empty": "אין עדיין ידע צוות. הוסיפו חיבור Notion ואת הדפים שלו בעמוד",
+      "connections": "חיבורים"
+    }
+  },
+  "opportunities": {
+    "title": "הזדמנויות",
+    "subtitle": "הימורים שנתמכים בראיות, מדורגים לפי ערך לשעת סקירה.",
+    "space": "מרחב",
+    "empty": "אין הזדמנויות פתוחות במרחב הזה. עצבו אחת למעלה.",
+    "errors": {
+      "actionFailed": "לא ניתן היה לשמור את השינוי. נסו שוב."
+    },
+    "capacity": {
+      "title": "קיבולת הסקירה השבוע",
+      "used": "{{used}} מתוך {{capacity}} שעות סקירה",
+      "waiting_one": "הימור מאושר {{count}} ממתין לקיבולת",
+      "waiting_few": "{{count}} הימורים מאושרים ממתינים לקיבולת",
+      "waiting_many": "{{count}} הימורים מאושרים ממתינים לקיבולת",
+      "waiting_other": "{{count}} הימורים מאושרים ממתינים לקיבולת"
+    },
+    "row": {
+      "inLine": "בקו של השבוע",
+      "outOfLine": "מחוץ לקו",
+      "strategic": "אסטרטגית",
+      "cost": "{{hours}} שעות · ביטחון {{confidence}}%",
+      "evidenceParts": {
+        "signals_one": "{{count}} אות",
+        "signals_few": "{{count}} אותות",
+        "signals_many": "{{count}} אותות",
+        "signals_other": "{{count}} אותות",
+        "customers_one": "{{count}} לקוח",
+        "customers_few": "{{count}} לקוחות",
+        "customers_many": "{{count}} לקוחות",
+        "customers_other": "{{count}} לקוחות",
+        "urgent_one": "{{count}} דחוף",
+        "urgent_few": "{{count}} דחופים",
+        "urgent_many": "{{count}} דחופים",
+        "urgent_other": "{{count}} דחופים",
+        "revenue": "{{revenue}}/חודש"
+      }
+    },
+    "status": {
+      "Proposed": "הוצעה",
+      "Accepted": "התקבלה",
+      "Building": "בבנייה",
+      "Shipped": "שוחררה",
+      "Dropped": "נדחתה"
+    },
+    "kind": {
+      "Feedback": "משוב",
+      "Incident": "תקלה",
+      "Tracker": "מערכת מעקב",
+      "Discovery": "ממצא",
+      "Manual": "הערה"
+    },
+    "actions": {
+      "accept": "קבלה",
+      "build": "בנייה",
+      "drop": "דחייה",
+      "cancel": "ביטול",
+      "reason": "למה לדחות?",
+      "project": "פרויקט",
+      "noProjects": "צרו קודם פרויקט; בנייה יוצרת בו פריט עבודה.",
+      "ship": "סימון כמשוחררת"
+    },
+    "inbox": {
+      "title": "אותות לקישור ({{count}})",
+      "empty": "כל אות תומך בהזדמנות.",
+      "urgent": "דחוף",
+      "customerRevenue": "{{customer}} · {{revenue}} לחודש",
+      "link": "קישור אל…",
+      "remove": "הסרת אות"
+    },
+    "signalForm": {
+      "title": "תיעוד אות",
+      "signal": "אות",
+      "placeholder": "מה משתמש ביקש, או מה נשבר?",
+      "kind": "סוג",
+      "customer": "לקוח",
+      "revenue": "הכנסה לחודש",
+      "urgent": "דחוף",
+      "submit": "תיעוד"
+    },
+    "opportunityForm": {
+      "title": "עיצוב הזדמנות",
+      "name": "הזדמנות",
+      "placeholder": "הימור ששווה לבנות",
+      "hours": "שעות סקירה",
+      "confidence": "% ביטחון",
+      "productLine": "קו מוצרים",
+      "anyLine": "כל המרחב",
+      "strategic": "אסטרטגית",
+      "submit": "הוספה"
+    },
+    "weights": {
+      "title": "משקלים וקיבולת",
+      "formula": "ערך = תפוצה × לקוחות + הכנסה × (הכנסה בסיכון ÷ 1,000) + דחיפות × אותות דחופים + אסטרטגי. ציון = ערך × ביטחון ÷ שעות סקירה.",
+      "reach": "תפוצה",
+      "revenue": "הכנסה",
+      "urgency": "דחיפות",
+      "strategic": "אסטרטגי",
+      "weeklyReviewHours": "שעות סקירה בשבוע",
+      "save": "שמירה"
+    },
+    "themes": {
+      "title": "נושאים באותות לא מקושרים",
+      "empty": "אין עדיין נושאים: אין שני אותות לא מקושרים שחולקים מספיק מילים.",
+      "promote": "קידום",
+      "hours": "שעות סקירה"
+    },
+    "feedbackKeys": {
+      "title": "מפתחות משוב",
+      "subtitle": "כלים שולחים משוב עם מפתח: {{endpoint}} עם \"Authorization: Bearer <מפתח>\".",
+      "empty": "אין עדיין מפתחות.",
+      "name": "כלי",
+      "namePlaceholder": "Zendesk, ווידג'ט, סקריפט…",
+      "create": "יצירת מפתח",
+      "secretOnce": "העתיקו את המפתח עכשיו; הוא לא יוצג שוב.",
+      "revoke": "ביטול",
+      "revoked": "בוטל",
+      "lastUsed": "שימוש אחרון {{when}}",
+      "neverUsed": "לא היה בשימוש"
+    },
+    "source": {
+      "Manual": "ידני",
+      "Theme": "מנושא",
+      "Discovery": "התגלתה"
+    },
+    "discovery": {
+      "title": "גילוי",
+      "run": "גילוי עכשיו",
+      "discovering": "מגלה…",
+      "schedule": "תזמון",
+      "off": "כבוי",
+      "everyHours": "כל {{hours}} שעות",
+      "never": "הגילוי עדיין לא רץ במרחב הזה.",
+      "running": "הגילוי רץ…",
+      "failed": "ההרצה האחרונה נכשלה: {{error}}",
+      "succeeded": "הרצה אחרונה: {{proposed}} הוצעו מתוך {{read}} אותות, {{when}}"
+    },
+    "outcomes": {
+      "title": "תוצאות",
+      "check": "בדיקה עכשיו",
+      "empty": "עוד לא שוחרר דבר במרחב הזה.",
+      "judgedOn": "תישפט ב-{{date}}",
+      "counts": "{{before}} דיווחים דומים לפני, {{after}} אחרי",
+      "hours": "שעות סקירה",
+      "saveHours": "שמירה",
+      "hoursTaken": "לקח {{actual}} ש׳ מתוך {{estimated}} ש׳ בהערכה",
+      "note": "ספרו להם ש„{{title}}” שוחרר:",
+      "markTold": "סימון כמעודכנים",
+      "hoursRatio": "שעות הסקירה בפועל הן פי {{ratio}} מההערכות ({{timed}} נרשמו)",
+      "noHours": "עוד לא נרשמו שעות סקירה בפועל",
+      "solvedShare": "{{solved}} מתוך {{judged}} תוצאות שנשפטו נפתרו",
+      "noVerdicts": "עוד לא נשפטו תוצאות",
+      "verdict": {
+        "Pending": "ממתינה",
+        "Solved": "נפתרה",
+        "Persisting": "נמשכת"
+      }
+    }
+  },
+  "incidents": {
+    "title": "תקלות",
+    "subtitle": "תקלות בייצור, הניתוח שלהן, ההפעלות מחדש, החזרות לאחור והשינויים בקנה מידה שמתקנים אותן, ותחקיר.",
+    "space": "מרחב",
+    "list": "תקלות",
+    "empty": "אין תקלות במרחב הזה.",
+    "timeline": "ציר זמן",
+    "actions": "פעולות בסביבה",
+    "approve": "אישור",
+    "reject": "דחייה",
+    "recovered": "התאושש",
+    "notRecovered": "לא התאושש",
+    "scaleTo": "שינוי ל-{{replicas}} רפליקות",
+    "showEvidence": "הצגת ראיות",
+    "triage": "ניתוח",
+    "triaging": "מנתח…",
+    "workload": "deployment/{{workload}} ב-{{namespace}} ({{context}})",
+    "currentContext": "הקונטקסט הנוכחי",
+    "noWorkload": "אין עומס עבודה — הפעולות כבויות.",
+    "openLink": "פתיחת ההתראה",
+    "errors": {
+      "actionFailed": "הפעולה נכשלה."
+    },
+    "form": {
+      "title": "פתיחת תקלה",
+      "incident": "תקלה",
+      "placeholder": "מה לא עובד?",
+      "severity": "חומרה",
+      "workload": "עומס עבודה",
+      "namespace": "Namespace",
+      "context": "קונטקסט",
+      "submit": "פתיחה"
+    },
+    "act": {
+      "title": "הרצת פעולה",
+      "kind": "פעולה",
+      "replicas": "רפליקות",
+      "reason": "למה?",
+      "submit": "הרצה",
+      "running": "רץ…"
+    },
+    "note": {
+      "title": "הערה",
+      "placeholder": "הוספת הערה לציר הזמן",
+      "submit": "הוספה"
+    },
+    "resolve": {
+      "title": "סגירה",
+      "postmortem": "תחקיר",
+      "placeholder": "כתבו את התחקיר, או השאירו ריק לטיוטה מציר הזמן",
+      "submit": "סגירה"
+    },
+    "severity": {
+      "Critical": "קריטית",
+      "Major": "חמורה",
+      "Minor": "קלה"
+    },
+    "status": {
+      "Open": "פתוחה",
+      "Mitigated": "מוקלת",
+      "Resolved": "סגורה"
+    },
+    "actionKind": {
+      "Restart": "הפעלה מחדש",
+      "Rollback": "החזרה לאחור",
+      "Scale": "שינוי קנה מידה"
+    },
+    "actionStatus": {
+      "Proposed": "ממתינה לאישור",
+      "Approved": "אושרה",
+      "Rejected": "נדחתה",
+      "Succeeded": "בוצעה",
+      "Failed": "נכשלה"
+    },
+    "proposedBy": {
+      "Agent": "הוצעה על ידי הסוכן",
+      "Person": "התבקשה על ידי אדם"
+    },
+    "eventKind": {
+      "Opened": "נפתחה",
+      "Note": "הערה",
+      "Evidence": "ראיות",
+      "Hypothesis": "השערה",
+      "ActionProposed": "פעולה הוצעה",
+      "ActionApproved": "פעולה אושרה",
+      "ActionRejected": "פעולה נדחתה",
+      "ActionSucceeded": "פעולה בוצעה",
+      "ActionFailed": "פעולה נכשלה",
+      "Recovered": "התאושש",
+      "NotRecovered": "לא התאושש",
+      "Resolved": "נסגרה"
+    }
+  },
+  "factory": {
+    "title": "מפעל",
+    "subtitle": "מה מפעל התוכנה של המרחב עושה ומה ממתין לאנשים.",
+    "space": "מרחב",
+    "errors": {
+      "actionFailed": "הפעולה נכשלה."
+    },
+    "cards": {
+      "line": "שעות סקירה השבוע",
+      "building": "בבנייה",
+      "incidents": "תקלות פתוחות",
+      "actions": "פעולות שממתינות לאישור",
+      "outcomes": "תוצאות ממתינות",
+      "customers": "לקוחות לעדכן",
+      "features": "פיצ'רים בתהליך",
+      "approval": "ממתינים לאישור"
+    },
+    "runs": {
+      "title": "מעברי autopilot",
+      "none": "Autopilot עוד לא רץ במרחב הזה.",
+      "pass": "נחקרו {{investigated}} · תוקנו {{fixed}} · נבנו {{built}}"
+    },
+    "autopilot": {
+      "title": "Autopilot",
+      "hint": "מה shep מתחיל כאן לבד, כל שעה. הכול כבוי עד שתפעילו.",
+      "investigate": "לחקור פריטים דחופים פתוחים",
+      "fix": "לתקן כשההשערה המובילה היא High",
+      "mergeFixes": "לאפשר לתיקונים האלה להתמזג בלי אדם",
+      "fillLine": "לבנות את ההזדמנויות המאושרות שבקו",
+      "budget": "תיקונים ביום",
+      "project": "לבנות אל",
+      "noProject": "בלי פרויקט",
+      "save": "שמירה",
+      "run": "הרצה עכשיו",
+      "running": "רץ…"
     }
   }
 }

@@ -210,6 +210,14 @@ Reject a feature waiting for review.
 `--reason` is a `requiredOption`: the command fails without it. There is no
 `--feedback` flag.
 
+### `shep feat comments <id>` / `shep feat address-comments <id> [comments...]`
+
+Review comments on the feature's pull request (spec 124). `comments` reads them from GitHub
+and lists each with its state (`--no-refresh` shows the stored ones). `address-comments` has an
+agent address the pending comments (or the ids or id prefixes given) in the feature's
+worktree, push, and reply on each; it exits 1 if the round fails. The feature must be waiting
+for review with an open pull request. See the [PR comments guide](../guides/pr-comments.md).
+
 ### `shep feat logs <id>`
 
 View feature agent logs.
@@ -745,7 +753,7 @@ Gated on the `projects` feature flag.
 
 | Command              | Description          |
 | -------------------- | -------------------- |
-| `shep project new`   | Create a new project |
+| `shep project new`   | Create a new project (`--repo <path>` links it to the application of a local folder, registering one if needed) |
 | `shep project ls`    | List all projects    |
 | `shep project show`  | Show project details |
 | `shep project del`   | Delete a project     |
@@ -842,6 +850,233 @@ the `collaboration` feature flag. See
 | `shep plugin status`     | Show detailed health status of a plugin                |
 
 **Source**: `src/presentation/cli/commands/plugin/`
+
+---
+
+## Space Commands
+
+`shep space` keeps bodies of work apart (spec 120). A **space** is a hard wall:
+memory shared inside one space (Space or ProductLine scope) is never read by a
+repository in another. A **product line** groups repositories inside a space.
+
+A repository lands in a space by, in order: an explicit pin (`assign`), the most
+specific matching rule (path prefix or git-remote pattern; between equally
+specific rules the lower `--priority` wins, and the rule id settles any
+remaining tie so the answer never flips), or the default space. Every repository is always
+in exactly one space.
+
+| Command                                             | Description                                             |
+| --------------------------------------------------- | ------------------------------------------------------- |
+| `shep space ls`                                     | Spaces with their product lines, repository and memory counts |
+| `shep space show [path]`                            | Which space and line a repository is in, and why        |
+| `shep space new <name>`                             | Create a space (`-d` description, `-c #hex`, `--default`) |
+| `shep space edit <space>`                           | Rename (`-n`), describe (`-d`) or recolour (`-c`) a space |
+| `shep space rm <space>`                             | Delete a space; refused for the default space or while it holds memory |
+| `shep space default <space>`                        | Make a space the one unmatched repositories land in     |
+| `shep space line new <space> <name>`                | Add a product line                                      |
+| `shep space line rm <space> <line>`                 | Remove a product line; refused while memory is shared with it |
+| `shep space rule add <space> <pattern>`             | Add a rule (`-l` line, `-p` priority, `--remote`)        |
+| `shep space rule ls [space]`                        | List rules                                              |
+| `shep space rule rm <id>`                           | Remove a rule                                           |
+| `shep space assign <space> [path]`                  | Pin a repository to a space (`-l` line)                 |
+| `shep space unassign [path]`                        | Remove a pin so the rules apply again                   |
+| `shep space config <space>`                         | Show or set the space's agent logins, git identity and allowed agents (spec 121) |
+
+`<space>` and `<line>` accept a name's slug or an id. `[path]` defaults to the
+current directory and expands a leading `~`. A rule pattern that is an absolute
+path is a path rule; anything else is a git-remote rule matched against the
+repository's normalised remote (`host/owner/repo`, no scheme, no `.git`).
+In remote patterns `*` matches within one segment and `**` across segments.
+
+```bash
+shep space new Acme -c "#3456c4"
+shep space line new acme Payments
+shep space rule add acme "github.com/acme/*"
+shep space rule add acme "github.com/acme/pay-*" -l payments
+shep space rule add acme ~/work/acme
+shep space assign personal ~/oss/acme-fork
+shep space show ~/work/acme/pay-api
+```
+
+`shep space config <space>` with no options shows the settings and the environment they
+produce. Options: `--claude-config-dir <dir>`, `--gh-config-dir <dir>`, `--git-name`,
+`--git-email`, `--aws-profile`, `--bedrock` / `--no-bedrock`, `--agents a,b`,
+`--pr-comments off|mention|all` (which PR review comments shep answers on its own; default
+mention), `--resolve-threads` / `--no-resolve-threads`, `--auto-actions restart,rollback,scale`
+(runtime actions shep runs on the space's incidents without asking), `--docs-first` /
+`--no-docs-first` with `--docs-paths docs/,README.md` (docs first, spec 131) and
+`--clear <fields...>` (`claude-config-dir`, `gh-config-dir`, `git-name`, `git-email`,
+`aws-profile`, `bedrock`, `agents`, `pr-comments`, `resolve-threads`, `auto-actions`,
+`docs-first`, `docs-paths`). Feature runs and feature chats in the space's
+repositories run with these settings; host `GH_TOKEN`/`GITHUB_TOKEN` (with a gh dir) and
+`ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN`/`CLAUDE_CODE_OAUTH_TOKEN` (with a Claude dir) are
+removed for them.
+
+**Source**: `src/presentation/cli/commands/space/`
+
+---
+
+## Connection and Sync Commands
+
+`shep connection` connects Linear, Jira and Notion accounts; `shep sync` keeps tracker issues
+in shep projects (spec 122) and `shep knowledge` keeps Notion pages as team knowledge (spec 125).
+See the [tracker guide](../guides/trackers.md) and the [knowledge guide](../guides/knowledge.md).
+
+| Command | Description |
+| ------- | ----------- |
+| `shep connection add <linear\|jira\|notion> --name <n>` | Connect an account (`--space`, Jira: `--site`, `--email`); the key is prompted, or read from `--secret-env VAR`, and tested before saving |
+| `shep connection ls` | Connections with account and status |
+| `shep connection test <connection>` | Re-check the stored credentials |
+| `shep connection rm <connection>` | Remove a connection with its rules and knowledge sources; synced work items stay |
+| `shep sync rule add <connection> --project <p> --scope <s>` | Keep a Linear team key or Jira JQL in a project (`--two-way`, `--every <minutes>`, 5-1440, default 15) |
+| `shep sync rule ls [connection]` | Rules with mode, interval and last run |
+| `shep sync rule enable\|disable\|rm <rule>` | Pause, resume or remove a rule |
+| `shep sync run [rule]` | Run one rule, or every enabled rule, now; exits 1 if a run failed |
+| `shep knowledge source add <connection> --scope <link>` | Keep a Notion page tree or database as knowledge of the connection's space (`--product-line <l>`, `--every <minutes>`, 15-1440, default 60) |
+| `shep knowledge source ls` | Sources with documents, interval and last sync |
+| `shep knowledge source enable\|disable\|rm <source>` | Pause, resume or remove a source (removing drops its documents) |
+| `shep knowledge sync [source]` | Sync one source, or every enabled source, now; exits 1 if a sync stopped early |
+| `shep knowledge ls [--space <space>]` | A space's knowledge documents with links |
+| `shep knowledge search <query> [--repo <path>]` | The passages an agent working in that repository would read for the task |
+
+The daemon runs enabled rules and sources on their interval. Secrets are never accepted as
+arguments.
+
+**Source**: `src/presentation/cli/commands/connection/`, `src/presentation/cli/commands/sync/`,
+`src/presentation/cli/commands/knowledge/`
+
+---
+
+## Signal and Opportunity Commands
+
+`shep signal` records evidence of what users need; `shep opportunity` shapes bets backed by
+signals, ranks them by value per review hour and draws the line that fits a space's weekly
+review capacity (spec 126). See the [opportunities guide](../guides/opportunities.md).
+
+| Command | Description |
+| ------- | ----------- |
+| `shep signal add <title>` | Record a signal (`--space`, `--product-line`, `--kind feedback\|incident\|tracker\|discovery\|manual`, `--customer`, `--revenue <per month>`, `--urgent`, `--url`, `--detail`, `--opportunity`) |
+| `shep signal ls` | Signals, newest first (`--space`, `--unlinked`) |
+| `shep signal rm <signal>` | Remove a signal |
+| `shep opportunity add <title> --hours <h>` | Shape an opportunity (`--confidence 0-1`, `--strategic`, `--problem`, `--space`, `--product-line`) |
+| `shep opportunity ls [--space]` | Open opportunities ranked by value per review hour; ▶ marks the line |
+| `shep opportunity show <opportunity>` | Score, evidence and signals |
+| `shep opportunity estimate <opportunity>` | Change `--hours`, `--confidence`, `--strategic` or `--problem` |
+| `shep opportunity link <signal> <opportunity>` / `unlink <signal>` | Link a signal to an opportunity of its space, or unlink it |
+| `shep opportunity accept <opportunity>` | Accept: it competes for review capacity |
+| `shep opportunity drop <opportunity> --reason <text>` | Drop it, saying why |
+| `shep opportunity build <opportunity> --project <p>` | Create a work item carrying the problem and evidence |
+| `shep opportunity weights` | Show, or set with `--reach`, `--revenue`, `--urgency`, `--strategic`, `--capacity <h/week>` |
+
+**Source**: `src/presentation/cli/commands/signal/`, `src/presentation/cli/commands/opportunity/`
+
+---
+
+## Outcome Commands
+
+`shep outcome` follows opportunities past the merge: a Building opportunity ships when its work
+item is done, and 14 days later its outcome is judged from the space's similar signals before
+and after (spec 130). The daemon checks every hour. See the
+[opportunities guide](../guides/opportunities.md#after-it-ships).
+
+| Command | Description |
+| ------- | ----------- |
+| `shep outcome ls` | Shipped opportunities with verdict, similar reports before → after and customers to tell, then the space's calibration (`--space`) |
+| `shep outcome check` | Ship opportunities whose work item is done, reopen cancelled ones and judge due outcomes now |
+| `shep outcome ship <opportunity>` | Mark a proposed, accepted or building opportunity shipped by hand |
+| `shep outcome tell <opportunity>` | The customers behind it not yet told, with a note; `--done` marks them told |
+| `shep outcome hours <opportunity> <hours>` | Record the review hours it really took |
+
+**Source**: `src/presentation/cli/commands/outcome/`
+
+---
+
+## Feedback Commands
+
+`shep feedback` manages the keys tools use to post customer feedback into a space through
+`POST /api/feedback`, and groups unlinked signals into themes (spec 127). See the
+[feedback guide](../guides/feedback.md).
+
+| Command | Description |
+| ------- | ----------- |
+| `shep feedback key create --name <tool>` | Create a key for a space (`--space`); the key is printed once |
+| `shep feedback key ls` | Keys by name and prefix, with last use (`--space`) |
+| `shep feedback key revoke <key>` | Refuse posts with the key from now on |
+| `shep feedback themes` | Themes among a space's unlinked signals, with their evidence (`--space`) |
+| `shep feedback promote <theme> --hours <h>` | Create an opportunity with the theme's signals linked (`--confidence`, `--title`, `--space`) |
+
+**Source**: `src/presentation/cli/commands/feedback/`
+
+---
+
+## Discovery Commands
+
+`shep discovery` asks an agent to read a space's loose signals and propose opportunities backed
+by them (spec 128). See the [discovery guide](../guides/discovery.md).
+
+| Command | Description |
+| ------- | ----------- |
+| `shep discovery run` | Run discovery now (`--space`, `--agent <type>`); proposals become Discovered opportunities |
+| `shep discovery ls` | A space's runs with what each read, proposed and dropped (`--space`) |
+| `shep discovery schedule --every <hours>` | Let the daemon run discovery every 1–720 hours (`--space`); `--off` turns it off |
+
+**Source**: `src/presentation/cli/commands/discovery/`
+
+---
+
+## Incident Commands
+
+`shep incident` opens production incidents, triages them with the space's agent and restarts,
+rolls back or scales their Kubernetes deployment (spec 129). Monitoring tools open them through
+`POST /api/alerts`. See the [incidents guide](../guides/incidents.md).
+
+| Command | Description |
+| ------- | ----------- |
+| `shep incident open <title>` | Open an incident (`--space`, `--severity critical\|major\|minor`, `--detail`, `--url`, `--workload`, `--namespace`, `--context`) |
+| `shep incident ls` | Incidents, newest first (`--open` for unresolved only) |
+| `shep incident show <incident>` | The incident with its timeline and runtime actions |
+| `shep incident note <incident> <text>` | Add a note to the timeline |
+| `shep incident triage <incident>` | Read evidence, rank likely causes and propose one action (`--agent <type>`) |
+| `shep incident act <incident> <restart\|rollback\|scale>` | Run an action now (`--replicas` for scale, `--reason`) |
+| `shep incident approve <action>` / `reject <action>` | Run or refuse a proposed action (`--reason` on reject) |
+| `shep incident resolve <incident>` | Resolve with `--postmortem <markdown>`, or a draft from the timeline |
+
+**Source**: `src/presentation/cli/commands/incident/`
+
+---
+
+## Autopilot and Factory Commands
+
+`shep autopilot` sets what shep starts on its own in a space every hour — investigating urgent
+work items, fixing confident hypotheses, building the week's line — and `shep factory status`
+shows a space's factory at a glance (spec 132). See the [autopilot guide](../guides/autopilot.md).
+
+| Command | Description |
+| ------- | ----------- |
+| `shep autopilot show` | The policy and recent passes (`--space`) |
+| `shep autopilot set` | `--investigate`, `--fix`, `--merge-fixes`, `--fill-line` (each with `--no-…`), `--project <p>` / `--clear-project`, `--budget <fixes a day>` (`--space`) |
+| `shep autopilot run` | A pass now, printing what it investigated, fixed and built (`--space`) |
+| `shep factory status` | Line, building, incidents, actions awaiting approval, outcomes, customers to tell and autopilot (`--space`) |
+
+**Source**: `src/presentation/cli/commands/autopilot/`, `src/presentation/cli/commands/factory/`
+
+---
+
+## Bug Loop Commands
+
+`shep item investigate`, `hypotheses` and `fix` take a bug from report to fix (spec 123). See the
+[bug loop guide](../guides/bug-loop.md).
+
+| Command | Description |
+| ------- | ----------- |
+| `shep item investigate <item>` | An agent reads a throwaway read-only copy of the repository and ranks up to five root-cause hypotheses (`--repo <path>`, `--agent <type>`); exits 1 if the investigation fails |
+| `shep item hypotheses <item>` | The latest investigation of a work item |
+| `shep item fix <item> <number>` | Start a feature from a hypothesis that writes the failing test first (`--spec` for the full pipeline, `--agent <type>`); moves the item to Started |
+
+`<item>` is a key such as `PAY-42` or a work item id. Without `--repo`, the item's previous
+repository is used, then its project's application repository.
+
+**Source**: `src/presentation/cli/commands/item/`
 
 ---
 
