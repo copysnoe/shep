@@ -4,6 +4,45 @@
   </a>
 </p>
 
+# 🚀 Shep [v1.236.0](/compare/v1.235.0...v1.236.0) · _2026-10-05_
+
+> Your organization does not have access to Claude. Please login again or contact your administrator.
+
+
+
+### ✨ Features
+
+* **agents:** software factory per space — specs 120–132 ([#917](https://github.com/shep-ai/shep/issues/917)) ([4a373e7](https://github.com/shep-ai/shep/commit/4a373e7fb29a7978f368326170b625fc109b09d4))
+
+  ![UI walkthrough](https://raw.githubusercontent.com/shep-ai/shep/v1.236.0/wonderful-keller-g4wgaf/.github/pr-assets/factory/ui/walkthrough.gif)
+  ![Factory](https://raw.githubusercontent.com/shep-ai/shep/v1.236.0/wonderful-keller-g4wgaf/.github/pr-assets/factory/ui/01-factory-status.png)
+  ![Opportunities full page](https://raw.githubusercontent.com/shep-ai/shep/v1.236.0/wonderful-keller-g4wgaf/.github/pr-assets/factory/ui/03-opportunities-full-page.png)
+  ![Board](https://raw.githubusercontent.com/shep-ai/shep/v1.236.0/wonderful-keller-g4wgaf/.github/pr-assets/factory/ui/02-opportunities-board.png)
+
+## 📦 Install or update
+
+```bash
+# upgrade an existing install
+npm i -g @shepai/cli@1.236.0
+
+# or run instantly without installing
+npx @shepai/cli@latest
+```
+
+## 💬 Join the community
+
+[💬 **Discord**](https://discord.gg/ES6tdVFfur) · [📖 **Docs**](https://github.com/shep-ai/shep#readme) · [⭐ **Star on GitHub**](https://github.com/shep-ai/shep) · [🐛 **Report an issue**](https://github.com/shep-ai/shep/issues)
+
+---
+
+<sub>🤖 Released autonomously by Shep — built by parallel AI agents working in isolated git worktrees. Try it: `npx @shepai/cli`</sub>
+
+<p align="center">
+  <a href="https://github.com/shep-ai/shep">
+    <img src="https://raw.githubusercontent.com/shep-ai/shep/main/docs/screenshots/shep-card.jpg" alt="Shep — run multiple AI agents in parallel" width="720" />
+  </a>
+</p>
+
 # 🚀 Shep [v1.235.0](/compare/v1.234.2...v1.235.0) · _2026-10-04_
 
 > Your organization does not have access to Claude. Please login again or contact your administrator.
