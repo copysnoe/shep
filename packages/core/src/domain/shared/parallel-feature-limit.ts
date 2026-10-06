@@ -141,7 +141,32 @@ export function markQueuedForCapacity<T extends Feature>(feature: T, now: Date =
 
 /** Minimal shape this rule needs from settings — keeps callers free of the full entity. */
 export interface MaxParallelFeaturesSource {
-  workflow?: { maxParallelFeatures?: number };
+  workflow?: { maxParallelFeatures?: number; queuePaused?: FleetQueuePauseSource };
+}
+
+/** The shape of a recorded pause, as the settings entity carries it. */
+export interface FleetQueuePauseSource {
+  pausedAt: unknown;
+  reason: string;
+}
+
+/**
+ * The recorded pause, or undefined when the queue is draining.
+ *
+ * Absence of the record IS "not paused" — there is no separate boolean to fall
+ * out of sync with the reason it carries.
+ */
+export function resolveFleetQueuePause(
+  settings: MaxParallelFeaturesSource | undefined | null
+): FleetQueuePauseSource | undefined {
+  return settings?.workflow?.queuePaused ?? undefined;
+}
+
+/** Is the fleet admission queue parked? */
+export function isFleetQueuePaused(
+  settings: MaxParallelFeaturesSource | undefined | null
+): boolean {
+  return resolveFleetQueuePause(settings) !== undefined;
 }
 
 /**
@@ -150,8 +175,33 @@ export interface MaxParallelFeaturesSource {
  * Accepts `undefined`/`null` so callers that may run before settings are
  * initialised do not have to branch — an uninitialised install is unlimited,
  * which is also its default once written.
+ *
+ * A PAUSED queue resolves to 0 — and this is the one case where the returned 0
+ * does NOT mean "unlimited". It cannot be told apart from an uncapped queue by
+ * the number alone (`hasCapacity(0, 0)` is true), so any caller that GATES on
+ * this value must read {@link isFleetQueuePaused} as well — see
+ * `FeatureCapacityService.hasCapacity`/`claimSlot`, which is the only place
+ * admission is actually decided. Callers that merely PERSIST or DISPLAY the
+ * user's own ceiling (`settings.mapper`) want this raw value and must NOT let
+ * the pause overwrite it, or `fleet resume` would have nothing to restore.
  */
 export function resolveMaxParallelFeatures(
+  settings: MaxParallelFeaturesSource | undefined | null
+): number {
+  if (isFleetQueuePaused(settings)) {
+    return 0;
+  }
+  return resolveConfiguredMaxParallelFeatures(settings);
+}
+
+/**
+ * The ceiling the user configured, ignoring any pause.
+ *
+ * For callers that persist or display the setting rather than gate on it. The
+ * pause must never be written into this number: it is the user's own choice, and
+ * overwriting it would leave `fleet resume` with nothing to restore.
+ */
+export function resolveConfiguredMaxParallelFeatures(
   settings: MaxParallelFeaturesSource | undefined | null
 ): number {
   return clampMaxParallelFeatures(settings?.workflow?.maxParallelFeatures);
