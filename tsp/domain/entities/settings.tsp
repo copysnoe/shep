@@ -444,6 +444,19 @@ model WorkflowConfig {
   @doc("Maximum concurrently running features (default: 0 = unlimited)")
   maxParallelFeatures?: int32;
 
+  /**
+   * Set while the fleet admission queue is parked. Absent means the queue is
+   * draining normally.
+   *
+   * A separate field from `maxParallelFeatures` on purpose — see
+   * `FleetQueuePause` in fleet-overview.tsp. The pause is an override laid over
+   * the user's ceiling, not a replacement for it, so raising or lowering the
+   * ceiling later still works and `fleet resume` restores exactly what the user
+   * configured.
+   */
+  @doc("Present while the fleet admission queue is paused (absent = draining)")
+  queuePaused?: FleetQueuePause;
+
   @doc("Maximum number of CI fix/push/watch iterations before giving up (default: 3)")
   ciMaxFixAttempts?: int32;
 

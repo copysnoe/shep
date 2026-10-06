@@ -18,6 +18,9 @@ properties:
     minimum: -2147483648
     maximum: 2147483647
     description: "Maximum concurrently running features (default: 0 = unlimited)"
+  queuePaused:
+    $ref: FleetQueuePause.yaml
+    description: Present while the fleet admission queue is paused (absent = draining)
   ciMaxFixAttempts:
     type: integer
     minimum: -2147483648
