@@ -241,6 +241,73 @@ Three properties are deliberate:
 
 ---
 
+## Circuit breaker → admission queue (spec 111)
+
+The breaker watches agent-run failures in a rolling 15-minute window and trips on **4
+consecutive failed runs**, or on a failure rate above **25%** across at least **4** finished runs
+(the sample floor exists so one failure out of one run cannot park a fleet).
+
+A trip does two things:
+
+1. **Reports** — `circuitBreakerTripped` and its reason surface in `shep fleet status` and on the
+   dashboard, as before.
+2. **Acts** — when `FleetCircuitBreakerSettings.autoPauseQueue` is set, the trip **parks the
+   admission queue**: no queued feature starts, and no manual start is admitted either, until the
+   queue is released.
+
+This closes the gap the original RFC described as *"auto-pauses the feature admission queue when
+consecutive failures exceed threshold"*. It was weakened to a status signal only because
+admission control did not exist yet when the breaker was written; `maxParallelFeatures` and
+`AdmitQueuedFeaturesUseCase` landed in #847, so the pause now has something to stop.
+
+### The pause is a separate record, never `maxParallelFeatures = 0`
+
+`WorkflowConfig.maxParallelFeatures` is the user's own ceiling, and **`0` there means
+unlimited**. Writing the pause as `maxParallelFeatures = 0` would therefore remove the cap and
+admit everything — the opposite of pausing — and would destroy the ceiling the user configured,
+so a resume could not restore it.
+
+The pause is its own field, `WorkflowConfig.queuePaused` (`FleetQueuePause`: `pausedAt` +
+`reason`, `settings.workflow_queue_pause`, migration 166). It is an **override laid over** the
+ceiling, not a replacement for it:
+
+| Question | Read |
+|---|---|
+| May another feature start? | `resolveMaxParallelFeatures()` → `0` while paused |
+| Is that `0` "paused" or "unlimited"? | `isFleetQueuePaused()` — the number alone cannot tell them apart |
+| What ceiling did the user configure? | `resolveConfiguredMaxParallelFeatures()` — persistence and the UI |
+
+Admission is decided in exactly two places, `FeatureCapacityService.hasCapacity()` and
+`claimSlot()`, and both consult `isFleetQueuePaused` **before** the limit. `claimSlot` refuses
+while paused even for a caller passing `bypassLimit`: that flag is the user's "start anyway"
+against the ceiling, and a fleet parked because everything is failing must not restart on the
+strength of one forced start.
+
+### The breaker cannot resume itself
+
+`SetFleetQueuePauseUseCase` is the single writer. The breaker only ever **sets** the pause;
+clearing it is an explicit user act (`shep fleet resume`). A fleet that tripped while the user
+was asleep must not silently restart into the same failing conditions the moment the rolling
+window happens to look healthy again.
+
+Pausing is **idempotent and preserves the original `pausedAt`** — the breaker is re-evaluated on
+every status read, so re-stamping would make a queue parked for an hour read as "paused just
+now", forever. Resuming drains the queue, because clearing the pause opens admission without any
+feature changing lifecycle.
+
+Neither direction touches running agents. Like the cap, the pause governs **admission only**.
+
+| Fact | Where |
+|---|---|
+| `FleetQueuePause` | `tsp/domain/entities/fleet-overview.tsp` |
+| Pause rule (`isFleetQueuePaused`, configured vs effective limit) | `packages/core/src/domain/shared/parallel-feature-limit.ts` |
+| Single writer | `packages/core/src/application/use-cases/fleet/set-fleet-queue-pause.use-case.ts` |
+| Trip → pause | `packages/core/src/application/use-cases/fleet/get-fleet-overview.use-case.ts` |
+| Admission gate | `packages/core/src/application/use-cases/features/capacity/feature-capacity.service.ts` |
+| Storage | `settings.workflow_queue_pause` (migration 166) |
+
+---
+
 ## Unified question pipeline
 
 `AgentQuestion` is the single surface for **every** agent-to-human ask, no
