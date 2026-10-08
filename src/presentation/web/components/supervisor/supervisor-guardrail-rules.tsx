@@ -14,7 +14,7 @@
  * which gate a rule governs, and whether it may auto-approve.
  */
 
-import { useRef } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -85,6 +85,78 @@ function formatPatterns(patterns?: string[]): string {
   return patterns?.join(', ') ?? '';
 }
 
+/**
+ * The blocked-paths field, which is the one input in this form that cannot be
+ * bound to its own parsed value.
+ *
+ * `parsePatterns` trims and drops blanks, so a trailing `,` or space disappears
+ * on the keystroke that types it and the input re-renders without it. Typing two
+ * glob patterns separated by a comma, one character at a time, therefore
+ * concatenates them into a single pattern that matches NEITHER path — so a rule
+ * the user believes escalates auth changes would auto-approve them. Pasting
+ * works, which is exactly why a `fireEvent.change` test cannot catch this.
+ *
+ * The fix is to own the raw text here and parse only on the way out, keeping the
+ * rule as the source of truth for everything except the characters in flight.
+ */
+function BlockedPathsInput({
+  id,
+  testId,
+  patterns,
+  onPatternsChange,
+  disabled,
+}: {
+  id: string;
+  testId: string;
+  patterns?: string[];
+  onPatternsChange: (patterns: string[] | undefined) => void;
+  disabled?: boolean;
+}): ReactElement {
+  const [text, setText] = useState(() => formatPatterns(patterns));
+
+  // The rule set is the source of truth, but re-deriving the text on every
+  // render is the bug. Track the value this field last emitted: while the
+  // incoming rule still carries it, the change is this field's own echo and the
+  // raw text stands. Anything else came from outside — a saved policy loading,
+  // a form reset — and must be picked up.
+  //
+  // The re-sync runs during render rather than in an effect so the corrected
+  // text is what this render paints, and it is guarded on a state change React
+  // would actually make, which is what stops it looping.
+  const lastEmitted = useRef<string[] | undefined>(patterns);
+  const incoming = patterns ?? [];
+  if (!samePatterns(incoming, lastEmitted.current)) {
+    lastEmitted.current = patterns;
+    setText(formatPatterns(patterns));
+  }
+
+  const handleChange = (value: string) => {
+    setText(value);
+    const parsed = parsePatterns(value);
+    lastEmitted.current = parsed;
+    onPatternsChange(parsed);
+  };
+
+  return (
+    <Input
+      id={id}
+      data-testid={testId}
+      placeholder="e.g. **/auth/**, **/migrations/**, package.json"
+      value={text}
+      disabled={disabled}
+      onChange={(e) => handleChange(e.target.value)}
+    />
+  );
+}
+
+/** Are two pattern lists the same list? Order matters — it is what the user sees. */
+function samePatterns(a: readonly string[] | undefined, b: readonly string[] | undefined): boolean {
+  const left = a ?? [];
+  const right = b ?? [];
+  if (left.length !== right.length) return false;
+  return left.every((pattern, i) => pattern === right[i]);
+}
+
 /** Empty or unparseable input clears the bound rather than pinning it to zero. */
 function parseOptionalInt(value: string): number | undefined {
   const trimmed = value.trim();
@@ -143,7 +215,7 @@ export function SupervisorGuardrailRules({
 
       {rules.length === 0 ? (
         <p className="text-muted-foreground rounded border border-dashed px-3 py-4 text-center text-xs">
-          No guardrail rules. Every gate goes to the evaluator model, as it does today.
+          No guardrail rules. Every gate goes to the evaluator model.
         </p>
       ) : (
         <div className="flex flex-col gap-3">
@@ -155,7 +227,7 @@ export function SupervisorGuardrailRules({
             >
               <div className="flex items-end gap-2">
                 <div className="flex flex-1 flex-col gap-1">
-                  <Label htmlFor={`guardrail-id-${index}`}>Rule name</Label>
+                  <Label htmlFor={`guardrail-id-${index}`}>Rule name (required)</Label>
                   <Input
                     id={`guardrail-id-${index}`}
                     data-testid={`guardrail-id-${index}`}
@@ -228,14 +300,12 @@ export function SupervisorGuardrailRules({
 
               <div className="flex flex-col gap-1">
                 <Label htmlFor={`guardrail-paths-${index}`}>Always escalate if these change</Label>
-                <Input
+                <BlockedPathsInput
                   id={`guardrail-paths-${index}`}
-                  data-testid={`guardrail-paths-${index}`}
-                  placeholder="e.g. **/auth/**, **/migrations/**, package.json"
-                  value={formatPatterns(rule.blockedPathPatterns)}
-                  onChange={(e) =>
-                    update(index, { blockedPathPatterns: parsePatterns(e.target.value) })
-                  }
+                  testId={`guardrail-paths-${index}`}
+                  patterns={rule.blockedPathPatterns}
+                  disabled={disabled}
+                  onPatternsChange={(patterns) => update(index, { blockedPathPatterns: patterns })}
                 />
                 <p className="text-muted-foreground text-xs">
                   Comma-separated glob patterns. A match forces human review, whatever the size

@@ -9,6 +9,8 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import React from 'react';
 import {
   SupervisorGuardrailRules,
   parseGuardrailRules,
@@ -123,6 +125,80 @@ describe('SupervisorGuardrailRules', () => {
     fireEvent.change(screen.getByTestId('guardrail-paths-0'), { target: { value: '   ' } });
 
     expect(onChange).toHaveBeenCalledWith([{ ...RULE, blockedPathPatterns: undefined }]);
+  });
+
+  /**
+   * Typing is how users fill this field, and it is the one case the parsed-value
+   * binding cannot survive: a trailing separator is dropped by `parsePatterns`
+   * on the keystroke that types it, so the input re-renders without it and the
+   * next pattern is appended to the previous one.
+   *
+   * The result is not cosmetic. The merged pattern matches neither `auth/` nor
+   * `billing/`, so a rule the user believes escalates auth changes would
+   * AUTO-APPROVE them — the opposite of the field's purpose. `fireEvent` sets
+   * the whole value at once and therefore cannot see this.
+   */
+  it('keeps typed separators, so a character-by-character entry does not merge patterns', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    function Controlled() {
+      const [rules, setRules] = React.useState<GuardrailRule[]>([RULE]);
+      return (
+        <SupervisorGuardrailRules
+          rules={rules}
+          onChange={(next) => {
+            setRules(next);
+            onChange(next);
+          }}
+        />
+      );
+    }
+
+    render(<Controlled />);
+
+    const input = screen.getByTestId('guardrail-paths-0');
+    await user.clear(input);
+    await user.type(input, '**/auth/**, **/billing/**');
+
+    expect(input).toHaveValue('**/auth/**, **/billing/**');
+    expect(onChange).toHaveBeenLastCalledWith([
+      { ...RULE, blockedPathPatterns: ['**/auth/**', '**/billing/**'] },
+    ]);
+  });
+
+  it('does not re-format the text the user is still typing', async () => {
+    // `parsePatterns` trims, so re-rendering from the parsed value would also
+    // swallow a trailing space mid-entry.
+    const user = userEvent.setup();
+
+    function Controlled() {
+      const [rules, setRules] = React.useState<GuardrailRule[]>([RULE]);
+      return <SupervisorGuardrailRules rules={rules} onChange={setRules} />;
+    }
+
+    render(<Controlled />);
+
+    const input = screen.getByTestId('guardrail-paths-0');
+    await user.clear(input);
+    await user.type(input, '**/a/**, ');
+
+    expect(input).toHaveValue('**/a/**, ');
+  });
+
+  it('picks up a rule set changed from outside the field', () => {
+    // The local text must still follow a value that arrives from the parent
+    // (loading a saved policy, resetting the form) — otherwise the field would
+    // show stale text after the rule underneath it changed.
+    const { rerender } = render(<SupervisorGuardrailRules rules={[RULE]} onChange={noop} />);
+
+    const reloaded: GuardrailRule = {
+      ...RULE,
+      blockedPathPatterns: ['**/infra/**', '**/db/**'],
+    };
+    rerender(<SupervisorGuardrailRules rules={[reloaded]} onChange={noop} />);
+
+    expect(screen.getByTestId('guardrail-paths-0')).toHaveValue('**/infra/**, **/db/**');
   });
 
   it('turns the CI requirement off without touching other fields', () => {
