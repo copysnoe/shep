@@ -297,6 +297,62 @@ feature changing lifecycle.
 
 Neither direction touches running agents. Like the cap, the pause governs **admission only**.
 
+### Resuming has to *stick*: the acknowledgement timestamp
+
+The breaker's metrics read a rolling window of `agent_runs`, and nothing in that history records
+that a human has already looked at the failures. So a resume alone was not enough: the next
+status read saw the same failing runs still inside the 15-minute window, tripped again, and
+re-parked the queue with a fresh `pausedAt`. On the web that read happens on every dashboard
+render and on **every SSE agent event**, so a resume was undone within seconds — the user was
+locked out of their own lever for the rest of the window.
+
+`WorkflowConfig.breakerAcknowledgedAt` (migration 167) records when the user last acknowledged a
+trip, written in the same update that releases the queue. The breaker then judges only runs that
+finished **after** that moment, so a trip means *"failures since you last looked"* — which is what
+an operator expects a breaker to mean. A new failure after an acknowledgement trips again, so
+acknowledging once cannot disarm the breaker.
+
+The bound only ever **narrows** the window: a timestamp older than the window start (or one from a
+machine with a fast clock) cannot make the breaker look further back than the window it
+advertises, and an unparseable value is treated as absent so the breaker still trips rather than
+silently going blind.
+
+### Two failure definitions, deliberately
+
+| Set | Statuses | Used by |
+|---|---|---|
+| `FAILURE_STATUSES` | `failed`, `interrupted` | the triage feed |
+| `BREAKER_FAILURE_STATUSES` | `failed` | the breaker metrics |
+
+`interrupted` is written by `StopAgentRunUseCase` when the user stops an agent, and by
+crash/liveness reconciliation after a daemon restart. Counting it was harmless while the breaker
+only reported a badge; now that a trip parks the whole fleet, a user who stops four agents in a
+row — or restarts the daemon with four running — would park every repo by doing something
+deliberate. The feed still shows interrupted runs, because a stopped run is a real thing to offer
+a retry for.
+
+### A scoped read reports, but never parks
+
+`shep fleet status --repo <path>` evaluates the breaker over **one repository**, but the pause it
+would write is **global**. Letting a scoped read trip it meant one repo's failures stopped work in
+every other repo. A scoped read now reports the trip and leaves the lever to the fleet-wide read
+(and to `shep fleet pause`).
+
+### The pause only refuses work that takes a slot
+
+`claimSlot` refuses while paused only when the target lifecycle **occupies a slot**.
+`ResumeFeatureUseCase` passes `bypassLimit` for lifecycles outside the running set — resuming a
+failed merge sitting in `Review`, for example — and those are not asking for capacity at all.
+Refusing them would turn "stop starting new work" into "stop finishing work already in flight".
+
+### The tripping read reports the pause it wrote
+
+`overview.queuePaused` is taken from the **return value** of the pause, not from the settings read
+at the top of `execute()`. That earlier read happened before the write, so the read that parked
+the queue used to report TRIPPED with no PAUSED line — the user only found out on some later read,
+and the `fleet status` example in `docs/cli/commands.md` documented a state the tripping read
+could never produce.
+
 | Fact | Where |
 |---|---|
 | `FleetQueuePause` | `tsp/domain/entities/fleet-overview.tsp` |
@@ -304,7 +360,7 @@ Neither direction touches running agents. Like the cap, the pause governs **admi
 | Single writer | `packages/core/src/application/use-cases/fleet/set-fleet-queue-pause.use-case.ts` |
 | Trip → pause | `packages/core/src/application/use-cases/fleet/get-fleet-overview.use-case.ts` |
 | Admission gate | `packages/core/src/application/use-cases/features/capacity/feature-capacity.service.ts` |
-| Storage | `settings.workflow_queue_pause` (migration 166) |
+| Storage | `settings.workflow_queue_pause` (166), `settings.workflow_breaker_acknowledged_at` (167) |
 
 ---
 

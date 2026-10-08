@@ -638,6 +638,21 @@ pause, and `shep fleet pause` is the manual lever when you want to stop new work
 `resume` drains whatever now has room, so queued features start immediately rather than waiting
 for the next lifecycle event.
 
+**`resume` acknowledges the trip, so it sticks.** The breaker judges only runs that finished
+*after* the last acknowledgement, so the same failures cannot re-park the queue the moment you
+release it — which on the web would otherwise happen on the next dashboard render or SSE agent
+event, for the rest of the 15-minute window. A **new** failure after the acknowledgement trips
+again, so acknowledging once does not disarm the breaker.
+
+Two things the pause deliberately does **not** do:
+
+- **It does not count a user stopping agents as a failure.** `interrupted` runs still appear in
+  `shep fleet triage` — they are worth retrying — but they do not trip the breaker. Otherwise
+  stopping four agents in a row, or restarting the daemon with four running, would park the fleet.
+- **A scoped read does not park the fleet.** `shep fleet status --repo <path>` reports the trip
+  for that repository but never writes the global pause, because one repo's failures must not stop
+  work in every other repo. Run `shep fleet pause` if that is what you want.
+
 The pause is stored as its own record (`workflow.queuePaused`) beside
 `workflow.maxParallelFeatures`, never as `maxParallelFeatures = 0` — in that field `0` means
 **unlimited**, so using it to mean "paused" would remove the cap and admit everything.
