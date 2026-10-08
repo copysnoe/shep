@@ -201,8 +201,12 @@ describe('SupervisorConfigForm', () => {
     await user.click(screen.getByTestId('submit'));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
-    // An empty array would clear stored rules on a policy that never had any;
-    // undefined leaves the field alone.
+    // `undefined` CLEARS the stored rules rather than leaving them alone:
+    // `ConfigureSupervisorUseCase` maps an empty/absent list to `undefined`, and
+    // the repository's UPDATE replaces every column, so the value lands as SQL
+    // NULL. That is what a user expects when they delete the last rule — the
+    // stored set goes away with it. (Before this PR the form submitted without
+    // carrying the rules at all, which silently wiped a stored set on save.)
     expect(onSubmit.mock.calls[0][0].guardrailRules).toBeUndefined();
   });
 
