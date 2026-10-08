@@ -121,6 +121,9 @@ export interface SettingsRow {
   // WorkflowConfig admission-queue pause (workflow.queuePaused; NULL = draining)
   workflow_queue_pause: string | null;
 
+  // WorkflowConfig breaker acknowledgement (workflow.breakerAcknowledgedAt; NULL = never)
+  workflow_breaker_acknowledged_at: string | null;
+
   // WorkflowConfig per-stage timeouts (workflow.stageTimeouts.*)
   stage_timeout_analyze_ms: number | null;
   stage_timeout_requirements_ms: number | null;
@@ -325,6 +328,11 @@ export function toDatabase(settings: Settings): SettingsRow {
           pausedAt: serializeIsoLike(settings.workflow.queuePaused.pausedAt),
         })
       : null,
+
+    // When the user last acknowledged a trip. NULL (never) means the breaker
+    // judges the whole rolling window, which is how it behaved before this
+    // column existed.
+    workflow_breaker_acknowledged_at: serializeIsoLike(settings.workflow.breakerAcknowledgedAt),
 
     // WorkflowConfig per-stage timeouts (optional number → INTEGER | null)
     stage_timeout_analyze_ms: settings.workflow.stageTimeouts?.analyzeMs ?? null,
@@ -837,6 +845,9 @@ export function fromDatabase(row: SettingsRow): Settings {
       ...buildAnalyzeRepoTimeoutsFromRow(row),
       ...buildSkillInjectionFromRow(row),
       ...buildQueuePauseFromRow(row),
+      ...(row.workflow_breaker_acknowledged_at !== null && {
+        breakerAcknowledgedAt: row.workflow_breaker_acknowledged_at,
+      }),
       ciWatchEnabled: row.ci_watch_enabled !== 0,
       // The user's ceiling, NOT the paused 0 — a paused fleet that displayed
       // "unlimited" would also leave resume with nothing to restore.

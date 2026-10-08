@@ -515,6 +515,10 @@ export type WorkflowConfig = {
    */
   queuePaused?: FleetQueuePause;
   /**
+   * When the user last acknowledged a breaker trip; failures before this do not re-trip
+   */
+  breakerAcknowledgedAt?: any;
+  /**
    * Maximum number of CI fix/push/watch iterations before giving up (default: 3)
    */
   ciMaxFixAttempts?: number;

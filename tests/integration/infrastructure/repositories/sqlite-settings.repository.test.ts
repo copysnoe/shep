@@ -1216,6 +1216,59 @@ describe('SQLiteSettingsRepository', () => {
     });
   });
 
+  describe('workflow.breakerAcknowledgedAt', () => {
+    // Without this surviving a round trip, `shep fleet resume` cannot stick: the
+    // breaker would keep judging the same failing runs and re-park the queue on
+    // the very next status read.
+
+    it('persists an acknowledgement through initialize()', async () => {
+      const settings = createTestSettings();
+      settings.workflow.breakerAcknowledgedAt = new Date('2026-03-01T12:30:00Z');
+
+      await repository.initialize(settings);
+
+      expect((await repository.load())?.workflow.breakerAcknowledgedAt).toBe(
+        '2026-03-01T12:30:00.000Z'
+      );
+    });
+
+    it('moves the acknowledgement forward through update()', async () => {
+      const settings = createTestSettings();
+      settings.workflow.breakerAcknowledgedAt = new Date('2026-03-01T12:30:00Z');
+      await repository.initialize(settings);
+
+      settings.workflow.breakerAcknowledgedAt = new Date('2026-03-02T09:00:00Z');
+      settings.updatedAt = new Date('2025-02-09T00:00:00Z');
+      await repository.update(settings);
+
+      expect((await repository.load())?.workflow.breakerAcknowledgedAt).toBe(
+        '2026-03-02T09:00:00.000Z'
+      );
+    });
+
+    it('is absent when the user has never acknowledged a trip', async () => {
+      // Absent must read as absent, not as an epoch date that would make the
+      // breaker judge the whole window — or go blind.
+      await repository.initialize(createTestSettings());
+
+      expect((await repository.load())?.workflow.breakerAcknowledgedAt).toBeUndefined();
+    });
+
+    it('coexists with a pause record and the ceiling', async () => {
+      const settings = createTestSettings();
+      settings.workflow.maxParallelFeatures = 6;
+      settings.workflow.queuePaused = { pausedAt: '2026-03-01T12:00:00.000Z', reason: 'tripped' };
+      settings.workflow.breakerAcknowledgedAt = new Date('2026-02-01T00:00:00Z');
+
+      await repository.initialize(settings);
+
+      const loaded = await repository.load();
+      expect(loaded?.workflow.queuePaused?.reason).toBe('tripped');
+      expect(loaded?.workflow.breakerAcknowledgedAt).toBe('2026-02-01T00:00:00.000Z');
+      expect(loaded?.workflow.maxParallelFeatures).toBe(6);
+    });
+  });
+
   describe('workflow.ciWatchEnabled', () => {
     it('persists a disabled CI watch through initialize()', async () => {
       const settings = createTestSettings();
