@@ -87,7 +87,22 @@ export class SetFleetQueuePauseUseCase {
     // writes SQL NULL instead of the string "undefined".
     const { queuePaused: _cleared, ...workflow } = settings.workflow;
 
-    await this.settingsRepository.update({ ...settings, workflow });
+    // Acknowledge the trip in the same write that releases the queue.
+    //
+    // Without this, resume cannot stick: the breaker reads a rolling window of
+    // `agent_runs`, nothing there records that a human has looked at the
+    // failures, so the next status read sees the same runs and trips again —
+    // re-parking the queue with a fresh `pausedAt`. On the web that read happens
+    // on every dashboard render and every SSE agent event, so the user's resume
+    // would be undone within seconds, for the rest of the 15-minute window.
+    //
+    // Stamping it means the breaker judges only runs that finished AFTER this
+    // moment: a trip becomes "failures since you last looked", which is what an
+    // operator expects the breaker to mean.
+    await this.settingsRepository.update({
+      ...settings,
+      workflow: { ...workflow, breakerAcknowledgedAt: input.now ?? new Date() },
+    });
 
     await this.drain();
 

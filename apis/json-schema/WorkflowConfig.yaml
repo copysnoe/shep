@@ -21,6 +21,10 @@ properties:
   queuePaused:
     $ref: FleetQueuePause.yaml
     description: Present while the fleet admission queue is paused (absent = draining)
+  breakerAcknowledgedAt:
+    type: string
+    format: date-time
+    description: When the user last acknowledged a breaker trip; failures before this do not re-trip
   ciMaxFixAttempts:
     type: integer
     minimum: -2147483648

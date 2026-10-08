@@ -27,6 +27,7 @@ import {
   UNLIMITED_PARALLEL_FEATURES,
   hasCapacity,
   isFleetQueuePaused,
+  isRunningLifecycle,
   resolveConfiguredMaxParallelFeatures,
   resolveMaxParallelFeatures,
 } from '../../../../domain/shared/parallel-feature-limit.js';
@@ -175,15 +176,23 @@ export class FeatureCapacityService {
   async claimSlot(input: ClaimSlotInput): Promise<boolean> {
     const settings = await this.settingsRepository.load();
 
-    // The pause outranks even `bypassLimit`. That flag is the user's "start
-    // anyway" against the CEILING; a fleet parked because everything is failing
-    // must not restart on the strength of one forced start.
-    if (isFleetQueuePaused(settings)) {
+    // The pause governs ADMISSION, so it only refuses work that would occupy a
+    // slot. A caller resuming a lifecycle outside the running set — a failed
+    // merge sitting in Review, for example — is not asking for capacity at all:
+    // `ResumeFeatureUseCase` passes `bypassLimit` for exactly those, and
+    // refusing them would go beyond "stop starting new work" to "stop finishing
+    // work already in flight".
+    const occupiesSlot = isRunningLifecycle(input.targetLifecycle);
+    if (occupiesSlot && isFleetQueuePaused(settings)) {
       return false;
     }
 
+    // The pause outranks `bypassLimit` for work that DOES take a slot. That flag
+    // is the user's "start anyway" against the CEILING; a fleet parked because
+    // everything is failing must not restart on the strength of one forced
+    // start.
     const limit =
-      input.bypassLimit === true
+      input.bypassLimit === true || !occupiesSlot
         ? UNLIMITED_PARALLEL_FEATURES
         : resolveMaxParallelFeatures(settings);
 

@@ -141,13 +141,38 @@ export function markQueuedForCapacity<T extends Feature>(feature: T, now: Date =
 
 /** Minimal shape this rule needs from settings — keeps callers free of the full entity. */
 export interface MaxParallelFeaturesSource {
-  workflow?: { maxParallelFeatures?: number; queuePaused?: FleetQueuePauseSource };
+  workflow?: {
+    maxParallelFeatures?: number;
+    queuePaused?: FleetQueuePauseSource;
+    breakerAcknowledgedAt?: unknown;
+  };
 }
 
 /** The shape of a recorded pause, as the settings entity carries it. */
 export interface FleetQueuePauseSource {
   pausedAt: unknown;
   reason: string;
+}
+
+/**
+ * When the user last acknowledged a circuit-breaker trip, or undefined.
+ *
+ * The breaker only counts runs that finished after this moment, so a trip means
+ * "failures since you last looked". Without it, `fleet resume` is undone by the
+ * next read while the same failures sit inside the rolling window.
+ *
+ * A value that cannot be parsed as a date is treated as ABSENT, which is the
+ * safe direction: the breaker then judges the whole window and still trips,
+ * rather than silently going blind because a timestamp was corrupt.
+ */
+export function resolveBreakerAcknowledgedAt(
+  settings: MaxParallelFeaturesSource | undefined | null
+): Date | undefined {
+  const raw = settings?.workflow?.breakerAcknowledgedAt;
+  if (raw === undefined || raw === null) return undefined;
+
+  const parsed = raw instanceof Date ? raw : new Date(String(raw));
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 }
 
 /**

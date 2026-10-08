@@ -120,6 +120,38 @@ describe('FeatureCapacityService', () => {
       expect(featureRepo.claimForStart).not.toHaveBeenCalled();
     });
 
+    /**
+     * The pause governs ADMISSION, so it only refuses work that would occupy a
+     * slot. `ResumeFeatureUseCase` passes `bypassLimit` for lifecycles outside
+     * the running set — resuming a failed merge sitting in Review, say — which
+     * are not asking for capacity at all. Refusing those would turn "stop
+     * starting new work" into "stop finishing work already in flight".
+     */
+    it('still lets a non-slot lifecycle through while paused', async () => {
+      const capacity = service(settingsPaused(8));
+
+      expect(
+        await capacity.claimSlot({
+          featureId: 'f1',
+          targetLifecycle: SdlcLifecycle.Review,
+          bypassLimit: true,
+        })
+      ).toBe(true);
+      expect(featureRepo.claimForStart).toHaveBeenCalledOnce();
+    });
+
+    it('still refuses a slot-consuming lifecycle while paused without any bypass', async () => {
+      const capacity = service(settingsPaused(8));
+
+      expect(
+        await capacity.claimSlot({
+          featureId: 'f1',
+          targetLifecycle: SdlcLifecycle.Implementation,
+        })
+      ).toBe(false);
+      expect(featureRepo.claimForStart).not.toHaveBeenCalled();
+    });
+
     it('reports the queue as paused with nothing available, not as unlimited', async () => {
       featureRepo.countByLifecycles.mockResolvedValue(2);
 

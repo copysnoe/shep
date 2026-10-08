@@ -119,6 +119,32 @@ describe('SetFleetQueuePauseUseCase', () => {
       expect(written.workflow.maxParallelFeatures).toBe(8);
     });
 
+    /**
+     * Without this, resume cannot stick: the breaker reads a rolling window of
+     * `agent_runs`, nothing there records that a human has looked, so the next
+     * status read sees the same failures and re-parks the queue. On the web that
+     * read fires on every dashboard render and every SSE agent event.
+     */
+    it('acknowledges the trip so the same failures cannot re-park the queue', async () => {
+      const resumedAt = new Date('2026-03-01T12:30:00Z');
+      settingsRepo.load.mockResolvedValue(
+        settingsWith({ queuePaused: { pausedAt: new Date(), reason: 'tripped' } })
+      );
+
+      await useCase.execute({ paused: false, now: resumedAt });
+
+      const written = settingsRepo.update.mock.calls[0][0] as Settings;
+      expect(written.workflow.breakerAcknowledgedAt).toEqual(resumedAt);
+    });
+
+    it('does not move the acknowledgement on a no-op resume', async () => {
+      // Nothing was parked, so there is no trip to acknowledge — and no write
+      // worth making.
+      await useCase.execute({ paused: false, now: new Date('2026-03-01T12:30:00Z') });
+
+      expect(settingsRepo.update).not.toHaveBeenCalled();
+    });
+
     it('drains the queue once admission is open again', async () => {
       settingsRepo.load.mockResolvedValue(
         settingsWith({ queuePaused: { pausedAt: new Date(), reason: 'tripped' } })
