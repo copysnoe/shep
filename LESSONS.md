@@ -3017,6 +3017,23 @@ that a squash merge would invalidate.
 `'packages/core/src/...'` passed on Linux and failed on `windows-latest`. Always
 `.replace(/\\/g, '/')` a computed path before comparing or printing it in a test.
 
+## A new hook in a shared shell is a change to every test that renders the shell
+
+Adding `useRouteViewTelemetry()` to `AppShell` (it calls `useParams`) failed four AppShell suites
+whose `vi.mock('next/navigation')` only returned `usePathname`/`useRouter`, and a new
+`container.resolve('ITelemetry')` in `startBackgroundSync` failed the `ui` and `_serve` command
+tests whose stubs throw on unknown tokens. Before mounting a hook in a layout, grep the tests that
+mock its imports; before adding a resolve to a shared starter, grep the stubs of every command that
+calls it. The web test setup replaces `localStorage` with `vi.fn()` mocks (`getItem` returns
+`undefined`), so drive it with `vi.mocked(localStorage.getItem)` and treat "missing" as falsy, not
+`!== null`.
+
+## PostHog `/batch/` answers 200 for any project key
+
+A live probe returned `200 {"status":"Ok"}` for a fake key and `400` for a malformed body. A
+successful send proves the wire format, not that events reach a project — check the project's
+event stream after configuring a real key.
+
 ## A scripted "insert before the first import" can land above `import 'reflect-metadata'`
 
 Adding an import to `container-bootstrap.test.ts` with a script that inserted it before the
@@ -3038,3 +3055,11 @@ best-effort (the approval use cases already wrap theirs); a use case that writes
 needs at least one test against the migrated SQLite schema; and a new process entry point
 (an MCP server, a worker) gets one real spawn-and-call smoke before it is called done — that run
 also caught the entry skipping `initializeSettings()`.
+
+## Fields that identify a person are opt-in, even when usage metrics are opt-out
+
+Spec 133 first shipped "Include my identity" on by default (account hash, GitHub username and
+owners). The owner reversed it before merge: anonymous usage events may be opt-out, but anything
+that identifies a person defaults to off and the notice offers to turn it on. Keep one source for
+the default (`DEFAULT_TELEMETRY_PREFERENCES`) and make the migration's column default, the mapper's
+fallback and every `?? default` read it — the first version had `?? true` in three places.
