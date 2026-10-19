@@ -229,6 +229,36 @@ View feature agent logs.
 | `-f, --follow`        | Stream new lines as they arrive        | —       |
 | `-n, --lines <count>` | Show only the last N lines (0 = all)   | `0`     |
 
+### `shep feat checkpoints <id>`
+
+List the git checkpoint taken after each step of the feature's run, with each checkpoint's label,
+time, change summary and commit. See [git checkpoints](../architecture/git-checkpoints.md).
+
+**Source**: `src/presentation/cli/commands/feat/checkpoints.command.ts`
+
+### `shep feat diff <id> --to <step>`
+
+Show what one step changed, compared with the step before it. Add `--from` to compare any two
+steps. A step is a sequence number (`3`), a step name (`implement`, meaning its latest
+checkpoint) or a label (`0003-implement`).
+
+**Source**: `src/presentation/cli/commands/feat/diff.command.ts`
+
+| Option          | Description                                  | Default             |
+| --------------- | -------------------------------------------- | ------------------- |
+| `--to <step>`   | The step to show (required)                  | —                   |
+| `--from <step>` | The step to compare against                  | the step before `--to` |
+| `--stat`        | List only the changed files                  | —                   |
+
+### `shep feat restore <id> <step>`
+
+Roll the feature's worktree back to a checkpoint. The state before the restore is saved as a
+`pre-restore` checkpoint, the branch is not moved, and ignored files are kept. The restore is
+refused unless the feature runs in its own linked worktree and no agent is running.
+`-f, --force` skips the confirmation prompt.
+
+**Source**: `src/presentation/cli/commands/feat/restore.command.ts`
+
 ### `shep feat adopt <branch>`
 
 Adopt an existing branch as a tracked feature. `-r, --repo <path>` selects the
@@ -376,6 +406,33 @@ List sessions.
 Show details of a specific session.
 
 **Source**: `src/presentation/cli/commands/session/show.command.ts`
+
+---
+
+## Chat Commands
+
+### `shep chat block <spec-review|preview|plan>`
+
+Post a rich block into a chat conversation (spec 137): a spec or PRD to approve or send back
+(`spec-review`), a self-contained HTML page shown in a sandboxed, network-less frame
+(`preview`), or a plan to implement or refine (`plan`). Chat agents run it to show something
+inline; the user's answer arrives as their next message.
+
+```bash
+shep chat block plan --title "Add dark mode" --file plan.md
+shep chat block preview --title "Pricing card" --file card.html
+shep chat block spec-review --scope global --title "Login PRD" --content "# Login"
+```
+
+| Option | Description |
+| ------ | ----------- |
+| `--title <title>` | Title shown in the block header (required) |
+| `--file <path>` / `--content <text>` | The body: Markdown, or HTML for `preview` (exactly one) |
+| `--scope <conversation>` | `global`, `repo-<id>`, `app-<id>` or a feature id. Defaults to `$SHEP_CHAT_SCOPE`, which every chat session sets |
+
+The same block can be posted by any MCP client through the `post_chat_block` tool of `shep mcp`.
+
+**Source**: `src/presentation/cli/commands/chat/index.ts`
 
 ---
 
@@ -542,6 +599,18 @@ Configure the messaging integrations (Telegram / WhatsApp routing).
 Override how worktrees are created.
 
 **Source**: `src/presentation/cli/commands/settings/worktree.command.ts`
+
+### `shep settings flags`
+
+List every feature flag with its state, default and a one-line description, grouped into
+Platform, Software factory and Experimental. `shep settings flags enable <flag>` and
+`shep settings flags disable <flag>` turn one on or off; an unknown flag exits 1. The web UI's
+`/settings/feature-flags` view shows the same list.
+
+A command group whose flag is off (for example `shep space` with `spaces` off, or `shep aspm`
+with `aspm` off) is hidden from `--help`, and running it prints the `enable` command to use.
+
+**Source**: `src/presentation/cli/commands/settings/flags.command.ts`
 
 | Option                       | Description                                        |
 | ---------------------------- | -------------------------------------------------- |
@@ -1153,16 +1222,17 @@ feature flag.
 
 ### `shep security enforce`
 
-Evaluate repository security posture and enforce policy. Gated on the
-`supplyChainSecurity` feature flag; when the flag is off the command is a no-op
-that exits 0.
+Evaluate repository security posture and enforce policy. Supply-chain security
+is part of ASPM, so the command is gated on the `aspm` feature flag; when the
+flag is off the command is a no-op that exits 0.
 
 | Option                  | Description                                | Default |
 | ----------------------- | ------------------------------------------ | ------- |
 | `-r, --repo <path>`     | Repository to evaluate                     | cwd     |
 | `-o, --output <format>` | Output format (`table` or `json`)          | `table` |
 
-`SHEP_SUPPLY_CHAIN_SECURITY=false` is the CI kill-switch.
+`SHEP_SUPPLY_CHAIN_SECURITY` overrides the flag for CI: `false` (or `0`) turns
+enforcement off, `true` (or `1`) turns it on even while `aspm` is off.
 
 **Source**: `src/presentation/cli/commands/security.command.ts`
 

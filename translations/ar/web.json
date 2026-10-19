@@ -23,7 +23,8 @@
       "security": "Security",
       "messaging": "Messaging",
       "mcp": "MCP",
-      "harness": "Harness الوكيل"
+      "harness": "Harness الوكيل",
+      "telemetry": "مقاييس الاستخدام"
     },
     "language": {
       "title": "اللغة",
@@ -83,6 +84,8 @@
       "defaultModeDescription": "الوضع الافتراضي للميزات الجديدة المنشأة عبر CLI أو واجهة الويب",
       "maxParallelFeatures": "الحد الأقصى للميزات المتوازية",
       "maxParallelFeaturesDescription": "أقصى عدد من الميزات التي تشغّل وكيلاً في الوقت نفسه. القيمة 0 تعني بلا حد. تُوضع الميزات الإضافية في قائمة انتظار وتبدأ تلقائياً عند توفر مكان.",
+      "decisionTimeout": "مهلة الأسئلة",
+      "decisionTimeoutDescription": "المدة التي ينتظر فيها وكيل الخلفية إجابتك قبل أن يتابع بالخيار الموصى به.",
       "modeRegular": "عادي",
       "modeFast": "سريع",
       "modeExploration": "استكشاف",
@@ -243,8 +246,8 @@
       "description": "تبديل الميزات التجريبية والتجريبية المبكرة",
       "sectionDescription": "تمكين أو تعطيل الميزات التجريبية",
       "badge": "تجريبي",
-      "deployments": "النشر",
-      "deploymentsDescription": "تمكين سير عمل نشر البيئات",
+      "envDeploy": "النشر",
+      "envDeployDescription": "تمكين سير عمل نشر البيئات",
       "debug": "التصحيح",
       "debugDescription": "عرض لوحات التصحيح والتسجيل المفصل",
       "reactFileManager": "مدير ملفات React",
@@ -265,7 +268,46 @@
       "clustersDescription": "تمكين التنقل بين المجموعات وإدارة مجموعات Kubernetes في واجهة الويب",
       "hint": "ميزات تجريبية لا تزال قيد التطوير. قم بتمكينها على مسؤوليتك — قد تتغير أو تُزال في الإصدارات المستقبلية. وضع التصحيح يضيف تسجيلًا مفصلاً مفيدًا لاستكشاف الأخطاء.",
       "queryAwareHarness": "Harness وكيل مدرك للاستعلام",
-      "queryAwareHarnessDescription": "تجريبي: وكيل Shep Harness و/harness وتبويب السياق في الميزة وطلبات الأذونات"
+      "queryAwareHarnessDescription": "تجريبي: وكيل Shep Harness و/harness وتبويب السياق في الميزة وطلبات الأذونات",
+      "githubImport": "الاستيراد من GitHub",
+      "githubImportDescription": "استنساخ مستودعات GitHub أو تفريعها وإضافتها إلى Shep",
+      "scheduledWorkflows": "سير العمل المجدول",
+      "scheduledWorkflowsDescription": "إنشاء سير عمل آلي وجدولته وتشغيله وفق جدول cron",
+      "spaces": "المساحات",
+      "spacesDescription": "مساحات وخطوط منتجات تفصل معرفة كل سياق وتسجيلات دخول وكلائه",
+      "trackers": "المتتبعات",
+      "trackersDescription": "مزامنة مهام Linear وJira مع مشاريع Shep في الاتجاهين",
+      "knowledge": "المعرفة",
+      "knowledgeDescription": "مزامنة صفحات Notion مختارة في معرفة المساحة لوكلائها",
+      "signals": "الإشارات",
+      "signalsDescription": "جمع إشارات العملاء والحوادث كأدلة للفرص",
+      "opportunities": "الفرص",
+      "opportunitiesDescription": "ترتيب الفرص حسب القيمة لكل ساعة مراجعة وملء سعة الأسبوع",
+      "feedback": "الملاحظات",
+      "feedbackDescription": "استقبال ملاحظات العملاء عبر نقطة نهاية بمفتاح وتجميعها في مواضيع",
+      "discovery": "الاستكشاف",
+      "discoveryDescription": "السماح لوكيل باقتراح فرص من الأدلة المتفرقة في المساحة",
+      "incidents": "الحوادث",
+      "incidentsDescription": "فتح حوادث من التنبيهات ليرتب وكيل الأسباب ويقترح إصلاحات",
+      "outcomes": "النتائج",
+      "outcomesDescription": "التحقق مما إذا كان العمل المُسلَّم قد أصلح ما بُني من أجله",
+      "docsFirst": "التوثيق أولاً",
+      "docsFirstDescription": "السماح للمساحات باشتراط توثيق يُكتب أثناء التخطيط، مع بوابة دمج للتوثيق",
+      "autopilot": "الطيار الآلي",
+      "autopilotDescription": "السماح لمساحة بالتحقيق والإصلاح والبناء بنفسها ضمن سياستها",
+      "factory": "المصنع",
+      "factoryDescription": "عرض صفحة حالة المصنع لكل مساحة",
+      "sdlcBoard": "لوحة SDLC",
+      "sdlcBoardDescription": "عرض لوحة SDLC: لوحة مباشرة لمهام الوكلاء عبر الميزات النشطة",
+      "groupPlatform": "المنصة",
+      "groupSoftwareFactory": "مصنع البرمجيات",
+      "groupExperimental": "تجريبي",
+      "defaultOn": "الافتراضي: مفعّل",
+      "defaultOff": "الافتراضي: معطّل",
+      "openView": "فتح عرض أعلام الميزات",
+      "backToSettings": "العودة إلى الإعدادات",
+      "pageDescription": "كل ما يستطيع Shep تفعيله أو تعطيله. تسري التغييرات فوراً؛ وتُخفى صفحات وأوامر CLI للميزة المعطّلة.",
+      "onCount": "{{on}} من {{total}} مفعّلة"
     },
     "interactiveAgent": {
       "title": "الوكيل التفاعلي",
@@ -449,7 +491,8 @@
     "trackers": "الاتصالات",
     "opportunities": "الفرص",
     "incidents": "الحوادث",
-    "factory": "المصنع"
+    "factory": "المصنع",
+    "chat": "الدردشة"
   },
   "sidebar": {
     "features": "الميزات",
@@ -779,7 +822,14 @@
     "wait": "الانتظار",
     "cost": "التكلفة",
     "modelUsed": "شُغّل على {{model}}",
-    "noActivityRecorded": "لم يتم تسجيل أي نشاط بعد"
+    "noActivityRecorded": "لم يتم تسجيل أي نشاط بعد",
+    "decisions": {
+      "title": "القرارات",
+      "pending": "بانتظار إجابة",
+      "answered": "أجاب {{actor}}: {{answer}}",
+      "defaulted": "لا إجابة قبل المهلة — تمت المتابعة بالخيار الموصى به: {{answer}}",
+      "cancelled": "أُلغي دون إجابة"
+    }
   },
   "logTab": {
     "structuredView": "عرض منظم",
@@ -1819,6 +1869,160 @@
       "save": "حفظ",
       "run": "تشغيل الآن",
       "running": "جارٍ التشغيل…"
+    }
+  },
+  "decision": {
+    "answeredQuestions": "أسئلة تمت الإجابة عنها",
+    "recommended": "موصى به",
+    "selectMany": "اختر خيارًا واحدًا أو أكثر.",
+    "otherPlaceholder": "اكتب إجابتك الخاصة، أو اتركه فارغًا لاستخدام الخيار المحدد",
+    "composerHint": "اكتب في مربع الرسالة للإجابة بكلماتك.",
+    "restoreText": "استعادة النص المكتوب",
+    "notResumable": "لم يعد بالإمكان الإجابة عن هذا السؤال — الوكيل الذي طرحه لم يعد ينتظر.",
+    "defaultsAt": "إذا لم يُجب أحد قبل {{time}}، يتابع الوكيل بالخيار الموصى به.",
+    "preview": "معاينة",
+    "previous": "السابق",
+    "next": "التالي",
+    "submit": "إرسال",
+    "submitting": "جارٍ الإرسال…",
+    "new": "جديد"
+  },
+  "telemetry": {
+    "fieldsHeading": "ما الذي يُرسل",
+    "fields": {
+      "installId": "معرّف تثبيت عشوائي",
+      "usage": "الأوامر والصفحات والميزات التي تستخدمها، وكيف تنتهي عمليات التشغيل",
+      "platform": "إصدار Shep ونظام التشغيل وإصدار Node.js",
+      "agentAccountHash": "تجزئة SHA-256 لمعرّف حسابك على Claude أو Codex",
+      "githubUsername": "اسم المستخدم الخاص بك على GitHub (يُقرأ باستخدام gh)",
+      "githubOwners": "مالكو المستودعات على GitHub (مستخدمون أو مؤسسات) التي تستخدمها مع Shep",
+      "contactConsent": "ما إذا كان يمكن لفريق Shep التواصل معك على GitHub"
+    },
+    "identityHeading": "يُرسل فقط إذا فعّلت «تضمين هويتي» (معطّل افتراضيًا)",
+    "neverSent": "لا يُرسل أبدًا: المطالبات أو الشيفرة أو مسارات الملفات أو أسماء المستودعات أو الفروع أو عناوين الميزات أو رسائل الخطأ.",
+    "reasons": {
+      "ci": "تم تعيين متغير البيئة CI",
+      "do-not-track": "تم تعيين DO_NOT_TRACK",
+      "env-disabled": "تم تعيين SHEP_TELEMETRY_DISABLED",
+      "test": "يعمل ضمن مشغّل اختبارات",
+      "user-opt-out": "قمت بإيقافها"
+    },
+    "notice": {
+      "title": "يجمع Shep مقاييس الاستخدام",
+      "intro": "لمعرفة الميزات المستخدمة، يرسل Shep أحداث الاستخدام إلى فريق Shep (PostHog، منطقة الاتحاد الأوروبي). يمكنك إيقاف ذلك في أي وقت.",
+      "turnOff": "إيقاف",
+      "turnedOff": "مقاييس الاستخدام متوقفة. تم حذف الأحداث في قائمة الانتظار.",
+      "dismiss": "حسنًا",
+      "failed": "تعذّر تحديث مقاييس الاستخدام. حاول مرة أخرى من الإعدادات."
+    },
+    "controls": {
+      "enabled": "إرسال مقاييس الاستخدام",
+      "enabledDescription": "يؤدي إيقاف هذا الخيار أيضًا إلى حذف الأحداث التي لم تُرسل بعد.",
+      "identity": "تضمين هويتي (اسم المستخدم على GitHub، المؤسسة، تجزئة الحساب)",
+      "identityDescription": "معطّل حتى تفعّله. ما دام معطّلًا تبقى مقاييس الاستخدام مجهولة الهوية.",
+      "contact": "يمكن لفريق Shep التواصل معي على GitHub",
+      "contactDescription": "متوقف ما لم تقم بتشغيله."
+    },
+    "settings": {
+      "title": "مقاييس الاستخدام",
+      "description": "ساعد في تحديد ما سيتم بناؤه لاحقًا عبر إرسال أحداث الاستخدام إلى فريق Shep.",
+      "forcedOff": "متوقف في هذه البيئة: {{reason}}.",
+      "queued": "أحداث بانتظار الإرسال: {{count}}",
+      "destination": "تُرسل إلى {{destination}}",
+      "notConfigured": "لم يتم تكوين مفتاح مشروع في هذا الإصدار، لذلك لا يُرسل شيء.",
+      "hint": "شغّل `shep telemetry show` لترى بالضبط ما سيتم إرساله.",
+      "loading": "جارٍ تحميل إعدادات مقاييس الاستخدام…",
+      "loadFailed": "تعذّر تحميل إعدادات مقاييس الاستخدام."
+    }
+  },
+  "checkpoints": {
+    "loading": "جارٍ تحميل نقاط الحفظ…",
+    "empty": "لا توجد نقاط حفظ بعد. يحفظ Shep شجرة العمل بعد كل خطوة عند تشغيل الوكيل.",
+    "modeStep": "لكل خطوة",
+    "modeCompare": "مقارنة",
+    "kindBaseline": "البداية",
+    "kindPreRestore": "قبل الاستعادة",
+    "files_one": "{{count}} ملف",
+    "files_few": "{{count}} ملفات",
+    "files_many": "{{count}} ملفًا",
+    "files_other": "{{count}} ملف",
+    "from": "من",
+    "to": "إلى",
+    "selectStep": "اختر خطوة لرؤية ما غيّرته.",
+    "baselineSelected": "هذه نقطة البداية: لا شيء قبلها.",
+    "diffLoading": "جارٍ تحميل الفروق…",
+    "noChanges": "لا توجد تغييرات بين هاتين الخطوتين.",
+    "restore": "استعادة",
+    "restoreAria": "استعادة شجرة العمل إلى {{step}}",
+    "restoreTitle": "استعادة شجرة العمل إلى {{step}}؟",
+    "restoreDescription": "تُستبدل ملفات شجرة العمل بنقطة الحفظ هذه. تُحفظ الحالة الحالية أولًا كنقطة حفظ جديدة، ولا يتغير الفرع ولا إيداعاته.",
+    "restoreConfirm": "استعادة",
+    "cancel": "إلغاء",
+    "restored": "استُعيدت شجرة العمل إلى {{step}}",
+    "restoreFailed": "فشلت الاستعادة",
+    "blocked": {
+      "NoOwnWorktree": "الاستعادة متاحة فقط لميزة لها شجرة عمل خاصة بها.",
+      "NotLinkedWorktree": "الاستعادة غير متاحة: المجلد ليس شجرة عمل git مرتبطة.",
+      "WorktreeUnavailable": "الاستعادة غير متاحة: تعذّرت قراءة شجرة العمل.",
+      "AgentRunning": "الاستعادة غير متاحة أثناء تشغيل الوكيل."
+    }
+  },
+  "chatBlocks": {
+    "kinds": {
+      "spec_review": "مراجعة المواصفات",
+      "html_preview": "معاينة",
+      "plan_card": "خطة"
+    },
+    "actions": {
+      "approve": "موافقة",
+      "request_changes": "طلب تعديلات",
+      "implement": "تنفيذ",
+      "refine": "تحسين"
+    },
+    "resolved": {
+      "approve": "تمت الموافقة",
+      "request_changes": "طُلبت تعديلات",
+      "implement": "قيد التنفيذ",
+      "refine": "طُلب تحسين"
+    },
+    "notePlaceholder": "ما الذي يجب تغييره؟",
+    "send": "إرسال",
+    "cancel": "إلغاء",
+    "preview": "معاينة",
+    "source": "المصدر",
+    "openFullScreen": "فتح بملء الشاشة",
+    "sandboxNote": "يعمل في بيئة معزولة بلا وصول إلى الشبكة.",
+    "answerFailed": "لم يتم تسليم إجابتك",
+    "answerFailedDescription": "ما زالت الكتلة مفتوحة. حاول مرة أخرى.",
+    "retry": "إعادة المحاولة"
+  },
+  "chats": {
+    "title": "الدردشة",
+    "conversations": "المحادثات",
+    "conversation": "المحادثة",
+    "groups": {
+      "global": "Shep",
+      "repository": "المستودعات",
+      "feature": "الميزات",
+      "application": "التطبيقات"
+    },
+    "openOnCanvas": "فتح على اللوحة",
+    "openApplication": "فتح التطبيق",
+    "lifecycle": {
+      "Started": "بدأت",
+      "Analyze": "تحليل",
+      "Requirements": "المتطلبات",
+      "Research": "البحث",
+      "Planning": "التخطيط",
+      "Implementation": "التنفيذ",
+      "Review": "المراجعة",
+      "Maintain": "مدمجة",
+      "Blocked": "محظورة",
+      "Pending": "قيد الانتظار",
+      "Exploring": "استكشاف",
+      "Deleting": "قيد الحذف",
+      "AwaitingUpstream": "بانتظار المصدر",
+      "Archived": "مؤرشفة"
     }
   }
 }

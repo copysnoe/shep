@@ -4,6 +4,254 @@
   </a>
 </p>
 
+# 🚀 Shep [v1.242.0](/compare/v1.241.0...v1.242.0) · _2026-10-11_
+
+> Your organization does not have access to Claude. Please login again or contact your administrator.
+
+
+
+### ✨ Features
+
+* **web:** chat-first page with inline spec, preview and plan blocks (spec 137, N1) ([#930](https://github.com/shep-ai/shep/issues/930)) ([83573ca](https://github.com/shep-ai/shep/commit/83573caa5e0c9d5ff71610cb4f0a1a3962279adb))
+
+  ![chats](https://raw.githubusercontent.com/shep-ai/shep/v1.242.0/specs/137-chat-first-surface/evidence/chats-page.png)
+  ![chats dark](https://raw.githubusercontent.com/shep-ai/shep/v1.242.0/specs/137-chat-first-surface/evidence/chats-page-dark.png)
+  ![feature](https://raw.githubusercontent.com/shep-ai/shep/v1.242.0/specs/137-chat-first-surface/evidence/chats-page-feature.png)
+  ![answered](https://raw.githubusercontent.com/shep-ai/shep/v1.242.0/specs/137-chat-first-surface/evidence/spec-review-answered.png)
+
+## 📦 Install or update
+
+```bash
+# upgrade an existing install
+npm i -g @shepai/cli@1.242.0
+
+# or run instantly without installing
+npx @shepai/cli@latest
+```
+
+## 💬 Join the community
+
+[💬 **Discord**](https://discord.gg/ES6tdVFfur) · [📖 **Docs**](https://github.com/shep-ai/shep#readme) · [⭐ **Star on GitHub**](https://github.com/shep-ai/shep) · [🐛 **Report an issue**](https://github.com/shep-ai/shep/issues)
+
+---
+
+<sub>🤖 Released autonomously by Shep — built by parallel AI agents working in isolated git worktrees. Try it: `npx @shepai/cli`</sub>
+
+<p align="center">
+  <a href="https://github.com/shep-ai/shep">
+    <img src="https://raw.githubusercontent.com/shep-ai/shep/main/docs/screenshots/shep-card.jpg" alt="Shep — run multiple AI agents in parallel" width="720" />
+  </a>
+</p>
+
+# 🚀 Shep [v1.241.0](/compare/v1.240.0...v1.241.0) · _2026-10-11_
+
+> Your organization does not have access to Claude. Please login again or contact your administrator.
+
+
+
+### ✨ Features
+
+* **agents:** emit decision.answered and decision.defaulted telemetry (spec 136) ([#929](https://github.com/shep-ai/shep/issues/929)) ([1e1f859](https://github.com/shep-ai/shep/commit/1e1f8590bad5e6e6272e790b6a268395fe57799b)), closes [#922](https://github.com/shep-ai/shep/issues/922) [#925](https://github.com/shep-ai/shep/issues/925)
+
+  ![default](https://raw.githubusercontent.com/shep-ai/shep/v1.241.0/specs/134-unified-decisions/evidence/decision-panel-default.png)
+  ![dark](https://raw.githubusercontent.com/shep-ai/shep/v1.241.0/specs/134-unified-decisions/evidence/decision-panel-dark.png)
+  ![gate](https://raw.githubusercontent.com/shep-ai/shep/v1.241.0/specs/134-unified-decisions/evidence/decision-panel-approval-gate.png)
+  ![not resumable](https://raw.githubusercontent.com/shep-ai/shep/v1.241.0/specs/134-unified-decisions/evidence/decision-panel-not-resumable.png)
+* **agents:** git checkpoints after each feature-agent step (spec 138) ([#931](https://github.com/shep-ai/shep/issues/931)) ([26265ed](https://github.com/shep-ai/shep/commit/26265edcfdc47c479b38557901402567f17fbe61)), closes [#925](https://github.com/shep-ai/shep/issues/925)
+
+  ![checkpoints tab light](https://raw.githubusercontent.com/shep-ai/shep/v1.241.0/specs/138-git-checkpoints/evidence/checkpoints-tab-light.png)
+  ![checkpoints tab dark](https://raw.githubusercontent.com/shep-ai/shep/v1.241.0/specs/138-git-checkpoints/evidence/checkpoints-tab-dark.png)
+  ![checkpoints tab compare light](https://raw.githubusercontent.com/shep-ai/shep/v1.241.0/specs/138-git-checkpoints/evidence/checkpoints-tab-compare-light.png)
+  ![checkpoints tab compare dark](https://raw.githubusercontent.com/shep-ai/shep/v1.241.0/specs/138-git-checkpoints/evidence/checkpoints-tab-compare-dark.png)
+* **web:** put the SDLC board behind a feature flag, off by default ([#932](https://github.com/shep-ai/shep/issues/932)) ([e71f138](https://github.com/shep-ai/shep/commit/e71f138622e5a1e196903a9e9e08b487308d6cbb)), closes [#925](https://github.com/shep-ai/shep/issues/925)
+
+
+
+### 🐛 Bug Fixes
+
+* **cli:** wait for the conpty host to exit when a terminal closes ([#928](https://github.com/shep-ai/shep/issues/928)) ([94a846d](https://github.com/shep-ai/shep/commit/94a846dbc132ef7017558cdeb636daa9fea02371)), closes [#925](https://github.com/shep-ai/shep/issues/925) [#925](https://github.com/shep-ai/shep/issues/925)
+
+
+## 📦 Install or update
+
+```bash
+# upgrade an existing install
+npm i -g @shepai/cli@1.241.0
+
+# or run instantly without installing
+npx @shepai/cli@latest
+```
+
+## 💬 Join the community
+
+[💬 **Discord**](https://discord.gg/ES6tdVFfur) · [📖 **Docs**](https://github.com/shep-ai/shep#readme) · [⭐ **Star on GitHub**](https://github.com/shep-ai/shep) · [🐛 **Report an issue**](https://github.com/shep-ai/shep/issues)
+
+---
+
+<sub>🤖 Released autonomously by Shep — built by parallel AI agents working in isolated git worktrees. Try it: `npx @shepai/cli`</sub>
+
+<p align="center">
+  <a href="https://github.com/shep-ai/shep">
+    <img src="https://raw.githubusercontent.com/shep-ai/shep/main/docs/screenshots/shep-card.jpg" alt="Shep — run multiple AI agents in parallel" width="720" />
+  </a>
+</p>
+
+# 🚀 Shep [v1.240.0](/compare/v1.239.0...v1.240.0) · _2026-10-11_
+
+> Your organization does not have access to Claude. Please login again or contact your administrator.
+
+
+
+### ✨ Features
+
+* **web:** review cleanup — per-area feature flags, ASPM off by default ([#925](https://github.com/shep-ai/shep/issues/925)) ([58df74f](https://github.com/shep-ai/shep/commit/58df74f86eb98c0b38df40f1deb992da77244fea)), closes [#923](https://github.com/shep-ai/shep/issues/923) [922/#924](https://github.com/shep-ai/shep/issues/924)
+
+  ![notice light](https://raw.githubusercontent.com/shep-ai/shep/v1.240.0/specs/133-telemetry/evidence/notice-card-light.png)
+  ![settings light](https://raw.githubusercontent.com/shep-ai/shep/v1.240.0/specs/133-telemetry/evidence/settings-section-light.png)
+  ![notice dark](https://raw.githubusercontent.com/shep-ai/shep/v1.240.0/specs/133-telemetry/evidence/notice-card-dark.png)
+  ![settings dark](https://raw.githubusercontent.com/shep-ai/shep/v1.240.0/specs/133-telemetry/evidence/settings-section-dark.png)
+
+## 📦 Install or update
+
+```bash
+# upgrade an existing install
+npm i -g @shepai/cli@1.240.0
+
+# or run instantly without installing
+npx @shepai/cli@latest
+```
+
+## 💬 Join the community
+
+[💬 **Discord**](https://discord.gg/ES6tdVFfur) · [📖 **Docs**](https://github.com/shep-ai/shep#readme) · [⭐ **Star on GitHub**](https://github.com/shep-ai/shep) · [🐛 **Report an issue**](https://github.com/shep-ai/shep/issues)
+
+---
+
+<sub>🤖 Released autonomously by Shep — built by parallel AI agents working in isolated git worktrees. Try it: `npx @shepai/cli`</sub>
+
+<p align="center">
+  <a href="https://github.com/shep-ai/shep">
+    <img src="https://raw.githubusercontent.com/shep-ai/shep/main/docs/screenshots/shep-card.jpg" alt="Shep — run multiple AI agents in parallel" width="720" />
+  </a>
+</p>
+
+# 🚀 Shep [v1.239.0](/compare/v1.238.0...v1.239.0) · _2026-10-11_
+
+> Your organization does not have access to Claude. Please login again or contact your administrator.
+
+
+
+### ✨ Features
+
+* **api:** add opt-out usage metrics (spec 133) ([#923](https://github.com/shep-ai/shep/issues/923)) ([d97bc6f](https://github.com/shep-ai/shep/commit/d97bc6fabb457d4e4d603543f8ac43b3f977a4a4)), closes [#922](https://github.com/shep-ai/shep/issues/922) [#924](https://github.com/shep-ai/shep/issues/924)
+
+  ![notice light](https://raw.githubusercontent.com/shep-ai/shep/v1.239.0/specs/133-telemetry/evidence/notice-card-light.png)
+  ![settings light](https://raw.githubusercontent.com/shep-ai/shep/v1.239.0/specs/133-telemetry/evidence/settings-section-light.png)
+  ![notice dark](https://raw.githubusercontent.com/shep-ai/shep/v1.239.0/specs/133-telemetry/evidence/notice-card-dark.png)
+  ![settings dark](https://raw.githubusercontent.com/shep-ai/shep/v1.239.0/specs/133-telemetry/evidence/settings-section-dark.png)
+
+## 📦 Install or update
+
+```bash
+# upgrade an existing install
+npm i -g @shepai/cli@1.239.0
+
+# or run instantly without installing
+npx @shepai/cli@latest
+```
+
+## 💬 Join the community
+
+[💬 **Discord**](https://discord.gg/ES6tdVFfur) · [📖 **Docs**](https://github.com/shep-ai/shep#readme) · [⭐ **Star on GitHub**](https://github.com/shep-ai/shep) · [🐛 **Report an issue**](https://github.com/shep-ai/shep/issues)
+
+---
+
+<sub>🤖 Released autonomously by Shep — built by parallel AI agents working in isolated git worktrees. Try it: `npx @shepai/cli`</sub>
+
+<p align="center">
+  <a href="https://github.com/shep-ai/shep">
+    <img src="https://raw.githubusercontent.com/shep-ai/shep/main/docs/screenshots/shep-card.jpg" alt="Shep — run multiple AI agents in parallel" width="720" />
+  </a>
+</p>
+
+# 🚀 Shep [v1.238.0](/compare/v1.237.0...v1.238.0) · _2026-10-11_
+
+> Your organization does not have access to Claude. Please login again or contact your administrator.
+
+
+
+### ✨ Features
+
+* **agents:** background agents ask with a recommendation and a deadline (spec 134, part 2) ([#924](https://github.com/shep-ai/shep/issues/924)) ([cf30ab6](https://github.com/shep-ai/shep/commit/cf30ab62922e803b925f186fcb11d75ef9674cb5)), closes [#922](https://github.com/shep-ai/shep/issues/922)
+
+  ![default](https://raw.githubusercontent.com/shep-ai/shep/v1.238.0/specs/134-unified-decisions/evidence/decision-panel-default.png)
+  ![dark](https://raw.githubusercontent.com/shep-ai/shep/v1.238.0/specs/134-unified-decisions/evidence/decision-panel-dark.png)
+  ![gate](https://raw.githubusercontent.com/shep-ai/shep/v1.238.0/specs/134-unified-decisions/evidence/decision-panel-approval-gate.png)
+  ![not resumable](https://raw.githubusercontent.com/shep-ai/shep/v1.238.0/specs/134-unified-decisions/evidence/decision-panel-not-resumable.png)
+
+## 📦 Install or update
+
+```bash
+# upgrade an existing install
+npm i -g @shepai/cli@1.238.0
+
+# or run instantly without installing
+npx @shepai/cli@latest
+```
+
+## 💬 Join the community
+
+[💬 **Discord**](https://discord.gg/ES6tdVFfur) · [📖 **Docs**](https://github.com/shep-ai/shep#readme) · [⭐ **Star on GitHub**](https://github.com/shep-ai/shep) · [🐛 **Report an issue**](https://github.com/shep-ai/shep/issues)
+
+---
+
+<sub>🤖 Released autonomously by Shep — built by parallel AI agents working in isolated git worktrees. Try it: `npx @shepai/cli`</sub>
+
+<p align="center">
+  <a href="https://github.com/shep-ai/shep">
+    <img src="https://raw.githubusercontent.com/shep-ai/shep/main/docs/screenshots/shep-card.jpg" alt="Shep — run multiple AI agents in parallel" width="720" />
+  </a>
+</p>
+
+# 🚀 Shep [v1.237.0](/compare/v1.236.0...v1.237.0) · _2026-10-11_
+
+> Your organization does not have access to Claude. Please login again or contact your administrator.
+
+
+
+### ✨ Features
+
+* **agents:** one Decision primitive rendered inline everywhere (spec 134, part 1) ([#922](https://github.com/shep-ai/shep/issues/922)) ([49c74fd](https://github.com/shep-ai/shep/commit/49c74fd505bc45a34791f24249f0d3e7cb3b1514))
+
+  ![default](https://raw.githubusercontent.com/shep-ai/shep/v1.237.0/specs/134-unified-decisions/evidence/decision-panel-default.png)
+  ![dark](https://raw.githubusercontent.com/shep-ai/shep/v1.237.0/specs/134-unified-decisions/evidence/decision-panel-dark.png)
+  ![gate](https://raw.githubusercontent.com/shep-ai/shep/v1.237.0/specs/134-unified-decisions/evidence/decision-panel-approval-gate.png)
+  ![not resumable](https://raw.githubusercontent.com/shep-ai/shep/v1.237.0/specs/134-unified-decisions/evidence/decision-panel-not-resumable.png)
+
+## 📦 Install or update
+
+```bash
+# upgrade an existing install
+npm i -g @shepai/cli@1.237.0
+
+# or run instantly without installing
+npx @shepai/cli@latest
+```
+
+## 💬 Join the community
+
+[💬 **Discord**](https://discord.gg/ES6tdVFfur) · [📖 **Docs**](https://github.com/shep-ai/shep#readme) · [⭐ **Star on GitHub**](https://github.com/shep-ai/shep) · [🐛 **Report an issue**](https://github.com/shep-ai/shep/issues)
+
+---
+
+<sub>🤖 Released autonomously by Shep — built by parallel AI agents working in isolated git worktrees. Try it: `npx @shepai/cli`</sub>
+
+<p align="center">
+  <a href="https://github.com/shep-ai/shep">
+    <img src="https://raw.githubusercontent.com/shep-ai/shep/main/docs/screenshots/shep-card.jpg" alt="Shep — run multiple AI agents in parallel" width="720" />
+  </a>
+</p>
+
 # 🚀 Shep [v1.236.0](/compare/v1.235.0...v1.236.0) · _2026-10-05_
 
 > Your organization does not have access to Claude. Please login again or contact your administrator.

@@ -23,7 +23,8 @@
       "security": "Security",
       "messaging": "Messaging",
       "mcp": "MCP",
-      "harness": "Harness do agente"
+      "harness": "Harness do agente",
+      "telemetry": "Métricas de uso"
     },
     "language": {
       "title": "Idioma",
@@ -83,6 +84,8 @@
       "defaultModeDescription": "Modo padrão para novos recursos criados via CLI ou interface web",
       "maxParallelFeatures": "Máximo de recursos paralelos",
       "maxParallelFeaturesDescription": "Número máximo de recursos executando um agente ao mesmo tempo. 0 significa ilimitado. Recursos extras entram na fila e iniciam automaticamente quando uma vaga é liberada.",
+      "decisionTimeout": "Prazo das perguntas",
+      "decisionTimeoutDescription": "Quanto tempo um agente em segundo plano espera sua resposta antes de seguir com a opção recomendada.",
       "modeRegular": "Regular",
       "modeFast": "Rápido",
       "modeExploration": "Exploração",
@@ -243,8 +246,8 @@
       "description": "Alternar recursos experimentais e beta",
       "sectionDescription": "Ativar ou desativar recursos experimentais",
       "badge": "Experimental",
-      "deployments": "Implantações",
-      "deploymentsDescription": "Ativar fluxos de trabalho de implantação em ambientes",
+      "envDeploy": "Implantações",
+      "envDeployDescription": "Ativar fluxos de trabalho de implantação em ambientes",
       "debug": "Debug",
       "debugDescription": "Mostrar painéis de debug e logs detalhados",
       "reactFileManager": "Gerenciador de Arquivos React",
@@ -265,7 +268,46 @@
       "clustersDescription": "Habilitar navegação de clusters e gerenciamento de clusters Kubernetes na interface web",
       "hint": "Recursos experimentais que ainda estão em desenvolvimento. Ative por sua conta e risco — podem mudar ou ser removidos em versões futuras. O modo debug adiciona logs detalhados úteis para solução de problemas.",
       "queryAwareHarness": "Harness do agente sensível à consulta",
-      "queryAwareHarnessDescription": "Experimental: o agente Shep Harness, /harness, a aba Contexto da funcionalidade e os pedidos de permissão"
+      "queryAwareHarnessDescription": "Experimental: o agente Shep Harness, /harness, a aba Contexto da funcionalidade e os pedidos de permissão",
+      "githubImport": "Importação do GitHub",
+      "githubImportDescription": "Clonar ou fazer fork de repositórios do GitHub e adicioná-los ao Shep",
+      "scheduledWorkflows": "Workflows agendados",
+      "scheduledWorkflowsDescription": "Criar, agendar e executar workflows automatizados com um agendamento cron",
+      "spaces": "Espaços",
+      "spacesDescription": "Espaços e linhas de produto que mantêm separados o conhecimento e os acessos de agentes de cada contexto",
+      "trackers": "Trackers",
+      "trackersDescription": "Manter as issues do Linear e do Jira sincronizadas com os projetos do Shep nos dois sentidos",
+      "knowledge": "Conhecimento",
+      "knowledgeDescription": "Sincronizar páginas escolhidas do Notion com o conhecimento de um espaço para os seus agentes",
+      "signals": "Sinais",
+      "signalsDescription": "Recolher sinais de clientes e incidentes como evidência para oportunidades",
+      "opportunities": "Oportunidades",
+      "opportunitiesDescription": "Ordenar oportunidades por valor por hora de revisão e preencher a capacidade da semana",
+      "feedback": "Feedback",
+      "feedbackDescription": "Receber feedback de clientes por um endpoint com chave e agrupá-lo em temas",
+      "discovery": "Descoberta",
+      "discoveryDescription": "Deixar um agente propor oportunidades a partir das evidências soltas de um espaço",
+      "incidents": "Incidentes",
+      "incidentsDescription": "Abrir incidentes a partir de alertas e deixar um agente ordenar causas e propor correções",
+      "outcomes": "Resultados",
+      "outcomesDescription": "Verificar se o trabalho entregue resolveu aquilo para que foi feito",
+      "docsFirst": "Docs primeiro",
+      "docsFirstDescription": "Permitir que os espaços exijam documentação escrita durante o planejamento, com um bloqueio de merge de docs",
+      "autopilot": "Piloto automático",
+      "autopilotDescription": "Deixar um espaço investigar, corrigir e construir sozinho dentro da sua política",
+      "factory": "Fábrica",
+      "factoryDescription": "Mostrar a página de estado da fábrica de cada espaço",
+      "sdlcBoard": "Quadro SDLC",
+      "sdlcBoardDescription": "Mostrar o quadro SDLC: um quadro ao vivo das tarefas dos agentes nas funcionalidades ativas",
+      "groupPlatform": "Plataforma",
+      "groupSoftwareFactory": "Fábrica de software",
+      "groupExperimental": "Experimental",
+      "defaultOn": "Padrão: ligado",
+      "defaultOff": "Padrão: desligado",
+      "openView": "Abrir a vista de feature flags",
+      "backToSettings": "Voltar às configurações",
+      "pageDescription": "Tudo o que o Shep pode ligar ou desligar. As alterações aplicam-se de imediato; as páginas e comandos CLI de uma funcionalidade desligada ficam ocultos.",
+      "onCount": "{{on}} de {{total}} ligados"
     },
     "interactiveAgent": {
       "title": "Agente Interativo",
@@ -449,7 +491,8 @@
     "trackers": "Ligações",
     "opportunities": "Oportunidades",
     "incidents": "Incidentes",
-    "factory": "Fábrica"
+    "factory": "Fábrica",
+    "chat": "Chat"
   },
   "sidebar": {
     "features": "Recursos",
@@ -779,7 +822,14 @@
     "wait": "Espera",
     "cost": "Custo",
     "modelUsed": "Executado em {{model}}",
-    "noActivityRecorded": "Nenhuma atividade registrada"
+    "noActivityRecorded": "Nenhuma atividade registrada",
+    "decisions": {
+      "title": "Decisões",
+      "pending": "Aguardando uma resposta",
+      "answered": "{{actor}} respondeu: {{answer}}",
+      "defaulted": "Sem resposta até o prazo — seguiu com a opção recomendada: {{answer}}",
+      "cancelled": "Cancelada sem resposta"
+    }
   },
   "logTab": {
     "structuredView": "Vista estruturada",
@@ -1819,6 +1869,160 @@
       "save": "Salvar",
       "run": "Executar agora",
       "running": "Executando…"
+    }
+  },
+  "decision": {
+    "answeredQuestions": "Perguntas respondidas",
+    "recommended": "Recomendada",
+    "selectMany": "Selecione uma ou mais opções.",
+    "otherPlaceholder": "Digite sua própria resposta ou deixe em branco para usar a opção selecionada",
+    "composerHint": "Escreva na caixa de mensagem para responder com suas palavras.",
+    "restoreText": "Restaurar texto digitado",
+    "notResumable": "Esta pergunta não pode mais ser respondida — o agente que a fez não está mais esperando.",
+    "defaultsAt": "Se ninguém responder até {{time}}, o agente continua com a opção recomendada.",
+    "preview": "Pré-visualização",
+    "previous": "Anterior",
+    "next": "Próxima",
+    "submit": "Enviar",
+    "submitting": "Enviando…",
+    "new": "Nova"
+  },
+  "telemetry": {
+    "fieldsHeading": "O que é enviado",
+    "fields": {
+      "installId": "Um ID de instalação aleatório",
+      "usage": "Quais comandos, páginas e recursos você usa e como as execuções terminam",
+      "platform": "Versão do Shep, sistema operacional e versão do Node.js",
+      "agentAccountHash": "Um hash SHA-256 do ID da sua conta Claude ou Codex",
+      "githubUsername": "Seu usuário do GitHub (lido com gh)",
+      "githubOwners": "Os proprietários no GitHub (usuários ou organizações) dos repositórios que você usa com o Shep",
+      "contactConsent": "Se a equipe do Shep pode entrar em contato com você no GitHub"
+    },
+    "identityHeading": "Enviado apenas se você ativar “Incluir minha identidade” (desativado por padrão)",
+    "neverSent": "Nunca enviados: prompts, código, caminhos de arquivos, nomes de repositórios ou branches, títulos de features ou mensagens de erro.",
+    "reasons": {
+      "ci": "a variável de ambiente CI está definida",
+      "do-not-track": "DO_NOT_TRACK está definida",
+      "env-disabled": "SHEP_TELEMETRY_DISABLED está definida",
+      "test": "executando em um executor de testes",
+      "user-opt-out": "você as desativou"
+    },
+    "notice": {
+      "title": "O Shep coleta métricas de uso",
+      "intro": "Para saber quais recursos são usados, o Shep envia eventos de uso para a equipe do Shep (PostHog, região da UE). Você pode desativar isso a qualquer momento.",
+      "turnOff": "Desativar",
+      "turnedOff": "As métricas de uso estão desativadas. Os eventos na fila foram excluídos.",
+      "dismiss": "Entendi",
+      "failed": "Não foi possível atualizar as métricas de uso. Tente novamente em Configurações."
+    },
+    "controls": {
+      "enabled": "Enviar métricas de uso",
+      "enabledDescription": "Desativar isso também exclui os eventos que ainda não foram enviados.",
+      "identity": "Incluir minha identidade (usuário do GitHub, organização, hash da conta)",
+      "identityDescription": "Desativado até você ativar. Enquanto estiver desativado, as métricas de uso são anônimas.",
+      "contact": "A equipe do Shep pode entrar em contato comigo no GitHub",
+      "contactDescription": "Desativado, a menos que você ative."
+    },
+    "settings": {
+      "title": "Métricas de uso",
+      "description": "Ajude a decidir o que construir a seguir enviando eventos de uso para a equipe do Shep.",
+      "forcedOff": "Desativado neste ambiente: {{reason}}.",
+      "queued": "{{count}} eventos aguardando envio",
+      "destination": "Enviado para {{destination}}",
+      "notConfigured": "Nenhuma chave de projeto está configurada neste build, então nada é enviado.",
+      "hint": "Execute `shep telemetry show` para ver exatamente o que seria enviado.",
+      "loading": "Carregando configurações de métricas de uso…",
+      "loadFailed": "Não foi possível carregar as configurações de métricas de uso."
+    }
+  },
+  "checkpoints": {
+    "loading": "Carregando checkpoints…",
+    "empty": "Ainda não há checkpoints. O Shep salva o worktree após cada etapa quando o agente é executado.",
+    "modeStep": "Por etapa",
+    "modeCompare": "Comparar",
+    "kindBaseline": "início",
+    "kindPreRestore": "antes de restaurar",
+    "files_one": "{{count}} arquivo",
+    "files_few": "{{count}} arquivos",
+    "files_many": "{{count}} arquivos",
+    "files_other": "{{count}} arquivos",
+    "from": "De",
+    "to": "Até",
+    "selectStep": "Selecione uma etapa para ver o que ela alterou.",
+    "baselineSelected": "Este é o ponto de partida: nada veio antes.",
+    "diffLoading": "Carregando diff…",
+    "noChanges": "Nenhuma alteração entre essas etapas.",
+    "restore": "Restaurar",
+    "restoreAria": "Restaurar o worktree para {{step}}",
+    "restoreTitle": "Restaurar o worktree para {{step}}?",
+    "restoreDescription": "Os arquivos do worktree são substituídos por este checkpoint. O estado atual é salvo antes como um novo checkpoint; o branch e seus commits não mudam.",
+    "restoreConfirm": "Restaurar",
+    "cancel": "Cancelar",
+    "restored": "Worktree restaurado para {{step}}",
+    "restoreFailed": "Falha ao restaurar",
+    "blocked": {
+      "NoOwnWorktree": "Só é possível restaurar uma funcionalidade que tem seu próprio worktree.",
+      "NotLinkedWorktree": "Não é possível restaurar: a pasta não é um worktree git vinculado.",
+      "WorktreeUnavailable": "Não é possível restaurar: o worktree não pode ser lido.",
+      "AgentRunning": "Não é possível restaurar enquanto o agente está em execução."
+    }
+  },
+  "chatBlocks": {
+    "kinds": {
+      "spec_review": "Revisão de especificação",
+      "html_preview": "Prévia",
+      "plan_card": "Plano"
+    },
+    "actions": {
+      "approve": "Aprovar",
+      "request_changes": "Pedir alterações",
+      "implement": "Implementar",
+      "refine": "Refinar"
+    },
+    "resolved": {
+      "approve": "Aprovado",
+      "request_changes": "Alterações pedidas",
+      "implement": "Implementando",
+      "refine": "Refinamento pedido"
+    },
+    "notePlaceholder": "O que deve mudar?",
+    "send": "Enviar",
+    "cancel": "Cancelar",
+    "preview": "Prévia",
+    "source": "Código",
+    "openFullScreen": "Abrir em tela cheia",
+    "sandboxNote": "Executa em um sandbox sem acesso à rede.",
+    "answerFailed": "Sua resposta não foi entregue",
+    "answerFailedDescription": "O bloco continua aberto. Tente de novo.",
+    "retry": "Tentar de novo"
+  },
+  "chats": {
+    "title": "Chat",
+    "conversations": "Conversas",
+    "conversation": "Conversa",
+    "groups": {
+      "global": "Shep",
+      "repository": "Repositórios",
+      "feature": "Funcionalidades",
+      "application": "Aplicações"
+    },
+    "openOnCanvas": "Abrir no canvas",
+    "openApplication": "Abrir aplicação",
+    "lifecycle": {
+      "Started": "Iniciada",
+      "Analyze": "Analisando",
+      "Requirements": "Requisitos",
+      "Research": "Pesquisa",
+      "Planning": "Planejamento",
+      "Implementation": "Implementação",
+      "Review": "Revisão",
+      "Maintain": "Mesclada",
+      "Blocked": "Bloqueada",
+      "Pending": "Pendente",
+      "Exploring": "Explorando",
+      "Deleting": "Excluindo",
+      "AwaitingUpstream": "Aguardando upstream",
+      "Archived": "Arquivada"
     }
   }
 }

@@ -7,6 +7,7 @@ const mockReplace = vi.fn();
 let mockPathname = '/applications';
 
 vi.mock('next/navigation', () => ({
+  useParams: () => ({}),
   usePathname: () => mockPathname,
   useRouter: () => ({ push: mockPush, replace: mockReplace, refresh: vi.fn() }),
 }));
@@ -31,10 +32,22 @@ const defaultFlags = {
   whatsappDispatch: false,
   aspm: false,
   clusters: false,
-  supplyChainSecurity: false,
   scheduledWorkflows: false,
   githubImport: true,
   queryAwareHarness: false,
+  spaces: true,
+  trackers: true,
+  knowledge: true,
+  signals: true,
+  opportunities: true,
+  feedback: true,
+  discovery: true,
+  incidents: true,
+  outcomes: true,
+  docsFirst: true,
+  autopilot: true,
+  factory: true,
+  sdlcBoard: false,
 };
 
 /**

@@ -282,6 +282,7 @@ export function buildDeps(opts: BuildDepsOptions = {}): BuiltDeps {
       gitPrService.localMergeSquash(cwd, featureBranch, baseBranch, commitMessage, hasRemote),
     gitPrService,
     cleanupFeatureWorktreeUseCase: { execute: vi.fn().mockResolvedValue(undefined) } as any,
+    telemetry: { record: vi.fn() },
   };
 
   return { deps, featureRepository, executor };
@@ -335,6 +336,7 @@ export function makeState(overrides: Partial<FeatureAgentState>): FeatureAgentSt
     securityMode: SecurityMode.Disabled,
     securityActionDispositions: {},
     mcpConfigPath: undefined,
+    decisionToolAvailable: false,
     iterationCount: 0,
     maxIterations: 10,
     feedbackHistory: [],

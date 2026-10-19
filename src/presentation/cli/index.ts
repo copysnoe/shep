@@ -68,6 +68,7 @@ import { createBedrockCommand } from './commands/bedrock/bedrock.command.js';
 import { createContributorsCommand } from './commands/contributors/index.js';
 import { createWhatsappCommand } from './commands/whatsapp/whatsapp.command.js';
 import { createAspmCommand } from './commands/aspm/index.js';
+import { gateByFeatureFlag } from './commands/feature-flag-gate.js';
 import { createSecurityCommand } from './commands/security.command.js';
 import { createWorkflowCommand } from './commands/workflow/index.js';
 import { createPluginCommand } from './commands/plugin/index.js';
@@ -98,6 +99,9 @@ import { createStatusCommand } from './commands/status.command.js';
 import { createRestartCommand } from './commands/restart.command.js';
 import { createServeCommand } from './commands/_serve.command.js';
 import { startDaemon } from './commands/daemon/start-daemon.js';
+import { createTelemetryCommand } from './commands/telemetry/index.js';
+import { createChatCommand } from './commands/chat/index.js';
+import { recordUnhandledError, registerTelemetryHooks } from './telemetry-hooks.js';
 
 // DI container and settings
 import { initializeContainer, container } from '@/infrastructure/di/container.js';
@@ -168,6 +172,8 @@ async function bootstrap() {
     // inherits them; the preAction hook writes SHEP_LOG_LEVEL before any
     // action runs, and ConsoleLogger re-reads it per line.
     registerGlobalVerbosityOptions(program);
+    // Usage metrics (spec 133): first-run notice and `cli.command`.
+    registerTelemetryHooks(program);
 
     program
       // task-10: Default action starts the daemon (or shows already-running URL).
@@ -208,24 +214,26 @@ async function bootstrap() {
     program.addCommand(createAspmCommand());
     program.addCommand(createSecurityCommand());
     program.addCommand(createPluginCommand());
-    program.addCommand(createSpaceCommand());
-    program.addCommand(createConnectionCommand());
-    program.addCommand(createSyncCommand());
-    program.addCommand(createKnowledgeCommand());
-    program.addCommand(createSignalCommand());
-    program.addCommand(createOpportunityCommand());
-    program.addCommand(createFeedbackCommand());
-    program.addCommand(createDiscoveryCommand());
-    program.addCommand(createIncidentCommand());
-    program.addCommand(createOutcomeCommand());
-    program.addCommand(createAutopilotCommand());
-    program.addCommand(createFactoryCommand());
+    program.addCommand(gateByFeatureFlag(createSpaceCommand(), 'spaces'));
+    program.addCommand(gateByFeatureFlag(createConnectionCommand(), ['trackers', 'knowledge']));
+    program.addCommand(gateByFeatureFlag(createSyncCommand(), 'trackers'));
+    program.addCommand(gateByFeatureFlag(createKnowledgeCommand(), 'knowledge'));
+    program.addCommand(gateByFeatureFlag(createSignalCommand(), 'signals'));
+    program.addCommand(gateByFeatureFlag(createOpportunityCommand(), 'opportunities'));
+    program.addCommand(gateByFeatureFlag(createFeedbackCommand(), 'feedback'));
+    program.addCommand(gateByFeatureFlag(createDiscoveryCommand(), 'discovery'));
+    program.addCommand(gateByFeatureFlag(createIncidentCommand(), 'incidents'));
+    program.addCommand(gateByFeatureFlag(createOutcomeCommand(), 'outcomes'));
+    program.addCommand(gateByFeatureFlag(createAutopilotCommand(), 'autopilot'));
+    program.addCommand(gateByFeatureFlag(createFactoryCommand(), 'factory'));
     program.addCommand(createUpgradeCommand());
     program.addCommand(createWorkflowCommand());
     program.addCommand(createMcpCommand());
     program.addCommand(createFleetCommand());
     program.addCommand(createLogsCommand());
     program.addCommand(createUsageCommand());
+    program.addCommand(createTelemetryCommand());
+    program.addCommand(createChatCommand());
     // Experimental (spec 119): hidden from --help until the flag is on.
     program.addCommand(createHarnessCommand(), {
       hidden: !(getSettings().featureFlags?.queryAwareHarness ?? false),
@@ -241,6 +249,7 @@ async function bootstrap() {
     // Parse arguments (parseAsync needed for async command actions like init)
     await program.parseAsync();
   } catch (error) {
+    recordUnhandledError(error);
     if (!errorReported) {
       messages.error(
         'Failed to start CLI',
@@ -253,11 +262,13 @@ async function bootstrap() {
 
 // Global error handlers
 process.on('uncaughtException', (error) => {
+  recordUnhandledError(error);
   messages.error('An unexpected error occurred', error);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason) => {
+  recordUnhandledError(reason);
   const error = reason instanceof Error ? reason : new Error(String(reason));
   messages.error('Unhandled promise rejection', error);
   process.exit(1);

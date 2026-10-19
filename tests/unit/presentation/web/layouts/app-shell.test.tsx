@@ -6,6 +6,7 @@ const mockPush = vi.fn();
 let mockPathname = '/';
 
 vi.mock('next/navigation', () => ({
+  useParams: () => ({}),
   usePathname: () => mockPathname,
   useRouter: () => ({ push: mockPush, refresh: vi.fn() }),
 }));
@@ -64,6 +65,19 @@ const defaultFlags = {
   scheduledWorkflows: false,
   githubImport: true,
   queryAwareHarness: false,
+  spaces: true,
+  trackers: true,
+  knowledge: true,
+  signals: true,
+  opportunities: true,
+  feedback: true,
+  discovery: true,
+  incidents: true,
+  outcomes: true,
+  docsFirst: true,
+  autopilot: true,
+  factory: true,
+  sdlcBoard: false,
 };
 
 function renderShell(children: React.ReactNode) {
@@ -180,6 +194,19 @@ describe('AppShell', () => {
       // dynamic-loaded slot with a "Shep Chat" placeholder. We only assert
       // that AppShell mounts the slot when repos exist.
       expect(screen.getByText('Shep Chat')).toBeInTheDocument();
+    });
+
+    it('hides the floating chat on the chat-first page, which is the chat (spec 137)', () => {
+      mockPathname = '/chats/global';
+      render(
+        <FeatureFlagsProvider flags={defaultFlags}>
+          <AppShell>
+            <ContextPublisher features={[]} hasRepositories={true} />
+            <div>Content</div>
+          </AppShell>
+        </FeatureFlagsProvider>
+      );
+      expect(screen.queryByText('Shep Chat')).not.toBeInTheDocument();
     });
 
     it('hides the chat toggle button during onboarding', () => {

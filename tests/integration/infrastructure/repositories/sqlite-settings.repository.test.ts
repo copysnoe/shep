@@ -16,6 +16,7 @@ import { createInMemoryDatabase, tableExists } from '../../../helpers/database.h
 import { runSQLiteMigrations } from '@/infrastructure/persistence/sqlite/migrations.js';
 import { SQLiteSettingsRepository } from '@/infrastructure/repositories/sqlite-settings.repository.js';
 import type { Settings } from '@/domain/generated/output.js';
+import { createDefaultSettings } from '@/domain/factories/settings-defaults.factory.js';
 import {
   AgentType,
   AgentEffort,
@@ -50,7 +51,6 @@ describe('SQLiteSettingsRepository', () => {
       terminalPreference: TerminalType.System,
     },
     system: {
-      autoUpdate: true,
       logLevel: 'info',
     },
     agent: {
@@ -347,23 +347,16 @@ describe('SQLiteSettingsRepository', () => {
 
       // Assert
       expect(loaded?.system).toEqual({
-        autoUpdate: true,
         logLevel: 'info',
       });
     });
 
-    it('should convert integer back to boolean for autoUpdate', async () => {
-      // Arrange - create with autoUpdate = false
-      const settings = createTestSettings();
-      settings.system.autoUpdate = false;
-      await repository.initialize(settings);
+    it('does not surface the removed autoUpdate setting (spec 135)', async () => {
+      await repository.initialize(createTestSettings());
 
-      // Act
       const loaded = await repository.load();
 
-      // Assert
-      expect(loaded?.system.autoUpdate).toBe(false);
-      expect(typeof loaded?.system.autoUpdate).toBe('boolean');
+      expect(loaded?.system).not.toHaveProperty('autoUpdate');
     });
 
     it('should parse ISO 8601 timestamps back to Date objects', async () => {
@@ -501,7 +494,6 @@ describe('SQLiteSettingsRepository', () => {
 
       // Modify system config
       settings.system = {
-        autoUpdate: false,
         logLevel: 'error',
       };
 
@@ -533,6 +525,62 @@ describe('SQLiteSettingsRepository', () => {
   });
 
   describe('feature flags', () => {
+    const FACTORY_FLAGS = [
+      'spaces',
+      'trackers',
+      'knowledge',
+      'signals',
+      'opportunities',
+      'feedback',
+      'discovery',
+      'incidents',
+      'outcomes',
+      'docsFirst',
+      'autopilot',
+      'factory',
+    ] as const;
+
+    it('round-trips every software-factory flag through initialize and update (spec 135)', async () => {
+      const settings = createTestSettings();
+      const off = Object.fromEntries(FACTORY_FLAGS.map((flag) => [flag, false]));
+      settings.featureFlags = { ...createDefaultSettings().featureFlags!, ...off };
+
+      await repository.initialize(settings);
+      const loaded = await repository.load();
+      for (const flag of FACTORY_FLAGS) expect(loaded?.featureFlags?.[flag], flag).toBe(false);
+
+      const on = Object.fromEntries(FACTORY_FLAGS.map((flag) => [flag, true]));
+      await repository.update({ ...loaded!, featureFlags: { ...loaded!.featureFlags!, ...on } });
+      const updated = await repository.load();
+      for (const flag of FACTORY_FLAGS) expect(updated?.featureFlags?.[flag], flag).toBe(true);
+    });
+
+    it('round-trips the SDLC board flag, off by default (spec 140)', async () => {
+      const settings = createTestSettings();
+      settings.featureFlags = createDefaultSettings().featureFlags!;
+
+      await repository.initialize(settings);
+      const loaded = await repository.load();
+      expect(loaded?.featureFlags?.sdlcBoard).toBe(false);
+
+      await repository.update({
+        ...loaded!,
+        featureFlags: { ...loaded!.featureFlags!, sdlcBoard: true },
+      });
+      expect((await repository.load())?.featureFlags?.sdlcBoard).toBe(true);
+    });
+
+    it('keeps an ASPM flag a user already turned on now that the default is off', async () => {
+      const settings = createTestSettings();
+      settings.featureFlags = { ...createDefaultSettings().featureFlags!, aspm: true };
+
+      await repository.initialize(settings);
+      const loaded = await repository.load();
+
+      expect(createDefaultSettings().featureFlags?.aspm).toBe(false);
+      expect(loaded?.featureFlags?.aspm).toBe(true);
+    });
+
     it('should initialize settings with featureFlags and load them back', async () => {
       const settings = createTestSettings();
       settings.featureFlags = {
@@ -546,10 +594,22 @@ describe('SQLiteSettingsRepository', () => {
         whatsappDispatch: false,
         aspm: false,
         clusters: false,
-        supplyChainSecurity: true,
         scheduledWorkflows: false,
         githubImport: true,
         queryAwareHarness: false,
+        spaces: false,
+        trackers: false,
+        knowledge: false,
+        signals: false,
+        opportunities: false,
+        feedback: false,
+        discovery: false,
+        incidents: false,
+        outcomes: false,
+        docsFirst: false,
+        autopilot: false,
+        factory: false,
+        sdlcBoard: false,
       };
 
       await repository.initialize(settings);
@@ -566,10 +626,22 @@ describe('SQLiteSettingsRepository', () => {
         whatsappDispatch: false,
         aspm: false,
         clusters: false,
-        supplyChainSecurity: true,
         scheduledWorkflows: false,
         githubImport: true,
         queryAwareHarness: false,
+        spaces: false,
+        trackers: false,
+        knowledge: false,
+        signals: false,
+        opportunities: false,
+        feedback: false,
+        discovery: false,
+        incidents: false,
+        outcomes: false,
+        docsFirst: false,
+        autopilot: false,
+        factory: false,
+        sdlcBoard: false,
       });
     });
 
@@ -591,11 +663,23 @@ describe('SQLiteSettingsRepository', () => {
         aspm: false,
         clusters: false,
         // When settings is initialized without featureFlags, the mapper writes 0 for all
-        // flags (including supplyChainSecurity), so load-back returns false across the board.
-        supplyChainSecurity: false,
+        // flags, so load-back returns false across the board.
         scheduledWorkflows: false,
         githubImport: true,
         queryAwareHarness: false,
+        spaces: false,
+        trackers: false,
+        knowledge: false,
+        signals: false,
+        opportunities: false,
+        feedback: false,
+        discovery: false,
+        incidents: false,
+        outcomes: false,
+        docsFirst: false,
+        autopilot: false,
+        factory: false,
+        sdlcBoard: false,
       });
     });
 
@@ -614,10 +698,22 @@ describe('SQLiteSettingsRepository', () => {
         whatsappDispatch: false,
         aspm: false,
         clusters: false,
-        supplyChainSecurity: true,
         scheduledWorkflows: false,
         githubImport: true,
         queryAwareHarness: false,
+        spaces: false,
+        trackers: false,
+        knowledge: false,
+        signals: false,
+        opportunities: false,
+        feedback: false,
+        discovery: false,
+        incidents: false,
+        outcomes: false,
+        docsFirst: false,
+        autopilot: false,
+        factory: false,
+        sdlcBoard: false,
       };
       settings.updatedAt = new Date('2025-01-02T00:00:00Z');
       await repository.update(settings);
@@ -634,10 +730,22 @@ describe('SQLiteSettingsRepository', () => {
         whatsappDispatch: false,
         aspm: false,
         clusters: false,
-        supplyChainSecurity: true,
         scheduledWorkflows: false,
         githubImport: true,
         queryAwareHarness: false,
+        spaces: false,
+        trackers: false,
+        knowledge: false,
+        signals: false,
+        opportunities: false,
+        feedback: false,
+        discovery: false,
+        incidents: false,
+        outcomes: false,
+        docsFirst: false,
+        autopilot: false,
+        factory: false,
+        sdlcBoard: false,
       });
     });
 
@@ -654,10 +762,22 @@ describe('SQLiteSettingsRepository', () => {
         whatsappDispatch: false,
         aspm: false,
         clusters: false,
-        supplyChainSecurity: true,
         scheduledWorkflows: false,
         githubImport: true,
         queryAwareHarness: false,
+        spaces: false,
+        trackers: false,
+        knowledge: false,
+        signals: false,
+        opportunities: false,
+        feedback: false,
+        discovery: false,
+        incidents: false,
+        outcomes: false,
+        docsFirst: false,
+        autopilot: false,
+        factory: false,
+        sdlcBoard: false,
       };
 
       await repository.initialize(settings);
@@ -670,6 +790,24 @@ describe('SQLiteSettingsRepository', () => {
       expect(row.feature_flag_env_deploy).toBe(0);
       expect(row.feature_flag_debug).toBe(1);
       expect(row.feature_flag_react_file_manager).toBe(0);
+    });
+  });
+
+  describe('decision default timeout (spec 134)', () => {
+    it('round-trips decisionDefaultTimeoutMinutes through INSERT and UPDATE', async () => {
+      const settings = createTestSettings();
+      settings.workflow.decisionDefaultTimeoutMinutes = 45;
+      await repository.initialize(settings);
+      expect((await repository.load())?.workflow.decisionDefaultTimeoutMinutes).toBe(45);
+
+      settings.workflow.decisionDefaultTimeoutMinutes = 5;
+      await repository.update(settings);
+      expect((await repository.load())?.workflow.decisionDefaultTimeoutMinutes).toBe(5);
+    });
+
+    it('leaves it unset when not configured', async () => {
+      await repository.initialize(createTestSettings());
+      expect((await repository.load())?.workflow.decisionDefaultTimeoutMinutes).toBeUndefined();
     });
   });
 
@@ -897,17 +1035,9 @@ describe('SQLiteSettingsRepository', () => {
       expect(row.sys_auto_update).toBeDefined();
     });
 
-    it('should correctly convert boolean to integer for storage', async () => {
-      // Arrange
-      const settingsTrue = createTestSettings();
-      settingsTrue.system.autoUpdate = true;
-
-      const settingsFalse = createTestSettings();
-      settingsFalse.id = 'test-false';
-      settingsFalse.system.autoUpdate = false;
-
+    it('keeps writing the legacy NOT NULL sys_auto_update column (spec 135)', async () => {
       // Act
-      await repository.initialize(settingsTrue);
+      await repository.initialize(createTestSettings());
 
       // Assert
       const rowTrue = db
@@ -916,7 +1046,7 @@ describe('SQLiteSettingsRepository', () => {
       expect(rowTrue.sys_auto_update).toBe(1);
     });
 
-    it('should correctly convert integer back to boolean when loading', async () => {
+    it('loads a row written by an older build that stored sys_auto_update = 0', async () => {
       // Arrange - manually insert with integer value
       db.prepare(
         `INSERT INTO settings (
@@ -943,8 +1073,7 @@ describe('SQLiteSettingsRepository', () => {
       const loaded = await repository.load();
 
       // Assert
-      expect(loaded?.system.autoUpdate).toBe(false);
-      expect(typeof loaded?.system.autoUpdate).toBe('boolean');
+      expect(loaded?.system).toEqual({ logLevel: 'info' });
     });
   });
 
@@ -1015,10 +1144,22 @@ describe('SQLiteSettingsRepository', () => {
         whatsappDispatch: true,
         aspm: false,
         clusters: false,
-        supplyChainSecurity: false,
         scheduledWorkflows: false,
         githubImport: true,
         queryAwareHarness: false,
+        spaces: false,
+        trackers: false,
+        knowledge: false,
+        signals: false,
+        opportunities: false,
+        feedback: false,
+        discovery: false,
+        incidents: false,
+        outcomes: false,
+        docsFirst: false,
+        autopilot: false,
+        factory: false,
+        sdlcBoard: false,
       };
       await repository.initialize(settings);
 

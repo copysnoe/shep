@@ -12,6 +12,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('next/navigation', () => ({
+  useParams: () => ({}),
   usePathname: () => '/control-center',
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
@@ -42,6 +43,19 @@ const defaultFlags = {
   scheduledWorkflows: false,
   githubImport: true,
   queryAwareHarness: false,
+  spaces: true,
+  trackers: true,
+  knowledge: true,
+  signals: true,
+  opportunities: true,
+  feedback: true,
+  discovery: true,
+  incidents: true,
+  outcomes: true,
+  docsFirst: true,
+  autopilot: true,
+  factory: true,
+  sdlcBoard: false,
 };
 
 function renderShell() {

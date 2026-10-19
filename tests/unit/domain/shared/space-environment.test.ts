@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   applySpaceEnvironment,
+  combineSpaceEnvironments,
   isAgentAllowedInSpace,
   spaceEnvironment,
   spaceAgent,
@@ -66,6 +67,24 @@ describe('applySpaceEnvironment', () => {
   });
 });
 
+describe('combineSpaceEnvironments', () => {
+  it('sets every variable, later environments winning, and unsets each name once', () => {
+    expect(
+      combineSpaceEnvironments(
+        { set: { A: '1', B: '1' }, unset: ['X'] },
+        { set: { B: '2', SHEP_CHAT_SCOPE: 'global' }, unset: ['X', 'Y'] }
+      )
+    ).toEqual({ set: { A: '1', B: '2', SHEP_CHAT_SCOPE: 'global' }, unset: ['X', 'Y'] });
+  });
+
+  it('skips missing environments', () => {
+    expect(combineSpaceEnvironments(undefined, { set: { A: '1' }, unset: [] })).toEqual({
+      set: { A: '1' },
+      unset: [],
+    });
+  });
+});
+
 describe('isAgentAllowedInSpace', () => {
   it('allows every agent when no list is set', () => {
     expect(isAgentAllowedInSpace(undefined, AgentType.CodexCli)).toBe(true);
@@ -86,7 +105,7 @@ describe('spaceAgent', () => {
       ok: true,
       agentType: AgentType.ClaudeCode,
     });
-    expect(spaceAgent(settings, AgentType.Aider)).toEqual({ ok: false });
+    expect(spaceAgent(settings, AgentType.Cursor)).toEqual({ ok: false });
   });
 
   it('picks the first allowed agent, or leaves the default when every agent is allowed', () => {

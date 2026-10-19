@@ -25,6 +25,11 @@ properties:
     type: string
     format: date-time
     description: When the user last acknowledged a breaker trip; failures before this do not re-trip
+  decisionDefaultTimeoutMinutes:
+    type: integer
+    minimum: -2147483648
+    maximum: 2147483647
+    description: "Minutes a background agent's question waits before the agent proceeds with its recommended option (spec 134; default: 30)"
   ciMaxFixAttempts:
     type: integer
     minimum: -2147483648

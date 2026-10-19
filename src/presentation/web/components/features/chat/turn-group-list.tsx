@@ -16,11 +16,24 @@
  * here only to avoid the network round-trip for its own render.
  */
 
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { InteractiveMessage } from '@shepai/core/domain/generated/output';
 import { InteractiveMessageRole } from '@shepai/core/domain/generated/output';
 import { TurnGroupCard } from './turn-group-card';
+import {
+  isInteractionAnswerMessage,
+  parseInteractionAnswerMessage,
+  decisionFromInteractionAnswer,
+} from '@shepai/core/domain/shared/interaction-answer';
+import { AnsweredDecisionRow } from '@/components/common/decision-panel';
+import {
+  chatMessageDisplayText,
+  isChatBlockMessage,
+  isChatBlockResponseMessage,
+} from '@shepai/core/domain/shared/chat-block';
+import { ChatBlockMessage } from './ChatBlockMessage';
+import { ChatBlockResponseRow } from './ChatBlockResponseRow';
 
 export interface TurnGroupView {
   id: string;
@@ -98,7 +111,8 @@ export function computeTurnGroupsFromMessages(
   const turns: Turn[] = [];
   let current: Turn | null = null;
   for (const m of flat) {
-    if (m.role === InteractiveMessageRole.user) {
+    // An answered-question record belongs to the turn that asked (spec 134).
+    if (m.role === InteractiveMessageRole.user && !isInteractionAnswerMessage(m.content)) {
       current = { user: m, items: [m] };
       turns.push(current);
     } else if (current) {
@@ -112,7 +126,8 @@ export function computeTurnGroupsFromMessages(
   const toView = (t: Turn, status: 'completed' | 'in-progress'): TurnGroupView => {
     const first = t.items[0];
     const last = t.items[t.items.length - 1];
-    const userText = t.user.content ?? '';
+    // An answer to a chat block (spec 137) is titled in words, not raw JSON.
+    const userText = chatMessageDisplayText(t.user.content ?? '', flat);
     return {
       id: `turn-${t.user.id}`,
       title: buildTitle(userText),
@@ -211,14 +226,7 @@ export function CurrentTurnCard({ view, allMessages, streaming }: CurrentTurnCar
 
   const condensed = (
     <div className="flex flex-col gap-2">
-      {userMessage ? (
-        <div className="text-foreground border-l-2 border-violet-500/50 pl-2 text-[12px] whitespace-pre-wrap">
-          <div className="text-muted-foreground/70 mb-0.5 text-[10px] font-medium tracking-wide uppercase">
-            You
-          </div>
-          {userMessage.content}
-        </div>
-      ) : null}
+      {userMessage ? <TurnUserMessage content={userMessage.content} /> : null}
       {/* Condensed indicator — never the raw assistant stream. Only
           a high-level activity line (tool status, "Thinking…", or
           "Agent is waking up…") so the card obeys the layer rule:
@@ -244,6 +252,7 @@ export function CurrentTurnCard({ view, allMessages, streaming }: CurrentTurnCar
       assistantMessageCount={view.currentTurn.assistantMessageCount}
       condensed={condensed}
       details={details}
+      pinned={<TurnBlocks messageIds={view.currentTurn.messageIds} byId={byId} />}
     />
   );
 }
@@ -266,10 +275,16 @@ export function SingleTurnCard({
   group,
   allMessages,
   streaming,
+  decision,
 }: {
   group: TurnGroupView;
   allMessages: readonly InteractiveMessage[];
   streaming?: TurnStreamingState;
+  /**
+   * A question the agent is waiting on in this turn (spec 134). Shown in the
+   * default view — the user must not have to expand the card to answer.
+   */
+  decision?: ReactNode;
 }) {
   const byId = new Map<string, InteractiveMessage>();
   for (const m of allMessages) byId.set(m.id, m);
@@ -282,6 +297,7 @@ export function SingleTurnCard({
         title={group.title}
         status="completed"
         assistantMessageCount={group.assistantMessageCount}
+        pinned={<TurnBlocks messageIds={group.messageIds} byId={byId} />}
       >
         <TurnChildMessages messageIds={group.messageIds} byId={byId} />
       </TurnGroupCard>
@@ -296,15 +312,9 @@ export function SingleTurnCard({
   const userMessage = userMessageId ? byId.get(userMessageId) : null;
   const condensed = (
     <div className="flex flex-col gap-2">
-      {userMessage ? (
-        <div className="text-foreground border-l-2 border-violet-500/50 pl-2 text-[12px] whitespace-pre-wrap">
-          <div className="text-muted-foreground/70 mb-0.5 text-[10px] font-medium tracking-wide uppercase">
-            You
-          </div>
-          {userMessage.content}
-        </div>
-      ) : null}
+      {userMessage ? <TurnUserMessage content={userMessage.content} /> : null}
       {streaming ? <CondensedStreamingIndicator streaming={streaming} /> : null}
+      {decision}
     </div>
   );
   const details = (
@@ -321,6 +331,7 @@ export function SingleTurnCard({
       assistantMessageCount={group.assistantMessageCount}
       condensed={condensed}
       details={details}
+      pinned={<TurnBlocks messageIds={group.messageIds} byId={byId} />}
     />
   );
 }
@@ -354,9 +365,50 @@ export function CompletedTurnGroupsList({ view, allMessages }: CompletedTurnGrou
           title={g.title}
           status="completed"
           assistantMessageCount={g.assistantMessageCount}
+          pinned={<TurnBlocks messageIds={g.messageIds} byId={byId} />}
         >
           <TurnChildMessages messageIds={g.messageIds} byId={byId} />
         </TurnGroupCard>
+      ))}
+    </div>
+  );
+}
+
+/** The user's ask at the top of a live card; an answer to a block reads as one line. */
+function TurnUserMessage({ content }: { content: string }) {
+  if (isChatBlockResponseMessage(content)) {
+    return <ChatBlockResponseRow content={content} className="pl-2" />;
+  }
+  return (
+    <div className="text-foreground border-l-2 border-violet-500/50 pl-2 text-[12px] whitespace-pre-wrap">
+      <div className="text-muted-foreground/70 mb-0.5 text-[10px] font-medium tracking-wide uppercase">
+        You
+      </div>
+      {content}
+    </div>
+  );
+}
+
+/**
+ * The rich blocks the agent posted in a turn (spec 137), pinned to the card
+ * so they stay visible and answerable while the card is collapsed. Null when
+ * the turn has none, so the card shows no empty pinned area.
+ */
+function TurnBlocks({
+  messageIds,
+  byId,
+}: {
+  messageIds: readonly string[];
+  byId: Map<string, InteractiveMessage>;
+}) {
+  const blocks = messageIds
+    .map((mid) => byId.get(mid))
+    .filter((m): m is InteractiveMessage => Boolean(m && isChatBlockMessage(m.content)));
+  if (blocks.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      {blocks.map((m) => (
+        <ChatBlockMessage key={m.id} content={m.content} />
       ))}
     </div>
   );
@@ -380,6 +432,23 @@ function TurnChildMessages({
             <div key={mid} className="text-muted-foreground/50 text-[11px] italic">
               …
             </div>
+          );
+        }
+        // Blocks are pinned to the card (TurnBlocks); answers read as one line.
+        if (isChatBlockMessage(msg.content)) return null;
+        if (isChatBlockResponseMessage(msg.content)) {
+          return <ChatBlockResponseRow key={mid} content={msg.content} className="pl-2" />;
+        }
+        const answered = parseInteractionAnswerMessage(msg.content);
+        if (answered) {
+          const { decision, responses } = decisionFromInteractionAnswer(answered);
+          return (
+            <AnsweredDecisionRow
+              key={mid}
+              decision={decision}
+              responses={responses}
+              className="pl-2"
+            />
           );
         }
         const isUser = msg.role === InteractiveMessageRole.user;

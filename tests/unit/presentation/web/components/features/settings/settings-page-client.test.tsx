@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { updateSettingsAction } from '@/app/actions/update-settings';
 import { SettingsPageClient } from '@/components/features/settings/settings-page-client';
 import { createDefaultSettings } from '@shepai/core/domain/factories/settings-defaults.factory';
 
@@ -37,8 +38,9 @@ describe('SettingsPageClient', () => {
   });
 
   it('renders all section components', () => {
+    const withAspm = { ...settings, featureFlags: { ...settings.featureFlags!, aspm: true } };
     render(
-      <SettingsPageClient settings={settings} shepHome="/home/user/.shep" dbFileSize="2.4 MB" />
+      <SettingsPageClient settings={withAspm} shepHome="/home/user/.shep" dbFileSize="2.4 MB" />
     );
     expect(screen.getByTestId('agent-settings-section')).toBeDefined();
     expect(screen.getByTestId('environment-settings-section')).toBeDefined();
@@ -47,6 +49,14 @@ describe('SettingsPageClient', () => {
     expect(screen.getByTestId('notification-settings-section')).toBeDefined();
     expect(screen.getByTestId('feature-flags-settings-section')).toBeDefined();
     expect(screen.getByTestId('database-settings-section')).toBeDefined();
+  });
+
+  it('hides the supply-chain security section while ASPM is off', () => {
+    render(
+      <SettingsPageClient settings={settings} shepHome="/home/user/.shep" dbFileSize="2.4 MB" />
+    );
+    expect(settings.featureFlags?.aspm).toBe(false);
+    expect(screen.queryByTestId('security-settings-section')).toBeNull();
   });
 
   it('passes shepHome and dbFileSize to database section', () => {
@@ -103,5 +113,22 @@ describe('SettingsPageClient', () => {
     );
     expect(screen.getByTestId('switch-event-mergeReviewReady')).toBeDefined();
     expect(screen.getByText('Merge review ready')).toBeDefined();
+  });
+
+  it('shows the 30-minute question deadline and saves a change within bounds (spec 134)', async () => {
+    render(
+      <SettingsPageClient settings={settings} shepHome="/home/user/.shep" dbFileSize="2.4 MB" />
+    );
+    const input = screen.getByTestId('input-decision-timeout') as HTMLInputElement;
+    expect(input.value).toBe('30');
+
+    fireEvent.change(input, { target: { value: '99999' } });
+    fireEvent.blur(input);
+
+    await vi.waitFor(() => {
+      expect(updateSettingsAction).toHaveBeenCalledWith(
+        expect.objectContaining({ workflow: { decisionDefaultTimeoutMinutes: 1440 } })
+      );
+    });
   });
 });

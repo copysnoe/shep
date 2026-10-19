@@ -78,6 +78,7 @@ import "./agent-definition.tsp";
 // Human-in-the-loop approval gates and phase timing
 import "./approval-gates.tsp";
 import "./phase-timing.tsp";
+import "./git-checkpoint.tsp";
 
 // PRD approval/rejection DTOs
 import "./prd-approval.tsp";
@@ -90,11 +91,15 @@ import "./agent-session.tsp";
 import "./interactive-session.tsp";
 import "./interactive-message.tsp";
 
+// Rich blocks agents post into chat conversations (spec 137)
+import "./chat-block.tsp";
+
 // Persistent workflow step tracking
 import "./workflow-step.tsp";
 
 // Agent collaboration & supervision (spec 093)
 import "./agent-message.tsp";
+import "./decision.tsp";
 import "./agent-question.tsp";
 import "./supervisor-policy.tsp";
 import "./supervisor-decision.tsp";
