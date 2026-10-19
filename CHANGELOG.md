@@ -4,6 +4,47 @@
   </a>
 </p>
 
+# 🚀 Shep [v1.243.0](/compare/v1.242.0...v1.243.0) · _2026-10-19_
+
+> Your organization does not have access to Claude. Please login again or contact your administrator.
+
+
+
+### ✨ Features
+
+* **agents:** opt-in agent-owned coordination for overlapping feature workcells ([#933](https://github.com/shep-ai/shep/issues/933)) ([d8576ae](https://github.com/shep-ai/shep/commit/d8576ae8f4f7bd1bf1d115a77743efa86db75414))
+
+
+
+### 🐛 Bug Fixes
+
+* **agents:** prevent ESM feature-worker startup crash ([#934](https://github.com/shep-ai/shep/issues/934)) ([a9a7f8b](https://github.com/shep-ai/shep/commit/a9a7f8b1a9802632abd2fa564146c5c3c850e51f))
+
+
+## 📦 Install or update
+
+```bash
+# upgrade an existing install
+npm i -g @shepai/cli@1.243.0
+
+# or run instantly without installing
+npx @shepai/cli@latest
+```
+
+## 💬 Join the community
+
+[💬 **Discord**](https://discord.gg/ES6tdVFfur) · [📖 **Docs**](https://github.com/shep-ai/shep#readme) · [⭐ **Star on GitHub**](https://github.com/shep-ai/shep) · [🐛 **Report an issue**](https://github.com/shep-ai/shep/issues)
+
+---
+
+<sub>🤖 Released autonomously by Shep — built by parallel AI agents working in isolated git worktrees. Try it: `npx @shepai/cli`</sub>
+
+<p align="center">
+  <a href="https://github.com/shep-ai/shep">
+    <img src="https://raw.githubusercontent.com/shep-ai/shep/main/docs/screenshots/shep-card.jpg" alt="Shep — run multiple AI agents in parallel" width="720" />
+  </a>
+</p>
+
 # 🚀 Shep [v1.242.0](/compare/v1.241.0...v1.242.0) · _2026-10-11_
 
 > Your organization does not have access to Claude. Please login again or contact your administrator.
