@@ -23,7 +23,8 @@
       "security": "Security",
       "messaging": "Messaging",
       "mcp": "MCP",
-      "harness": "Agent Harness"
+      "harness": "Agent Harness",
+      "telemetry": "Usage metrics"
     },
     "language": {
       "title": "Language",
@@ -83,6 +84,8 @@
       "defaultModeDescription": "Default mode for new features created via CLI or Web UI",
       "maxParallelFeatures": "Max parallel features",
       "maxParallelFeaturesDescription": "Maximum features running an agent at the same time. 0 means unlimited. Extra features are queued and start automatically as slots free up.",
+      "decisionTimeout": "Question deadline",
+      "decisionTimeoutDescription": "How long a background agent waits for your answer before it proceeds with its recommended option.",
       "modeRegular": "Regular",
       "modeFast": "Fast",
       "modeExploration": "Exploration",
@@ -243,8 +246,8 @@
       "description": "Toggle experimental and beta features",
       "sectionDescription": "Enable or disable experimental features",
       "badge": "Experimental",
-      "deployments": "Deployments",
-      "deploymentsDescription": "Enable environment deployment workflows",
+      "envDeploy": "Deployments",
+      "envDeployDescription": "Enable environment deployment workflows",
       "debug": "Debug",
       "debugDescription": "Show debug panels and verbose logging",
       "reactFileManager": "React File Manager",
@@ -265,7 +268,46 @@
       "clustersDescription": "Enable Clusters navigation and Kubernetes cluster management in the web UI",
       "hint": "Experimental features that are still under development. Enable at your own risk — they may change or be removed in future versions. Debug mode adds verbose logging useful for troubleshooting.",
       "queryAwareHarness": "Query-aware agent harness",
-      "queryAwareHarnessDescription": "Experimental: the Shep Harness agent, /harness, the feature Context tab and permission prompts"
+      "queryAwareHarnessDescription": "Experimental: the Shep Harness agent, /harness, the feature Context tab and permission prompts",
+      "githubImport": "GitHub Import",
+      "githubImportDescription": "Clone or fork GitHub repositories and add them to Shep",
+      "scheduledWorkflows": "Scheduled Workflows",
+      "scheduledWorkflowsDescription": "Create, schedule and run automated workflows on a cron schedule",
+      "spaces": "Spaces",
+      "spacesDescription": "Spaces and product lines that keep each context's knowledge and agent logins apart",
+      "trackers": "Trackers",
+      "trackersDescription": "Keep Linear and Jira issues in sync with Shep projects in both directions",
+      "knowledge": "Knowledge",
+      "knowledgeDescription": "Sync chosen Notion pages into a space's knowledge for its agents",
+      "signals": "Signals",
+      "signalsDescription": "Collect customer and incident signals as evidence for opportunities",
+      "opportunities": "Opportunities",
+      "opportunitiesDescription": "Rank opportunities by value per review hour and fill the week's capacity",
+      "feedback": "Feedback",
+      "feedbackDescription": "Take customer feedback through a keyed endpoint and group it into themes",
+      "discovery": "Discovery",
+      "discoveryDescription": "Let an agent propose opportunities from a space's loose evidence",
+      "incidents": "Incidents",
+      "incidentsDescription": "Open incidents from alerts and have an agent rank causes and propose fixes",
+      "outcomes": "Outcomes",
+      "outcomesDescription": "Check whether shipped work fixed what it was built for",
+      "docsFirst": "Docs First",
+      "docsFirstDescription": "Let spaces require documentation written while planning, with a docs merge gate",
+      "autopilot": "Autopilot",
+      "autopilotDescription": "Let a space investigate, fix and build on its own within its policy",
+      "factory": "Factory",
+      "factoryDescription": "Show each space's factory status page",
+      "sdlcBoard": "SDLC board",
+      "sdlcBoardDescription": "Show the SDLC board: a live board of agent tasks across active features",
+      "groupPlatform": "Platform",
+      "groupSoftwareFactory": "Software factory",
+      "groupExperimental": "Experimental",
+      "defaultOn": "Default: on",
+      "defaultOff": "Default: off",
+      "openView": "Open the feature flags view",
+      "backToSettings": "Back to settings",
+      "pageDescription": "Everything Shep can turn on or off. Changes apply right away; pages and CLI commands of a feature that is off are hidden.",
+      "onCount": "{{on}} of {{total}} on"
     },
     "interactiveAgent": {
       "title": "Interactive Agent",
@@ -449,7 +491,8 @@
     "trackers": "Connections",
     "opportunities": "Opportunities",
     "incidents": "Incidents",
-    "factory": "Factory"
+    "factory": "Factory",
+    "chat": "Chat"
   },
   "sidebar": {
     "features": "Features",
@@ -779,7 +822,14 @@
     "wait": "Wait",
     "cost": "Cost",
     "modelUsed": "Ran on {{model}}",
-    "noActivityRecorded": "No activity recorded yet"
+    "noActivityRecorded": "No activity recorded yet",
+    "decisions": {
+      "title": "Decisions",
+      "pending": "Waiting for an answer",
+      "answered": "{{actor}} answered: {{answer}}",
+      "defaulted": "No answer by the deadline — proceeded with the recommended option: {{answer}}",
+      "cancelled": "Cancelled without an answer"
+    }
   },
   "logTab": {
     "structuredView": "Structured view",
@@ -1819,6 +1869,160 @@
       "save": "Save",
       "run": "Run now",
       "running": "Running…"
+    }
+  },
+  "decision": {
+    "answeredQuestions": "Answered questions",
+    "recommended": "Recommended",
+    "selectMany": "Select one or more options.",
+    "otherPlaceholder": "Type your own answer, or leave this blank to use the selected option",
+    "composerHint": "Type in the message box to answer in your own words.",
+    "restoreText": "Restore typed text",
+    "notResumable": "This question can no longer be answered — the agent that asked it is no longer waiting.",
+    "defaultsAt": "If nobody answers by {{time}}, the agent continues with the recommended option.",
+    "preview": "Preview",
+    "previous": "Previous",
+    "next": "Next",
+    "submit": "Submit",
+    "submitting": "Submitting…",
+    "new": "New"
+  },
+  "telemetry": {
+    "fieldsHeading": "What is sent",
+    "fields": {
+      "installId": "A random install id",
+      "usage": "Which commands, pages and features you use, and how runs end",
+      "platform": "Shep version, operating system and Node.js version",
+      "agentAccountHash": "A SHA-256 hash of your Claude or Codex account id",
+      "githubUsername": "Your GitHub username (read with gh)",
+      "githubOwners": "The GitHub owners (users or organisations) of the repositories you use with Shep",
+      "contactConsent": "Whether the Shep team may contact you on GitHub"
+    },
+    "identityHeading": "Sent only if you turn on “Include my identity” (off by default)",
+    "neverSent": "Never sent: prompts, code, file paths, repository or branch names, feature titles or error messages.",
+    "reasons": {
+      "ci": "the CI environment variable is set",
+      "do-not-track": "DO_NOT_TRACK is set",
+      "env-disabled": "SHEP_TELEMETRY_DISABLED is set",
+      "test": "running under a test runner",
+      "user-opt-out": "you turned them off"
+    },
+    "notice": {
+      "title": "Shep collects usage metrics",
+      "intro": "To learn which features are used, Shep sends usage events to the Shep team (PostHog, EU region). You can turn this off at any time.",
+      "turnOff": "Turn off",
+      "turnedOff": "Usage metrics are off. Queued events were deleted.",
+      "dismiss": "Got it",
+      "failed": "Could not update usage metrics. Try again from Settings."
+    },
+    "controls": {
+      "enabled": "Send usage metrics",
+      "enabledDescription": "Turning this off also deletes events that have not been sent yet.",
+      "identity": "Include my identity (GitHub username, org, account hash)",
+      "identityDescription": "Off unless you turn it on. While it is off, usage metrics stay anonymous.",
+      "contact": "The Shep team may contact me on GitHub",
+      "contactDescription": "Off unless you turn it on."
+    },
+    "settings": {
+      "title": "Usage metrics",
+      "description": "Help decide what to build next by sending usage events to the Shep team.",
+      "forcedOff": "Off in this environment: {{reason}}.",
+      "queued": "{{count}} events waiting to be sent",
+      "destination": "Sent to {{destination}}",
+      "notConfigured": "No project key is configured in this build, so nothing is sent.",
+      "hint": "Run `shep telemetry show` to see exactly what would be sent.",
+      "loading": "Loading usage metrics settings…",
+      "loadFailed": "Could not load usage metrics settings."
+    }
+  },
+  "checkpoints": {
+    "loading": "Loading checkpoints…",
+    "empty": "No checkpoints yet. Shep snapshots the worktree after each step once the agent runs.",
+    "modeStep": "Per step",
+    "modeCompare": "Compare",
+    "kindBaseline": "start",
+    "kindPreRestore": "before restore",
+    "files_one": "{{count}} file",
+    "files_few": "{{count}} files",
+    "files_many": "{{count}} files",
+    "files_other": "{{count}} files",
+    "from": "From",
+    "to": "To",
+    "selectStep": "Select a step to see what it changed.",
+    "baselineSelected": "This is the starting point: nothing came before it.",
+    "diffLoading": "Loading diff…",
+    "noChanges": "No changes between these steps.",
+    "restore": "Restore",
+    "restoreAria": "Restore the worktree to {{step}}",
+    "restoreTitle": "Restore the worktree to {{step}}?",
+    "restoreDescription": "The worktree's files are replaced with this checkpoint. The current state is saved as a new checkpoint first, and the branch and its commits are not changed.",
+    "restoreConfirm": "Restore",
+    "cancel": "Cancel",
+    "restored": "Worktree restored to {{step}}",
+    "restoreFailed": "Restore failed",
+    "blocked": {
+      "NoOwnWorktree": "Restore is only available for a feature that runs in its own worktree.",
+      "NotLinkedWorktree": "Restore is unavailable: the folder is not a linked git worktree.",
+      "WorktreeUnavailable": "Restore is unavailable: the worktree can't be read.",
+      "AgentRunning": "Restore is unavailable while the agent is running."
+    }
+  },
+  "chatBlocks": {
+    "kinds": {
+      "spec_review": "Spec review",
+      "html_preview": "Preview",
+      "plan_card": "Plan"
+    },
+    "actions": {
+      "approve": "Approve",
+      "request_changes": "Request changes",
+      "implement": "Implement",
+      "refine": "Refine"
+    },
+    "resolved": {
+      "approve": "Approved",
+      "request_changes": "Changes requested",
+      "implement": "Implementing",
+      "refine": "Refinement requested"
+    },
+    "notePlaceholder": "What should change?",
+    "send": "Send",
+    "cancel": "Cancel",
+    "preview": "Preview",
+    "source": "Source",
+    "openFullScreen": "Open full screen",
+    "sandboxNote": "Runs in a sandbox with no network access.",
+    "answerFailed": "Your answer was not delivered",
+    "answerFailedDescription": "The block is still open. Try again.",
+    "retry": "Retry"
+  },
+  "chats": {
+    "title": "Chat",
+    "conversations": "Conversations",
+    "conversation": "Conversation",
+    "groups": {
+      "global": "Shep",
+      "repository": "Repositories",
+      "feature": "Features",
+      "application": "Applications"
+    },
+    "openOnCanvas": "Open on canvas",
+    "openApplication": "Open application",
+    "lifecycle": {
+      "Started": "Started",
+      "Analyze": "Analyzing",
+      "Requirements": "Requirements",
+      "Research": "Research",
+      "Planning": "Planning",
+      "Implementation": "Implementation",
+      "Review": "Review",
+      "Maintain": "Merged",
+      "Blocked": "Blocked",
+      "Pending": "Pending",
+      "Exploring": "Exploring",
+      "Deleting": "Deleting",
+      "AwaitingUpstream": "Awaiting upstream",
+      "Archived": "Archived"
     }
   }
 }

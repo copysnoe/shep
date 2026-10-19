@@ -17,12 +17,14 @@ const { tasks, prSync, resolved } = vi.hoisted(() => ({
     comments: { start: vi.fn(), stop: vi.fn() },
     outcomes: { start: vi.fn(), stop: vi.fn() },
     autopilot: { start: vi.fn(), stop: vi.fn() },
+    telemetry: { start: vi.fn(), stop: vi.fn() },
   },
   prSync: { start: vi.fn(), stop: vi.fn() },
   resolved: {
     runDue: vi.fn(async () => ({})),
     run: vi.fn(async () => ({})),
     runAll: vi.fn(async () => []),
+    execute: vi.fn(async () => ({})),
   },
 }));
 
@@ -58,6 +60,19 @@ vi.mock('@/infrastructure/services/scheduling/hourly-watcher.js', () => ({
     return [tasks.outcomes, tasks.autopilot][hourlyJobs.length - 1];
   }),
 }));
+/** Telemetry flush watcher jobs (spec 133). */
+const telemetryJobs: { heartbeat?: () => Promise<unknown>; flush?: () => Promise<unknown> } = {};
+vi.mock('@/infrastructure/services/telemetry/telemetry-flush-watcher.js', () => ({
+  createTelemetryFlushWatcher: vi.fn(
+    (jobs: { heartbeat: () => Promise<unknown>; flush: () => Promise<unknown> }) => {
+      Object.assign(telemetryJobs, jobs);
+      return tasks.telemetry;
+    }
+  ),
+}));
+vi.mock('@/infrastructure/services/telemetry/node-telemetry-runtime.js', () => ({
+  setTelemetryProcessKind: vi.fn(),
+}));
 vi.mock('@/infrastructure/services/pr-sync/pr-sync-watcher.service.js', () => ({
   initializePrSyncWatcher: vi.fn(),
   getPrSyncWatcher: vi.fn(() => prSync),
@@ -65,18 +80,35 @@ vi.mock('@/infrastructure/services/pr-sync/pr-sync-watcher.service.js', () => ({
 vi.mock('@/infrastructure/persistence/sqlite/connection.js', () => ({
   getExistingConnection: vi.fn(() => ({})),
 }));
+const flagState = vi.hoisted(() => ({ off: new Set<string>() }));
+vi.mock('../../../../../src/presentation/cli/commands/feature-flag-gate.js', () => ({
+  isFeatureFlagOn: (flag: string) => !flagState.off.has(flag),
+}));
 vi.mock('@/application/use-cases/maintenance/prune-retained-data.use-case.js', () => ({
   PruneRetainedDataUseCase: vi.fn(),
 }));
 
 import { startBackgroundSync } from '../../../../../src/presentation/cli/commands/background-sync.js';
 import { container } from '@/infrastructure/di/container.js';
+import { setTelemetryProcessKind } from '@/infrastructure/services/telemetry/node-telemetry-runtime.js';
+import { TelemetryProcessKind } from '@/domain/generated/output.js';
 
 describe('startBackgroundSync', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     dueJobs.length = 0;
     hourlyJobs.length = 0;
+    flagState.off.clear();
+  });
+
+  it('skips the passes of software-factory areas whose flag is off (spec 135)', async () => {
+    flagState.off = new Set(['trackers', 'knowledge', 'discovery', 'outcomes', 'autopilot']);
+    startBackgroundSync('test');
+    vi.mocked(container.resolve).mockClear();
+    const now = new Date('2026-10-04T12:00:00Z');
+    for (const job of dueJobs) await job(now);
+    for (const job of hourlyJobs) await job();
+    expect(container.resolve).not.toHaveBeenCalled();
   });
 
   it('starts every sync and stops it all', () => {
@@ -89,6 +121,7 @@ describe('startBackgroundSync', () => {
       tasks.comments,
       tasks.outcomes,
       tasks.autopilot,
+      tasks.telemetry,
       prSync,
     ]) {
       expect(task.start).toHaveBeenCalledTimes(1);
@@ -102,6 +135,7 @@ describe('startBackgroundSync', () => {
       tasks.comments,
       tasks.outcomes,
       tasks.autopilot,
+      tasks.telemetry,
       prSync,
     ]) {
       expect(task.stop).toHaveBeenCalledTimes(1);
@@ -137,5 +171,15 @@ describe('startBackgroundSync', () => {
     await discoveryJob(now);
     expect(container.resolve).toHaveBeenCalledWith('SyncDiscoveryUseCase');
     expect(resolved.runDue).toHaveBeenCalledWith(now);
+  });
+
+  it('marks the process as the daemon and flushes telemetry after the daily heartbeat (spec 133)', async () => {
+    startBackgroundSync('test');
+    expect(setTelemetryProcessKind).toHaveBeenCalledWith(TelemetryProcessKind.Daemon);
+    await telemetryJobs.heartbeat?.();
+    expect(container.resolve).toHaveBeenCalledWith('RecordInstallHeartbeatUseCase');
+    await telemetryJobs.flush?.();
+    expect(container.resolve).toHaveBeenCalledWith('FlushTelemetryUseCase');
+    expect(resolved.execute).toHaveBeenCalledTimes(2);
   });
 });

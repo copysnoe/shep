@@ -13,8 +13,21 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import {
+  decisionFromInteractionAnswer,
+  isInteractionAnswerMessage,
+  parseInteractionAnswerMessage,
+} from '@shepai/core/domain/shared/interaction-answer';
+import { AnsweredDecisionRow } from '@/components/common/decision-panel';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ToolBubble, parseToolEvent } from '@/components/features/chat/tool-bubble';
+import {
+  isChatBlockMessage,
+  isChatBlockResponseMessage,
+} from '@shepai/core/domain/shared/chat-block';
+import { ChatBlockMessage } from '@/components/features/chat/ChatBlockMessage';
+import { ChatBlockResponseRow } from '@/components/features/chat/ChatBlockResponseRow';
+import { SandboxedHtmlFrame } from '@/components/common/sandboxed-html-frame';
 import {
   SendHorizontal,
   CircleStop,
@@ -26,7 +39,6 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
-  Check,
 } from 'lucide-react';
 
 // ── Markdown components for assistant messages ──────────────────────────────
@@ -158,16 +170,21 @@ function ThreadEmpty() {
 
 // ── User message ────────────────────────────────────────────────────────────
 
-const INTERACTION_PREFIX = '{{interaction}}';
-
 const UserMessage: FC = () => {
   const message = useMessage();
 
   // Check if this is an interaction response message
   const firstPart = message?.content?.[0];
   const text = firstPart && 'text' in firstPart ? firstPart.text : '';
-  if (text.startsWith(INTERACTION_PREFIX)) {
+  if (isInteractionAnswerMessage(text)) {
     return <InteractionResponseMessage text={text} />;
+  }
+  if (isChatBlockResponseMessage(text)) {
+    return (
+      <MessagePrimitive.Root className="group animate-in fade-in-0 slide-in-from-bottom-1 flex w-full items-start gap-2.5 px-4 py-0.5 duration-300 ease-out">
+        <ChatBlockResponseRow content={text} className="min-w-0 flex-1" />
+      </MessagePrimitive.Root>
+    );
   }
 
   return (
@@ -197,53 +214,22 @@ const UserMessage: FC = () => {
   );
 };
 
-/** Compact green bubble showing the user's selections from an AskUserQuestion interaction. */
+/** An answered AskUserQuestion: the shared "Answered questions" row (spec 134). */
 function InteractionResponseMessage({ text }: { text: string }) {
-  const parsed = useMemo(() => {
-    try {
-      const json = text.slice(INTERACTION_PREFIX.length);
-      return JSON.parse(json) as {
-        questions: { header: string; question: string }[];
-        answers: Record<string, string>;
-      };
-    } catch {
-      return null;
-    }
+  const answered = useMemo(() => {
+    const payload = parseInteractionAnswerMessage(text);
+    return payload ? decisionFromInteractionAnswer(payload) : null;
   }, [text]);
 
-  if (!parsed) return null;
+  if (!answered) return null;
 
   return (
     <MessagePrimitive.Root className="group animate-in fade-in-0 slide-in-from-bottom-1 flex w-full items-start gap-2.5 px-4 py-0.5 duration-300 ease-out">
-      <div className="bg-muted flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-        <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-      </div>
-
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <div className="text-foreground mt-px flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl rounded-tl-sm border border-emerald-600/20 bg-emerald-50/50 px-4 py-2 text-sm shadow-sm dark:border-emerald-500/20 dark:bg-emerald-950/20">
-          {parsed.questions.map((q) => (
-            <span key={q.question} className="flex items-center gap-2">
-              <span className="inline-flex shrink-0 items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-emerald-700 uppercase dark:bg-emerald-900/50 dark:text-emerald-400">
-                {q.header}
-              </span>
-              <span className="text-muted-foreground text-xs">
-                {parsed.answers[q.question] || 'No answer'}
-              </span>
-            </span>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-          <MessageMeta />
-          <ActionBarPrimitive.Root className="flex items-center gap-1">
-            <ActionBarPrimitive.Copy asChild>
-              <IconButton tooltip="Copy">
-                <Copy />
-              </IconButton>
-            </ActionBarPrimitive.Copy>
-          </ActionBarPrimitive.Root>
-        </div>
-      </div>
+      <AnsweredDecisionRow
+        decision={answered.decision}
+        responses={answered.responses}
+        className="min-w-0 flex-1"
+      />
     </MessagePrimitive.Root>
   );
 }
@@ -265,6 +251,18 @@ const AssistantMessage: FC = () => {
   const firstPart = message?.content?.[0];
   const rawText = firstPart && 'text' in firstPart ? firstPart.text : '';
   const toolEvent = rawText ? parseToolEvent(rawText) : null;
+
+  // A rich block the agent posted (spec 137) renders as its inline block.
+  if (isChatBlockMessage(rawText)) {
+    return (
+      <MessagePrimitive.Root className="group animate-in fade-in-0 slide-in-from-bottom-1 flex w-full items-start gap-2.5 px-4 py-1 duration-300 ease-out">
+        <div className="bg-muted flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+          <Bot className="text-muted-foreground h-3.5 w-3.5" />
+        </div>
+        <ChatBlockMessage content={rawText} className="max-w-[85%] min-w-0 flex-1" />
+      </MessagePrimitive.Root>
+    );
+  }
 
   if (toolEvent) {
     return (
@@ -427,11 +425,11 @@ export function HtmlPreviewBlock({ code, language }: { code: string; language: s
         </div>
         <div style={{ height: 'min(55vh, 450px)' }}>
           {showPreview ? (
-            <iframe
-              srcDoc={code}
-              sandbox="allow-scripts"
-              className="h-full w-full border-0 bg-white"
+            <SandboxedHtmlFrame
+              html={code}
               title={t('chat.htmlPreview')}
+              autoHeight={false}
+              className="h-full"
             />
           ) : (
             <pre className="h-full overflow-auto p-3 font-mono text-xs leading-relaxed">
@@ -497,11 +495,11 @@ export function HtmlPreviewBlock({ code, language }: { code: string; language: s
               <code>{code}</code>
             </pre>
           ) : (
-            <iframe
-              srcDoc={code}
-              sandbox="allow-scripts"
-              className="flex-1 border-0 bg-white dark:bg-neutral-900"
+            <SandboxedHtmlFrame
+              html={code}
               title={t('chat.htmlPreviewFullscreen')}
+              autoHeight={false}
+              className="flex-1 dark:bg-neutral-900"
             />
           )}
         </DialogContent>

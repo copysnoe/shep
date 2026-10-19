@@ -40,6 +40,9 @@ import { registerRepositories } from '@/infrastructure/di/modules/register-repos
 import { registerServices } from '@/infrastructure/di/modules/register-services.js';
 import { registerTools } from '@/infrastructure/di/modules/register-tools.js';
 import { registerAgents } from '@/infrastructure/di/modules/register-agents.js';
+import { registerDecisions } from '@/infrastructure/di/modules/register-decisions.js';
+import { registerChatBlocks } from '@/infrastructure/di/modules/register-chat-blocks.js';
+import { AgentQuestionBridgeFactory } from '@/infrastructure/services/agents/agent-question-service/agent-question-bridge.factory.js';
 import { registerCloudDeploy } from '@/infrastructure/di/modules/register-cloud-deploy.js';
 import { registerIntegrations } from '@/infrastructure/di/modules/register-integrations.js';
 import { registerDeployment } from '@/infrastructure/di/modules/register-deployment.js';
@@ -47,6 +50,8 @@ import { registerUseCases } from '@/infrastructure/di/modules/register-use-cases
 import { registerInteractive } from '@/infrastructure/di/modules/register-interactive.js';
 import { registerAspm } from '@/infrastructure/di/modules/register-aspm.js';
 import { registerHarness } from '@/infrastructure/di/modules/register-harness.js';
+import { registerTelemetry } from '@/infrastructure/di/modules/register-telemetry.js';
+import { registerGitCheckpoints } from '@/infrastructure/di/modules/register-git-checkpoints.js';
 import { registerSpaces } from '@/infrastructure/di/modules/register-spaces.js';
 import { registerTrackers } from '@/infrastructure/di/modules/register-trackers.js';
 import { registerBugLoop } from '@/infrastructure/di/modules/register-bug-loop.js';
@@ -107,12 +112,27 @@ import type { IRunPlanStalenessProbe } from '@/application/ports/output/services
  * failing with the offending token name on any missing registration.
  */
 const WEB_ROUTE_TOKENS: readonly string[] = [
+  // Telemetry (spec 133) — settings section, onboarding notice, route views
+  'GetTelemetryStatusUseCase',
+  'SetTelemetryPreferencesUseCase',
+  'AcknowledgeTelemetryNoticeUseCase',
+  'RecordTelemetryEventUseCase',
+  // Spec 134: the unified decisions inbox.
+  'ListAgentQuestionInboxUseCase',
+  // Spec 137: chat blocks and the chat-first page
+  'PostChatBlockUseCase',
+  'RespondToChatBlockUseCase',
+  'ListChatMessagesSinceUseCase',
+  'ListChatConversationsUseCase',
+  'AskAgentDecisionUseCase',
   'AttachmentStorageService',
   'ConnectCloudProviderUseCase',
   'CreateGitRemoteUseCase',
   'CreateTerminalSessionUseCase',
   'EnsureGhAuthenticatedUseCase',
   'GetAdaptiveModelPlanUseCase',
+  'ListFeatureFlagsUseCase',
+  'SetFeatureFlagUseCase',
   'GetApplicationUseCase',
   'GetCloudDeploymentStatusUseCase',
   'GetGitStatusUseCase',
@@ -139,6 +159,9 @@ const WEB_ROUTE_TOKENS: readonly string[] = [
   'ListApplicationsUseCase',
   'ListCloudProvidersUseCase',
   'ListFeaturesUseCase',
+  'ListFeatureCheckpointsUseCase',
+  'GetFeatureCheckpointDiffUseCase',
+  'RestoreFeatureCheckpointUseCase',
   'ReconcileAgentRunLivenessUseCase',
   'ListOperationLogEntriesUseCase',
   'ListRepositoriesUseCase',
@@ -241,6 +264,17 @@ const WEB_ROUTE_TOKENS: readonly string[] = [
  * if someone deletes a registration.
  */
 const CRITICAL_INFRA_TOKENS: readonly string[] = [
+  // Telemetry (spec 133) — resolved by every process, flushed by the daemon
+  'ITelemetry',
+  'ITelemetryOutboxRepository',
+  'ITelemetryTransport',
+  'ITelemetryIdentityProvider',
+  'ITelemetryRuntime',
+  'IClock',
+  'FlushTelemetryUseCase',
+  'RecordInstallHeartbeatUseCase',
+  'RecordUnhandledErrorUseCase',
+  'PreviewTelemetryUseCase',
   // Spaces and product lines (spec 120)
   'ISpaceRepository',
   'IProductLineRepository',
@@ -295,6 +329,8 @@ const CRITICAL_INFRA_TOKENS: readonly string[] = [
   'IHarnessEvalWorkspaceFactory',
   'IApplicationRepository',
   'IPhaseTimingRepository',
+  'IGitCheckpointRepository',
+  'IGitCheckpointService',
   'IInteractiveSessionRepository',
   'IInteractiveMessageRepository',
   'IWorkflowStepRepository',
@@ -438,6 +474,8 @@ describe('DI container bootstrap (integration)', () => {
     registerServices(scopedContainer);
     registerTools(scopedContainer);
     registerAgents(scopedContainer);
+    registerDecisions(scopedContainer);
+    registerChatBlocks(scopedContainer);
     registerCloudDeploy(scopedContainer);
     registerIntegrations(scopedContainer);
     registerDeployment(scopedContainer);
@@ -445,6 +483,8 @@ describe('DI container bootstrap (integration)', () => {
     registerInteractive(scopedContainer);
     registerAspm(scopedContainer);
     registerHarness(scopedContainer);
+    registerTelemetry(scopedContainer);
+    registerGitCheckpoints(scopedContainer);
 
     // Replicate the eager bootstrap done by initializeContainer() so the
     // test exercises the SAME container shape that web routes see at runtime.
@@ -513,7 +553,11 @@ describe('DI container bootstrap (integration)', () => {
       new SessionSpaceEnvironment(
         featureRepository,
         scopedContainer.resolve(ResolveSpaceEnvironmentUseCase)
-      )
+      ),
+      {
+        create: (session, surface) =>
+          scopedContainer.resolve(AgentQuestionBridgeFactory).create(session, surface),
+      }
     );
     const terminator = new SessionTerminator(
       sessionRegistry,
@@ -657,31 +701,28 @@ describe('DI container bootstrap (integration)', () => {
   });
 
   interface RegistryShape {
-    listAll(): readonly { id: string; displayName: string; enabled: boolean }[];
+    listAll(): readonly { id: string; displayName: string }[];
   }
 
   interface ListUseCaseShape {
-    execute(): Promise<readonly { id: string; enabled: boolean; connected: boolean }[]>;
+    execute(): Promise<readonly { id: string; connected: boolean }[]>;
   }
 
   describe('cloud-deploy registry constructs every provider end-to-end', () => {
-    it('resolves ICloudDeploymentProviderRegistry and lists all 5 providers without DI errors', () => {
+    it('resolves ICloudDeploymentProviderRegistry and lists only Cloudflare Pages', () => {
       const registry = scopedContainer.resolve<RegistryShape>('ICloudDeploymentProviderRegistry');
-      const providers = registry.listAll();
-      expect(providers.length).toBe(5);
-      expect(providers.map((p) => p.id).sort()).toEqual(
-        ['AwsAmplify', 'CloudflarePages', 'GcpCloudRun', 'Netlify', 'Vercel'].sort()
-      );
+      expect(registry.listAll()).toEqual([
+        { id: 'CloudflarePages', displayName: 'Cloudflare Pages' },
+      ]);
     });
   });
 
   describe('ListCloudProvidersUseCase end-to-end', () => {
-    it('produces the 5 known providers when called via DI', async () => {
+    it('produces only Cloudflare Pages when called via DI', async () => {
       const useCase = scopedContainer.resolve<ListUseCaseShape>('ListCloudProvidersUseCase');
       const providers = await useCase.execute();
-      expect(providers.length).toBe(5);
-      const ids = providers.map((p) => p.id);
-      expect(ids).toContain('CloudflarePages');
+      expect(providers.map((p) => p.id)).toEqual(['CloudflarePages']);
+      expect(providers[0]).not.toHaveProperty('enabled');
     });
   });
 });

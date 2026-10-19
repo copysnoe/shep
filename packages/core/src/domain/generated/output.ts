@@ -361,10 +361,6 @@ export type EnvironmentConfig = {
  */
 export type SystemConfig = {
   /**
-   * CLI auto-update preference
-   */
-  autoUpdate: boolean;
-  /**
    * Log level for CLI output
    */
   logLevel: string;
@@ -497,6 +493,10 @@ export type WorkflowConfig = {
    */
   maxParallelFeatures?: number;
   /**
+   * Minutes a background agent's question waits before the agent proceeds with its recommended option (spec 134; default: 30)
+   */
+  decisionDefaultTimeoutMinutes?: number;
+  /**
    * Maximum number of CI fix/push/watch iterations before giving up (default: 3)
    */
   ciMaxFixAttempts?: number;
@@ -559,8 +559,6 @@ export enum AgentType {
   CodexCli = 'codex-cli',
   CopilotCli = 'copilot-cli',
   GeminiCli = 'gemini-cli',
-  Aider = 'aider',
-  Continue = 'continue',
   Cursor = 'cursor',
   Cline = 'cline',
   OpenRouter = 'openrouter',
@@ -756,17 +754,13 @@ export type FeatureFlags = {
    */
   whatsappDispatch: boolean;
   /**
-   * Enable the Application Security Posture Management (ASPM) module — /aspm web routes, `shep aspm` CLI command tree, and the posture SSE stream (spec 098)
+   * Enable the Application Security Posture Management (ASPM) module — /aspm web routes, `shep aspm` CLI command tree, and the posture SSE stream (spec 098). Off by default: ASPM is a separate product category users opt into (spec 135).
    */
   aspm: boolean;
   /**
    * Enable Clusters navigation and Kubernetes cluster management in the web UI
    */
   clusters: boolean;
-  /**
-   * Enable the supply chain security feature (policy engine, badges, settings, CLI, CI gate). When false, the feature is inert regardless of SecurityMode.
-   */
-  supplyChainSecurity: boolean;
   /**
    * Enable scheduled workflows feature — workflow creation, scheduling, and execution
    */
@@ -779,6 +773,58 @@ export type FeatureFlags = {
    * Enable the experimental query-aware agent harness: the Shep Harness agent, /harness pages, the feature Context tab and `shep harness` commands (spec 119)
    */
   queryAwareHarness: boolean;
+  /**
+   * Software factory: spaces and product lines — /spaces and `shep space` (spec 120)
+   */
+  spaces: boolean;
+  /**
+   * Software factory: Linear and Jira tracker sync — /connections, `shep connection`, `shep sync` and the daemon sync loop (spec 122)
+   */
+  trackers: boolean;
+  /**
+   * Software factory: Notion knowledge sources — `shep knowledge` and the daemon knowledge sync (spec 125)
+   */
+  knowledge: boolean;
+  /**
+   * Software factory: customer and incident signals — `shep signal` (spec 126)
+   */
+  signals: boolean;
+  /**
+   * Software factory: ranked opportunities — /opportunities and `shep opportunity` (spec 126)
+   */
+  opportunities: boolean;
+  /**
+   * Software factory: feedback intake and themes — POST /api/feedback and `shep feedback` (spec 127)
+   */
+  feedback: boolean;
+  /**
+   * Software factory: agent discovery of opportunities — `shep discovery` and its daemon schedule (spec 128)
+   */
+  discovery: boolean;
+  /**
+   * Software factory: incident triage — /incidents, POST /api/alerts and `shep incident` (spec 129)
+   */
+  incidents: boolean;
+  /**
+   * Software factory: shipped-work outcomes — `shep outcome` and the daemon outcome tracker (spec 130)
+   */
+  outcomes: boolean;
+  /**
+   * Software factory: docs-first spaces — the docs-first space policy, planning instructions and merge gate (spec 131)
+   */
+  docsFirst: boolean;
+  /**
+   * Software factory: autopilot — `shep autopilot` and the daemon autopilot pass (spec 132)
+   */
+  autopilot: boolean;
+  /**
+   * Software factory: factory status — /factory and `shep factory` (spec 132)
+   */
+  factory: boolean;
+  /**
+   * SDLC board — /sdlc, its live task stream and board actions; off by default (spec 140)
+   */
+  sdlcBoard: boolean;
 };
 export enum WhatsAppAdapterKind {
   Baileys = 'baileys',
@@ -877,6 +923,36 @@ export type SupervisorConfig = {
    * Default evaluator prompt version marker
    */
   promptVersion?: string;
+};
+
+/**
+ * Opt-out usage metrics preferences (spec 133)
+ */
+export type TelemetryConfig = {
+  /**
+   * Whether usage metrics are recorded and sent
+   */
+  enabled: boolean;
+  /**
+   * Whether identity (agent account hash, GitHub username and owners) is attached; opt-in
+   */
+  includeIdentity: boolean;
+  /**
+   * Whether the Shep team may contact the user on GitHub
+   */
+  contactConsent: boolean;
+  /**
+   * Random install identifier (UUID), assigned on first use
+   */
+  installId?: string;
+  /**
+   * When the first-run notice was shown
+   */
+  noticeShownAt?: any;
+  /**
+   * When the last install.heartbeat event was recorded
+   */
+  lastHeartbeatAt?: any;
 };
 
 /**
@@ -1314,6 +1390,10 @@ export type Settings = BaseEntity & {
    * Query-aware agent harness configuration (optional, defaults applied at runtime)
    */
   harness?: HarnessConfig;
+  /**
+   * Usage metrics preferences (optional, defaults applied at runtime)
+   */
+  telemetry?: TelemetryConfig;
 };
 export enum HarnessEvalRunStatus {
   Pending = 'pending',
@@ -2430,10 +2510,6 @@ export enum ApplicationStatus {
 }
 export enum CloudDeploymentProvider {
   CloudflarePages = 'CloudflarePages',
-  Vercel = 'Vercel',
-  Netlify = 'Netlify',
-  AwsAmplify = 'AwsAmplify',
-  GcpCloudRun = 'GcpCloudRun',
 }
 
 /**
@@ -8514,6 +8590,65 @@ export type PhaseTiming = BaseEntity & {
    */
   errorMessage?: string;
 };
+export enum GitCheckpointKind {
+  Baseline = 'Baseline',
+  Step = 'Step',
+  PreRestore = 'PreRestore',
+}
+
+/**
+ * A hidden-ref snapshot of a feature's worktree after one feature-agent step
+ */
+export type GitCheckpoint = BaseEntity & {
+  /**
+   * Feature this checkpoint belongs to
+   */
+  featureId: string;
+  /**
+   * Agent run that produced the step, when one was running
+   */
+  agentRunId?: string;
+  /**
+   * Position within the feature's checkpoints; the baseline is 0
+   */
+  sequence: number;
+  /**
+   * Why the checkpoint was taken
+   */
+  kind: GitCheckpointKind;
+  /**
+   * Graph node name (implement, repair_research, merge, ...) or baseline / pre-restore
+   */
+  node: string;
+  /**
+   * Full hidden ref name, e.g. refs/shep/checkpoints/<featureId>/0003-implement
+   */
+  ref: string;
+  /**
+   * Checkpoint commit the ref points at
+   */
+  commitSha: string;
+  /**
+   * Tree of the checkpoint commit: the worktree content at capture time
+   */
+  treeSha: string;
+  /**
+   * Branch HEAD at capture time (absent on an unborn branch)
+   */
+  headSha?: string;
+  /**
+   * Files changed versus the previous checkpoint
+   */
+  filesChanged: number;
+  /**
+   * Lines added versus the previous checkpoint
+   */
+  additions: number;
+  /**
+   * Lines deleted versus the previous checkpoint
+   */
+  deletions: number;
+};
 
 /**
  * Change to a question's selected option during PRD review
@@ -8726,6 +8861,61 @@ export type InteractiveMessage = BaseEntity & {
    */
   stepId?: string;
 };
+export enum ChatBlockType {
+  SpecReview = 'spec_review',
+  HtmlPreview = 'html_preview',
+  PlanCard = 'plan_card',
+}
+
+/**
+ * A rich block posted into a chat conversation
+ */
+export type ChatBlock = {
+  /**
+   * Stable identifier, unique within the conversation
+   */
+  id: string;
+  /**
+   * Kind of block
+   */
+  type: ChatBlockType;
+  /**
+   * Short title shown in the block header
+   */
+  title: string;
+  /**
+   * Markdown body (spec reviews and plan cards)
+   */
+  markdown?: string;
+  /**
+   * Self-contained HTML document (HTML previews)
+   */
+  html?: string;
+};
+export enum ChatBlockAction {
+  Approve = 'approve',
+  RequestChanges = 'request_changes',
+  Implement = 'implement',
+  Refine = 'refine',
+}
+
+/**
+ * The user's answer to a chat block
+ */
+export type ChatBlockResponse = {
+  /**
+   * Block this response answers
+   */
+  blockId: string;
+  /**
+   * What the user did
+   */
+  action: ChatBlockAction;
+  /**
+   * Optional note, e.g. the changes requested or what to refine
+   */
+  note?: string;
+};
 export enum WorkflowStepStatus {
   pending = 'pending',
   running = 'running',
@@ -8840,6 +9030,126 @@ export type AgentMessage = BaseEntity & {
    */
   deliveredAt?: any;
 };
+
+/**
+ * A selectable option within a decision question
+ */
+export type DecisionOption = {
+  /**
+   * Stable identifier, unique within its question
+   */
+  id: string;
+  /**
+   * Short label shown in bold
+   */
+  label: string;
+  /**
+   * One-line explanation shown under the label
+   */
+  description: string;
+  /**
+   * Optional preformatted preview (code, mockup, diff) shown when the option is focused
+   */
+  preview?: string;
+  /**
+   * True for the option the asker recommends; it is preselected and used when a deadline passes
+   */
+  recommended?: boolean;
+  /**
+   * True when the option was added since the user last saw this decision (e.g. after a refinement)
+   */
+  isNew?: boolean;
+};
+
+/**
+ * One question within a decision
+ */
+export type DecisionQuestion = {
+  /**
+   * Stable identifier, unique within its decision
+   */
+  id: string;
+  /**
+   * Short chip label (e.g. 'Auth method')
+   */
+  header: string;
+  /**
+   * The full question text
+   */
+  question: string;
+  /**
+   * Options in display order (1–9 are keyboard shortcuts)
+   */
+  options: DecisionOption[];
+  /**
+   * Whether more than one option may be selected
+   */
+  multiSelect: boolean;
+  /**
+   * Whether a typed answer is accepted instead of (or with) an option
+   */
+  allowCustom: boolean;
+};
+export enum DecisionKind {
+  ChatQuestion = 'chat_question',
+  PrdQuestionnaire = 'prd_questionnaire',
+  ApprovalGate = 'approval_gate',
+  AgentAsk = 'agent_ask',
+  Legacy = 'legacy',
+}
+export enum DecisionResponseMode {
+  Live = 'live',
+  Async = 'async',
+  NotResumable = 'not_resumable',
+}
+
+/**
+ * A request for a person to choose, made of one or more questions
+ */
+export type Decision = {
+  /**
+   * Stable identifier
+   */
+  id: string;
+  /**
+   * Which producer raised the decision
+   */
+  kind: DecisionKind;
+  /**
+   * Optional one-line title shown above the questions
+   */
+  title?: string;
+  /**
+   * Questions answered together (paged n/N)
+   */
+  questions: DecisionQuestion[];
+  /**
+   * How the answer reaches the asker
+   */
+  responseMode: DecisionResponseMode;
+  /**
+   * When set, the recommended options are applied if nobody answers before this time
+   */
+  defaultAfter?: any;
+};
+
+/**
+ * The answer to one decision question
+ */
+export type DecisionResponse = {
+  /**
+   * Question this response answers
+   */
+  questionId: string;
+  /**
+   * Selected option ids (empty when only custom text was given)
+   */
+  optionIds: string[];
+  /**
+   * Typed answer; when non-empty it outranks the selected options
+   */
+  customText?: string;
+};
 export enum AgentQuestionKind {
   info = 'info',
   question = 'question',
@@ -8917,6 +9227,14 @@ export type AgentQuestion = BaseEntity & {
    * Auto-resolution deadline (optional, used with defaultAnswer)
    */
   expiresAt?: any;
+  /**
+   * Structured questions and options; when set, it is what every surface renders (spec 134)
+   */
+  decision?: Decision;
+  /**
+   * Structured answer to `decision`, set when status becomes answered or expired (spec 134)
+   */
+  responses?: DecisionResponse[];
 };
 export enum SupervisorVerdict {
   approve = 'approve',
@@ -9252,6 +9570,43 @@ export enum WhatsAppThreadTargetKind {
   Feature = 'feature',
   Application = 'application',
 }
+export enum FeatureFlagGroup {
+  Platform = 'platform',
+  SoftwareFactory = 'software-factory',
+  Experimental = 'experimental',
+}
+export enum TelemetryEvent {
+  InstallHeartbeat = 'install.heartbeat',
+  CliCommand = 'cli.command',
+  WebAreaViewed = 'web.area.viewed',
+  FeatureCreated = 'feature.created',
+  FeatureRunFinished = 'feature.run.finished',
+  PrOpened = 'pr.opened',
+  PrMerged = 'pr.merged',
+  DecisionAnswered = 'decision.answered',
+  DecisionDefaulted = 'decision.defaulted',
+  OnboardingStep = 'onboarding.step',
+  ErrorUnhandled = 'error.unhandled',
+}
+export enum TelemetryDisabledReason {
+  Ci = 'ci',
+  DoNotTrack = 'do-not-track',
+  EnvDisabled = 'env-disabled',
+  Test = 'test',
+  UserOptOut = 'user-opt-out',
+}
+export enum TelemetryProcessKind {
+  Cli = 'cli',
+  Daemon = 'daemon',
+  Worker = 'worker',
+}
+export enum OnboardingStep {
+  AgentSetup = 'agent-setup',
+  AddProject = 'add-project',
+  ProjectAdded = 'project-added',
+  StartFromPrompt = 'start-from-prompt',
+  TelemetryNotice = 'telemetry-notice',
+}
 export enum SpaceResolutionSource {
   Assignment = 'Assignment',
   Rule = 'Rule',
@@ -9304,6 +9659,39 @@ export enum AgentFeature {
   systemPrompt = 'system-prompt',
   sessionListing = 'session-listing',
   effort = 'effort',
+  mcpConfig = 'mcp-config',
+}
+export enum CheckpointRestoreBlocker {
+  NoOwnWorktree = 'NoOwnWorktree',
+  NotLinkedWorktree = 'NotLinkedWorktree',
+  WorktreeUnavailable = 'WorktreeUnavailable',
+  AgentRunning = 'AgentRunning',
+}
+export enum ChatScopeKind {
+  Global = 'global',
+  Repository = 'repository',
+  Feature = 'feature',
+  Application = 'application',
+}
+export enum DecisionOutcome {
+  Pending = 'pending',
+  Answered = 'answered',
+  Defaulted = 'defaulted',
+  Cancelled = 'cancelled',
+  Disabled = 'disabled',
+}
+export enum DecisionSurface {
+  Web = 'web',
+  Cli = 'cli',
+  Chat = 'chat',
+  Supervisor = 'supervisor',
+  Other = 'other',
+}
+export enum InlineBlockType {
+  Decision = 'decision',
+  SpecReview = 'spec_review',
+  HtmlPreview = 'html_preview',
+  PlanCard = 'plan_card',
 }
 export type DeployTarget = DeployTargetActionItem | DeployTargetTask | DeployTargetTasks;
 

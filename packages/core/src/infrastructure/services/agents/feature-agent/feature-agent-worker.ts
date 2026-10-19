@@ -18,6 +18,8 @@ import type { FeatureAgentGraphDeps } from './feature-agent-graph.js';
 import { createFastFeatureAgentGraph } from './fast-feature-agent-graph.js';
 import type { FastFeatureAgentGraphDeps } from './fast-feature-agent-graph.js';
 import { createExplorationAgentGraph } from './exploration-agent-graph.js';
+import { createCheckpointRecorder } from './checkpoint-capture.js';
+import { CaptureFeatureCheckpointUseCase } from '@/application/use-cases/features/checkpoints/capture-feature-checkpoint.use-case.js';
 import type { ExplorationAgentGraphDeps } from './exploration-agent-graph.js';
 import { createCheckpointer } from '../common/checkpointer.js';
 import type { IAgentCheckpointService } from '@/application/ports/output/agents/agent-checkpoint-service.interface.js';
@@ -30,6 +32,7 @@ import { type GitRemoteListService } from '@/infrastructure/services/git/git-rem
 import type { IGitForkService } from '@/application/ports/output/services/git-fork-service.interface.js';
 import {
   AgentRunStatus,
+  TelemetryProcessKind,
   SecurityMode,
   type AgentEffort,
   type AgentType,
@@ -49,6 +52,9 @@ import {
   WORKER_CLAIMABLE_STATUSES,
 } from './worker-run-status.js';
 import { setPhaseTimingContext, recordLifecycleEvent } from './phase-timing-context.js';
+import { createRunFinishedRecorder, type RunFinishedRecorder } from './worker-telemetry.js';
+import { setTelemetryProcessKind } from '../../telemetry/node-telemetry-runtime.js';
+import type { ITelemetry } from '../../../../application/ports/output/services/telemetry.interface.js';
 import { setLifecycleContext } from './lifecycle-context.js';
 import { setSdlcBoardContext } from './sdlc-board-context.js';
 import type { ISdlcBoardTracker } from '@/application/ports/output/agents/sdlc-board-tracker.interface.js';
@@ -63,6 +69,7 @@ import { UpdateFeatureLifecycleUseCase } from '@/application/use-cases/features/
 import { AdmitQueuedFeaturesUseCase } from '@/application/use-cases/features/capacity/admit-queued-features.use-case.js';
 import { CleanupFeatureWorktreeUseCase } from '@/application/use-cases/features/cleanup-feature-worktree.use-case.js';
 import { startPluginServers, stopPluginServers } from './plugin-startup.js';
+import { startDecisionTool, stopDecisionTool } from './decision-tool-startup.js';
 import { SelectProjectMemoryUseCase } from '@/application/use-cases/project-memory/select-project-memory.use-case.js';
 import { CheckDocsGateUseCase } from '@/application/use-cases/docs-first/check-docs-gate.use-case.js';
 import { RecordProjectMemoryUseCase } from '@/application/use-cases/project-memory/record-project-memory.use-case.js';
@@ -280,6 +287,7 @@ export async function runWorker(args: WorkerArgs): Promise<void> {
   log(`  ${cmdParts.join(' ')}`);
 
   log('Initializing container...');
+  setTelemetryProcessKind(TelemetryProcessKind.Worker);
   await initializeContainer();
 
   // Initialize settings in the worker process
@@ -297,6 +305,12 @@ export async function runWorker(args: WorkerArgs): Promise<void> {
   const bootedAt = new Date();
   log(`Claiming run as running (PID ${process.pid})...`);
   const claimed = await claimRunForWorker(runRepository, args.runId, process.pid, bootedAt);
+  const recordRunFinished = createRunFinishedRecorder(
+    container.resolve<ITelemetry>('ITelemetry'),
+    args.agentType ?? settings.agent.type,
+    bootedAt
+  );
+  recordRunFinishedForSignal = recordRunFinished;
   if (!claimed) {
     const current = await runRepository.findById(args.runId);
     log(
@@ -370,9 +384,17 @@ export async function runWorker(args: WorkerArgs): Promise<void> {
     taskText: string;
   }) => selectProjectMemoryUseCase.execute(input);
 
+  // Hidden-ref checkpoint after every file-changing node (spec 138).
+  const checkpoints = createCheckpointRecorder({
+    capture: container.resolve(CaptureFeatureCheckpointUseCase),
+    agentRunId: args.runId,
+    log,
+  });
+
   const graphDeps: FeatureAgentGraphDeps = {
     executor,
     selectProjectMemory,
+    checkpoints,
     mergeNodeDeps: {
       selectMemory: selectProjectMemory,
       getDiffSummary: (cwd: string, baseBranch: string) =>
@@ -399,6 +421,7 @@ export async function runWorker(args: WorkerArgs): Promise<void> {
       gitPrService,
       gitForkService: container.resolve<IGitForkService>('IGitForkService'),
       cleanupFeatureWorktreeUseCase,
+      telemetry: container.resolve<ITelemetry>('ITelemetry'),
       checkDocsGate: (repositoryPath: string, changedFiles: readonly string[]) =>
         container.resolve(CheckDocsGateUseCase).execute(repositoryPath, changedFiles),
     },
@@ -420,7 +443,7 @@ export async function runWorker(args: WorkerArgs): Promise<void> {
   let graph: ReturnType<typeof createFeatureAgentGraph>;
   if (args.exploration) {
     graph = createExplorationAgentGraph(
-      { executor } as ExplorationAgentGraphDeps,
+      { executor, checkpoints } as ExplorationAgentGraphDeps,
       checkpointer
     ) as unknown as ReturnType<typeof createFeatureAgentGraph>;
   } else if (args.fast) {
@@ -488,12 +511,25 @@ export async function runWorker(args: WorkerArgs): Promise<void> {
   await lifecyclePublisher.publishStarted(lifecycleScope);
 
   // Start MCP servers for enabled plugins (degrades gracefully on failure)
-  const mcpConfigPath = await startPluginServers(
+  const pluginMcpConfigPath = await startPluginServers(
     args.featureId,
     pluginRepository,
     mcpServerManager,
     log
   );
+  // Spec 134: a run whose executor takes an MCP config may ask the user
+  // through ask_decision (recommended option + deadline) instead of guessing.
+  const decisionMcpConfigPath = startDecisionTool({
+    collaborationEnabled: settings.featureFlags?.collaboration === true,
+    executor,
+    runId: args.runId,
+    featureId: args.featureId,
+    pluginConfigPath: pluginMcpConfigPath,
+    env: process.env,
+    log,
+  });
+  const mcpConfigPath = decisionMcpConfigPath ?? pluginMcpConfigPath;
+  const decisionToolAvailable = decisionMcpConfigPath !== undefined;
 
   try {
     const graphConfig = { configurable: { thread_id: checkpointId } };
@@ -527,6 +563,10 @@ export async function runWorker(args: WorkerArgs): Promise<void> {
         stateUpdate._approvalAction = 'approved';
         stateUpdate._rejectionFeedback = null;
       }
+
+      // The checkpoint holds the previous worker's (deleted) config path.
+      stateUpdate.mcpConfigPath = mcpConfigPath;
+      stateUpdate.decisionToolAvailable = decisionToolAvailable;
 
       log('Resuming graph from interrupt checkpoint...');
       result = await graph.invoke(
@@ -575,6 +615,7 @@ export async function runWorker(args: WorkerArgs): Promise<void> {
           ...(args.effort ? { effort: args.effort } : {}),
           ...(args.resumeReason ? { resumeReason: args.resumeReason } : {}),
           ...(mcpConfigPath ? { mcpConfigPath } : {}),
+          decisionToolAvailable,
           push: args.push ?? false,
           openPr: args.openPr ?? false,
           forkAndPr: args.forkAndPr ?? false,
@@ -605,6 +646,7 @@ export async function runWorker(args: WorkerArgs): Promise<void> {
           ...(args.model ? { model: args.model } : {}),
           ...(args.effort ? { effort: args.effort } : {}),
           ...(mcpConfigPath ? { mcpConfigPath } : {}),
+          decisionToolAvailable,
           push: args.push ?? false,
           openPr: args.openPr ?? false,
           forkAndPr: args.forkAndPr ?? false,
@@ -693,6 +735,7 @@ export async function runWorker(args: WorkerArgs): Promise<void> {
         return;
       }
       await recordLifecycleEvent('run:failed');
+      recordRunFinished(AgentRunStatus.failed);
       log(`Run marked as failed: ${result.error}`);
       await drainCapacityQueueAfterFailure(drainCapacityQueue, log);
       return;
@@ -711,6 +754,7 @@ export async function runWorker(args: WorkerArgs): Promise<void> {
       return;
     }
     await recordLifecycleEvent('run:completed');
+    recordRunFinished(AgentRunStatus.completed);
     await lifecyclePublisher.publishCompleted(lifecycleScope);
     log('Run marked as completed');
   } catch (error: unknown) {
@@ -728,9 +772,11 @@ export async function runWorker(args: WorkerArgs): Promise<void> {
       },
       { runId: args.runId, featureId: args.featureId, message, failedAt }
     );
+    recordRunFinished(AgentRunStatus.failed);
   } finally {
     // Stop MCP plugin servers regardless of success/failure/interrupt
     await stopPluginServers(args.featureId, mcpServerManager, log);
+    stopDecisionTool(decisionMcpConfigPath);
   }
 }
 
@@ -754,6 +800,7 @@ process.on('disconnect', () => {
 let runIdForSignal: string | undefined;
 let runRepoForSignal: IAgentRunRepository | undefined;
 let timingRepoForSignal: IPhaseTimingRepository | undefined;
+let recordRunFinishedForSignal: RunFinishedRecorder | undefined;
 
 process.on('SIGTERM', async () => {
   log('Received SIGTERM, shutting down...');
@@ -768,6 +815,7 @@ process.on('SIGTERM', async () => {
       { allowedFrom: WORKER_CLAIMABLE_STATUSES }
     );
     await recordLifecycleEvent('run:stopped', runIdForSignal, timingRepoForSignal);
+    recordRunFinishedForSignal?.(AgentRunStatus.interrupted);
   }
   process.exit(0);
 });

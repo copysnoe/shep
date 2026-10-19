@@ -19,6 +19,11 @@ import type { IInteractiveMessageRepository } from '@/application/ports/output/r
 import type { InteractiveMessage } from '@/domain/generated/output.js';
 import { InteractiveMessageRole } from '@/domain/generated/output.js';
 import { GetChatTurnGroupsUseCase } from '@/application/use-cases/interactive/get-chat-turn-groups.use-case.js';
+import { ChatBlockAction, ChatBlockType } from '@/domain/generated/output.js';
+import {
+  formatChatBlockMessage,
+  formatChatBlockResponseMessage,
+} from '@/domain/shared/chat-block.js';
 
 function msg(
   id: string,
@@ -46,6 +51,9 @@ class FakeRepo implements IInteractiveMessageRepository {
   }
   async findByFeatureId(): Promise<InteractiveMessage[]> {
     return [...this.messages];
+  }
+  async findByFeatureIdSince(): Promise<InteractiveMessage[]> {
+    return [];
   }
   async findBySessionId(): Promise<InteractiveMessage[]> {
     return [];
@@ -94,6 +102,23 @@ describe('GetChatTurnGroupsUseCase', () => {
     expect(result.currentTurn?.status).toBe('in-progress');
     expect(result.currentTurn?.messageIds).toEqual(['m1', 'm2']);
     expect(result.hiddenMessageIds).toEqual(['m1', 'm2']);
+  });
+
+  it('keeps an answered-question message in the turn that asked (spec 134)', async () => {
+    repo.messages = [
+      msg('m1', InteractiveMessageRole.user, 'Build a dashboard', 1000),
+      msg('m2', InteractiveMessageRole.assistant, 'Which layout?', 2000),
+      msg(
+        'm3',
+        InteractiveMessageRole.user,
+        '{{interaction}}{"questions":[{"header":"Layout","question":"Which layout?"}],"answers":{"Which layout?":"Grid"}}',
+        3000
+      ),
+      msg('m4', InteractiveMessageRole.assistant, 'Building the grid', 4000),
+    ];
+    const result = await useCase.execute({ featureId: 'feat-1' });
+    expect(result.groups).toEqual([]);
+    expect(result.currentTurn?.messageIds).toEqual(['m1', 'm2', 'm3', 'm4']);
   });
 
   it('groups every completed turn and promotes the latest to currentTurn', async () => {
@@ -177,5 +202,33 @@ describe('GetChatTurnGroupsUseCase', () => {
     expect(result.groups.map((g) => g.id)).toEqual(['turn-u1']);
     expect(result.currentTurn?.id).toBe('turn-u2');
     expect(result.hiddenMessageIds).toEqual(['u1', 'a1', 'u2']);
+  });
+
+  it('titles a turn opened by an answer to a block in words, not raw JSON (spec 137)', async () => {
+    repo.messages = [
+      msg('u1', InteractiveMessageRole.user, 'Plan dark mode', 1),
+      msg(
+        'a1',
+        InteractiveMessageRole.assistant,
+        formatChatBlockMessage({
+          id: 'b1',
+          type: ChatBlockType.PlanCard,
+          title: 'Dark mode',
+          markdown: '1. Tokens',
+        }),
+        2
+      ),
+      msg(
+        'u2',
+        InteractiveMessageRole.user,
+        formatChatBlockResponseMessage({ blockId: 'b1', action: ChatBlockAction.Implement }),
+        3
+      ),
+    ];
+
+    const result = await useCase.execute({ featureId: 'feat-1' });
+
+    expect(result.currentTurn?.title).toBe('Working on: Chose Implement for "Dark mode"');
+    expect(result.currentTurn?.userMessagePreview).toBe('Chose Implement for "Dark mode"');
   });
 });

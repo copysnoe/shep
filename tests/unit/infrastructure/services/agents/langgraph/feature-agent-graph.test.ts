@@ -557,6 +557,7 @@ describe('createFeatureAgentGraph', () => {
             revParse: vi.fn().mockResolvedValue('abc1234'),
             gitPrService: {} as never,
             cleanupFeatureWorktreeUseCase: { execute: vi.fn() },
+            telemetry: { record: vi.fn() },
           },
         },
         checkpointer
@@ -648,5 +649,39 @@ describe('createFeatureAgentGraph', () => {
       expect(state.values.featureId).toBe('feat-persist');
       expect(state.values.messages.length).toBeGreaterThan(0);
     });
+  });
+});
+
+describe('createFeatureAgentGraph — checkpoints (spec 138)', () => {
+  it('captures after every producer node and never after a validate node', async () => {
+    setupSpecFileMocks();
+    const afterNode = vi.fn().mockResolvedValue(undefined);
+    const beforeNode = vi.fn().mockResolvedValue(undefined);
+    const compiled = createFeatureAgentGraph(
+      { executor: createMockExecutor(), checkpoints: { beforeNode, afterNode } },
+      new MemorySaver()
+    );
+
+    await compiled.invoke(
+      {
+        featureId: 'feat-ckpt',
+        repositoryPath: '/test/repo',
+        worktreePath: '/test/repo',
+        specDir: '/test/specs/001-test',
+        enableEvidence: false,
+        commitEvidence: false,
+        approvalGates: { allowPrd: true, allowPlan: true, allowMerge: true },
+      },
+      { configurable: { thread_id: 'ckpt-thread' } }
+    );
+
+    expect(afterNode.mock.calls.map(([node]) => node)).toEqual([
+      'analyze',
+      'requirements',
+      'research',
+      'plan',
+      'implement',
+    ]);
+    expect(beforeNode).toHaveBeenCalledTimes(5);
   });
 });

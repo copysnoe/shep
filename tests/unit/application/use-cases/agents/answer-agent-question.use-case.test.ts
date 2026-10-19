@@ -12,7 +12,7 @@
  */
 
 import 'reflect-metadata';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { AnswerAgentQuestionUseCase } from '@/application/use-cases/agents/answer-agent-question.use-case.js';
 import { AskAgentQuestionUseCase } from '@/application/use-cases/agents/ask-agent-question.use-case.js';
@@ -25,14 +25,24 @@ import type { ISettingsRepository } from '@/application/ports/output/repositorie
 import type { IAgentRunRepository } from '@/application/ports/output/agents/agent-run-repository.interface.js';
 import type { ApproveAgentRunUseCase } from '@/application/use-cases/agents/approve-agent-run.use-case.js';
 import type { RejectAgentRunUseCase } from '@/application/use-cases/agents/reject-agent-run.use-case.js';
+import type { ITelemetry } from '@/application/ports/output/services/telemetry.interface.js';
 import {
   AgentQuestionAnswerer,
   AgentQuestionKind,
   AgentQuestionStatus,
   AgentRunStatus,
+  DecisionKind,
+  DecisionResponseMode,
+  DecisionSurface,
+  TelemetryEvent,
   type AgentRun,
+  type Decision,
   type Settings,
 } from '@/domain/generated/output.js';
+import { buildApprovalGateDecision } from '@/domain/shared/decision-builders.js';
+import { toDurationBucket } from '@/domain/shared/telemetry/telemetry-delivery.js';
+
+type TelemetryDouble = ITelemetry & { record: ReturnType<typeof vi.fn> };
 
 function makeSettingsRepo(collaboration: boolean): ISettingsRepository {
   return {
@@ -80,10 +90,12 @@ function makeRejectUseCase(): RejectAgentRunUseCase {
 describe('AnswerAgentQuestionUseCase', () => {
   let repo: InMemoryAgentQuestionRepository;
   let registry: DeferredQuestionRegistry;
+  let telemetry: TelemetryDouble;
 
   beforeEach(() => {
     repo = new InMemoryAgentQuestionRepository();
     registry = new DeferredQuestionRegistry();
+    telemetry = { record: vi.fn() } as TelemetryDouble;
   });
 
   it('returns enabled=false when feature flag is off', async () => {
@@ -111,7 +123,8 @@ describe('AnswerAgentQuestionUseCase', () => {
       makeSettingsRepo(false),
       makeAgentRunRepo(null),
       makeApproveUseCase(),
-      makeRejectUseCase()
+      makeRejectUseCase(),
+      telemetry
     );
 
     const result = await useCase.execute({
@@ -152,7 +165,8 @@ describe('AnswerAgentQuestionUseCase', () => {
       settings,
       makeAgentRunRepo(null),
       makeApproveUseCase(),
-      makeRejectUseCase()
+      makeRejectUseCase(),
+      telemetry
     );
 
     const result = await useCase.execute({
@@ -193,7 +207,8 @@ describe('AnswerAgentQuestionUseCase', () => {
       settings,
       makeAgentRunRepo(null),
       makeApproveUseCase(),
-      makeRejectUseCase()
+      makeRejectUseCase(),
+      telemetry
     );
 
     await answer.execute({
@@ -237,7 +252,8 @@ describe('AnswerAgentQuestionUseCase', () => {
         settings,
         makeAgentRunRepo(null),
         makeApproveUseCase(),
-        makeRejectUseCase()
+        makeRejectUseCase(),
+        telemetry
       ).execute({
         appId: 'app-1',
         questionId: result.question!.id,
@@ -278,7 +294,8 @@ describe('AnswerAgentQuestionUseCase', () => {
       settings,
       makeAgentRunRepo({ status: AgentRunStatus.waitingApproval }),
       approve,
-      makeRejectUseCase()
+      makeRejectUseCase(),
+      telemetry
     );
 
     const [fromCli, fromWeb] = await Promise.all([
@@ -330,7 +347,8 @@ describe('AnswerAgentQuestionUseCase', () => {
       settings,
       makeAgentRunRepo(null),
       makeApproveUseCase(),
-      makeRejectUseCase()
+      makeRejectUseCase(),
+      telemetry
     );
 
     await expect(
@@ -373,7 +391,8 @@ describe('AnswerAgentQuestionUseCase', () => {
       settings,
       makeAgentRunRepo({ id: 'run-1', status: AgentRunStatus.waitingApproval }),
       approve,
-      reject
+      reject,
+      telemetry
     );
 
     const result = await useCase.execute({
@@ -415,7 +434,8 @@ describe('AnswerAgentQuestionUseCase', () => {
       settings,
       makeAgentRunRepo({ id: 'run-1', status: AgentRunStatus.waitingApproval }),
       approve,
-      reject
+      reject,
+      telemetry
     );
 
     const result = await useCase.execute({
@@ -457,7 +477,8 @@ describe('AnswerAgentQuestionUseCase', () => {
       settings,
       makeAgentRunRepo({ id: 'run-1', status: AgentRunStatus.running }),
       approve,
-      reject
+      reject,
+      telemetry
     );
 
     const result = await useCase.execute({
@@ -470,5 +491,297 @@ describe('AnswerAgentQuestionUseCase', () => {
     expect(result.forwardedToGate).toBe(false);
     expect(approve.execute).not.toHaveBeenCalled();
     expect(reject.execute).not.toHaveBeenCalled();
+  });
+
+  describe('decisions (spec 134)', () => {
+    const chatDecision: Decision = {
+      id: 'x',
+      kind: DecisionKind.ChatQuestion,
+      responseMode: DecisionResponseMode.Live,
+      questions: [
+        {
+          id: 'q1',
+          header: 'Store',
+          question: 'Which store?',
+          multiSelect: false,
+          allowCustom: true,
+          options: [
+            { id: 'o1', label: 'Redis', description: '' },
+            { id: 'o2', label: 'Memory', description: '' },
+          ],
+        },
+      ],
+    };
+
+    async function askWith(decision: Decision, runStatus = AgentRunStatus.running) {
+      const settings = makeSettingsRepo(true);
+      const ask = new AskAgentQuestionUseCase(
+        repo,
+        registry,
+        settings,
+        {
+          routeIfApplicable: vi.fn().mockResolvedValue({ evaluated: false, answered: false }),
+        } as any,
+        { execute: vi.fn().mockResolvedValue({ escalated: false }) } as any
+      );
+      const { question, awaiter } = await ask.execute({
+        appId: 'app-1',
+        agentRunId: 'run-1',
+        kind: AgentQuestionKind.blocking,
+        prompt: 'Which store?',
+        decision,
+        answerer: AgentQuestionAnswerer.either,
+      });
+      awaiter?.catch(() => undefined);
+      const approve = makeApproveUseCase();
+      const reject = makeRejectUseCase();
+      const useCase = new AnswerAgentQuestionUseCase(
+        repo,
+        registry,
+        settings,
+        makeAgentRunRepo({ id: 'run-1', status: runStatus }),
+        approve,
+        reject,
+        telemetry
+      );
+      return { question: question!, awaiter, useCase, approve, reject };
+    }
+
+    it('records responses and a readable summary as the answer', async () => {
+      const { question, awaiter, useCase } = await askWith(chatDecision);
+      const result = await useCase.execute({
+        appId: 'app-1',
+        questionId: question.id,
+        responses: [{ questionId: 'q1', optionIds: ['o1'] }],
+        answeredBy: 'user:web',
+      });
+      expect(result.question?.answer).toBe('Redis');
+      expect(result.question?.responses).toEqual([{ questionId: 'q1', optionIds: ['o1'] }]);
+      await expect(awaiter).resolves.toBe('Redis');
+    });
+
+    it('resolves a typed answer against the decision options', async () => {
+      const { question, useCase } = await askWith(chatDecision);
+      const result = await useCase.execute({
+        appId: 'app-1',
+        questionId: question.id,
+        answer: 'memory',
+        answeredBy: 'user:cli',
+      });
+      expect(result.question?.responses).toEqual([{ questionId: 'q1', optionIds: ['o2'] }]);
+      expect(result.question?.answer).toBe('Memory');
+    });
+
+    it('refuses responses that do not fit the decision and records nothing', async () => {
+      const { question, useCase } = await askWith(chatDecision);
+      await expect(
+        useCase.execute({
+          appId: 'app-1',
+          questionId: question.id,
+          responses: [{ questionId: 'q1', optionIds: ['o1', 'o2'] }],
+          answeredBy: 'user:web',
+        })
+      ).rejects.toThrow(/single option/);
+      expect((await repo.findById('app-1', question.id))?.status).toBe(AgentQuestionStatus.pending);
+    });
+
+    it('never forwards a non-gate decision to the approval gate, even when it says approve', async () => {
+      const decision: Decision = {
+        ...chatDecision,
+        questions: [
+          {
+            ...chatDecision.questions[0],
+            options: [{ id: 'approve', label: 'approve', description: '' }],
+          },
+        ],
+      };
+      const { question, useCase, approve } = await askWith(
+        decision,
+        AgentRunStatus.waitingApproval
+      );
+      const result = await useCase.execute({
+        appId: 'app-1',
+        questionId: question.id,
+        responses: [{ questionId: 'q1', optionIds: ['approve'] }],
+        answeredBy: 'user:web',
+      });
+      expect(result.forwardedToGate).toBe(false);
+      expect(approve.execute).not.toHaveBeenCalled();
+    });
+
+    it('forwards a gate decision by the selected option id', async () => {
+      const { question, useCase, approve } = await askWith(
+        buildApprovalGateDecision('g', 'plan'),
+        AgentRunStatus.waitingApproval
+      );
+      const result = await useCase.execute({
+        appId: 'app-1',
+        questionId: question.id,
+        responses: [{ questionId: 'gate', optionIds: ['approve'] }],
+        answeredBy: 'user:web',
+      });
+      expect(result.forwardedToGate).toBe(true);
+      expect(approve.execute).toHaveBeenCalledWith('run-1');
+    });
+
+    it('treats a typed note on a gate as a rejection carrying that feedback', async () => {
+      const { question, useCase, reject } = await askWith(
+        buildApprovalGateDecision('g', 'merge'),
+        AgentRunStatus.waitingApproval
+      );
+      await useCase.execute({
+        appId: 'app-1',
+        questionId: question.id,
+        responses: [{ questionId: 'gate', optionIds: ['approve'], customText: 'Split the PR' }],
+        answeredBy: 'user:web',
+      });
+      expect(reject.execute).toHaveBeenCalledWith('run-1', 'Split the PR');
+    });
+  });
+
+  describe('decision.answered telemetry (spec 136)', () => {
+    const MINUTE_MS = 60_000;
+    const decision: Decision = {
+      id: 'x',
+      kind: DecisionKind.AgentAsk,
+      responseMode: DecisionResponseMode.Async,
+      questions: [
+        {
+          id: 'q1',
+          header: 'Store',
+          question: 'Which store?',
+          multiSelect: false,
+          allowCustom: true,
+          options: [
+            { id: 'o1', label: 'Redis', description: '', recommended: true },
+            { id: 'o2', label: 'Memory', description: '' },
+          ],
+        },
+      ],
+    };
+
+    afterEach(() => vi.useRealTimers());
+
+    async function ask(withDecision: Decision | undefined, collaboration = true) {
+      const settings = makeSettingsRepo(collaboration);
+      const asker = new AskAgentQuestionUseCase(
+        repo,
+        registry,
+        makeSettingsRepo(true),
+        {
+          routeIfApplicable: vi.fn().mockResolvedValue({ evaluated: false, answered: false }),
+        } as any,
+        { execute: vi.fn().mockResolvedValue({ escalated: false }) } as any
+      );
+      const { question, awaiter } = await asker.execute({
+        appId: 'app-1',
+        agentRunId: 'run-1',
+        kind: AgentQuestionKind.blocking,
+        prompt: 'Which store?',
+        ...(withDecision ? { decision: withDecision } : { options: ['Redis', 'Memory'] }),
+        answerer: AgentQuestionAnswerer.either,
+      });
+      awaiter?.catch(() => undefined);
+      const useCase = new AnswerAgentQuestionUseCase(
+        repo,
+        registry,
+        settings,
+        makeAgentRunRepo(null),
+        makeApproveUseCase(),
+        makeRejectUseCase(),
+        telemetry
+      );
+      return { question: question!, useCase };
+    }
+
+    it('records kind, surface, latency bucket and that the recommendation was picked', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-11T10:00:00Z'));
+      const { question, useCase } = await ask(decision);
+      vi.setSystemTime(new Date(Date.parse('2026-10-11T10:00:00Z') + 3 * MINUTE_MS));
+
+      await useCase.execute({
+        appId: 'app-1',
+        questionId: question.id,
+        responses: [{ questionId: 'q1', optionIds: ['o1'] }],
+        answeredBy: 'user:web',
+        surface: DecisionSurface.Web,
+      });
+
+      expect(telemetry.record).toHaveBeenCalledTimes(1);
+      expect(telemetry.record).toHaveBeenCalledWith(TelemetryEvent.DecisionAnswered, {
+        kind: DecisionKind.AgentAsk,
+        surface: DecisionSurface.Web,
+        latency: toDurationBucket(3 * MINUTE_MS),
+        pickedRecommended: true,
+      });
+    });
+
+    it('reports a different option or typed text as not the recommendation', async () => {
+      const { question, useCase } = await ask(decision);
+      await useCase.execute({
+        appId: 'app-1',
+        questionId: question.id,
+        answer: 'Postgres',
+        answeredBy: 'user:cli',
+        surface: DecisionSurface.Cli,
+      });
+      expect(telemetry.record).toHaveBeenCalledWith(
+        TelemetryEvent.DecisionAnswered,
+        expect.objectContaining({ surface: DecisionSurface.Cli, pickedRecommended: false })
+      );
+    });
+
+    it('reports a pre-134 question as Legacy and an unnamed caller as Other', async () => {
+      const { question, useCase } = await ask(undefined);
+      await useCase.execute({
+        appId: 'app-1',
+        questionId: question.id,
+        answer: 'Redis',
+        answeredBy: 'user:x',
+      });
+      expect(telemetry.record).toHaveBeenCalledWith(
+        TelemetryEvent.DecisionAnswered,
+        expect.objectContaining({
+          kind: DecisionKind.Legacy,
+          surface: DecisionSurface.Other,
+          pickedRecommended: false,
+        })
+      );
+    });
+
+    it('records nothing when the question was already settled', async () => {
+      const { question, useCase } = await ask(decision);
+      const input = {
+        appId: 'app-1',
+        questionId: question.id,
+        responses: [{ questionId: 'q1', optionIds: ['o2'] }],
+        answeredBy: 'user:web',
+        surface: DecisionSurface.Web,
+      };
+      await useCase.execute(input);
+      await useCase.execute(input);
+      expect(telemetry.record).toHaveBeenCalledTimes(1);
+    });
+
+    it('records nothing when agent questions are off or the answer is refused', async () => {
+      const off = await ask(decision, false);
+      await off.useCase.execute({
+        appId: 'app-1',
+        questionId: off.question.id,
+        answer: 'Redis',
+        answeredBy: 'user:web',
+      });
+      const on = await ask(decision);
+      await expect(
+        on.useCase.execute({
+          appId: 'app-1',
+          questionId: on.question.id,
+          responses: [{ questionId: 'q1', optionIds: ['o1', 'o2'] }],
+          answeredBy: 'user:web',
+        })
+      ).rejects.toThrow();
+      expect(telemetry.record).not.toHaveBeenCalled();
+    });
   });
 });

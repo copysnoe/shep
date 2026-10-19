@@ -10,6 +10,7 @@ import type Database from 'better-sqlite3';
 import { injectable } from 'tsyringe';
 import type { ISettingsRepository } from '../../application/ports/output/repositories/settings.repository.interface.js';
 import type { Settings } from '../../domain/generated/output.js';
+import { SETTINGS_TELEMETRY_COLUMNS } from '../persistence/sqlite/mappers/settings-telemetry.mapper.js';
 import {
   toDatabase,
   fromDatabase,
@@ -20,6 +21,13 @@ import {
  * SQLite implementation of ISettingsRepository.
  * Manages Settings persistence with singleton constraint.
  */
+// Telemetry columns (migration 166) come from one list so INSERT and UPDATE cannot drift.
+const TELEMETRY_INSERT_COLUMNS = SETTINGS_TELEMETRY_COLUMNS.join(', ');
+const TELEMETRY_INSERT_PARAMS = SETTINGS_TELEMETRY_COLUMNS.map((c) => `@${c}`).join(', ');
+const TELEMETRY_UPDATE_ASSIGNMENTS = SETTINGS_TELEMETRY_COLUMNS.map((c) => `${c} = @${c}`).join(
+  ', '
+);
+
 @injectable()
 export class SQLiteSettingsRepository implements ISettingsRepository {
   constructor(private readonly db: Database.Database) {}
@@ -54,6 +62,7 @@ export class SQLiteSettingsRepository implements ISettingsRepository {
         notif_evt_pr_blocked, notif_evt_merge_review_ready,
         workflow_open_pr_on_impl_complete,
         ci_max_fix_attempts, ci_watch_timeout_ms, ci_log_max_chars,
+        workflow_decision_default_timeout_minutes,
         ci_watch_enabled, workflow_max_parallel_features,
         stage_timeout_analyze_ms, stage_timeout_requirements_ms,
         stage_timeout_research_ms, stage_timeout_plan_ms,
@@ -71,7 +80,6 @@ export class SQLiteSettingsRepository implements ISettingsRepository {
         feature_flag_whatsapp_dispatch,
         feature_flag_aspm,
         feature_flag_clusters,
-        feature_flag_supply_chain_security,
         workflow_enable_evidence, workflow_commit_evidence,
         hide_ci_status, default_mode,
         interactive_agent_enabled, interactive_agent_auto_timeout_minutes,
@@ -88,6 +96,11 @@ export class SQLiteSettingsRepository implements ISettingsRepository {
         security_mode, security_last_evaluation_at, security_policy_source,
         worktree_create_command, worktree_post_create_command, worktree_command_timeout_ms,
         feature_flag_query_aware_harness, harness_config,
+        feature_flag_spaces, feature_flag_trackers, feature_flag_knowledge,
+        feature_flag_signals, feature_flag_opportunities, feature_flag_feedback,
+        feature_flag_discovery, feature_flag_incidents, feature_flag_outcomes,
+        feature_flag_docs_first, feature_flag_autopilot, feature_flag_factory,
+        feature_flag_sdlc_board,
         messaging_enabled, messaging_gateway_url, messaging_device_id,
         messaging_gateway_client_id, messaging_debounce_ms, messaging_chat_buffer_ms,
         messaging_telegram_enabled, messaging_telegram_paired, messaging_telegram_chat_id,
@@ -95,7 +108,8 @@ export class SQLiteSettingsRepository implements ISettingsRepository {
         messaging_telegram_bot_token, messaging_telegram_pending_code, messaging_telegram_pending_expires_at,
         messaging_whatsapp_enabled, messaging_whatsapp_paired, messaging_whatsapp_chat_id,
         messaging_whatsapp_route_id, messaging_whatsapp_route_token, messaging_whatsapp_public_url,
-        messaging_whatsapp_bot_token, messaging_whatsapp_pending_code, messaging_whatsapp_pending_expires_at
+        messaging_whatsapp_bot_token, messaging_whatsapp_pending_code, messaging_whatsapp_pending_expires_at,
+        ${TELEMETRY_INSERT_COLUMNS}
       ) VALUES (
         @id, @created_at, @updated_at,
         @model_analyze, @model_requirements, @model_plan, @model_implement, @model_default,
@@ -113,6 +127,7 @@ export class SQLiteSettingsRepository implements ISettingsRepository {
         @notif_evt_pr_blocked, @notif_evt_merge_review_ready,
         @workflow_open_pr_on_impl_complete,
         @ci_max_fix_attempts, @ci_watch_timeout_ms, @ci_log_max_chars,
+        @workflow_decision_default_timeout_minutes,
         @ci_watch_enabled, @workflow_max_parallel_features,
         @stage_timeout_analyze_ms, @stage_timeout_requirements_ms,
         @stage_timeout_research_ms, @stage_timeout_plan_ms,
@@ -130,7 +145,6 @@ export class SQLiteSettingsRepository implements ISettingsRepository {
         @feature_flag_whatsapp_dispatch,
         @feature_flag_aspm,
         @feature_flag_clusters,
-        @feature_flag_supply_chain_security,
         @workflow_enable_evidence, @workflow_commit_evidence,
         @hide_ci_status, @default_mode,
         @interactive_agent_enabled, @interactive_agent_auto_timeout_minutes,
@@ -147,6 +161,11 @@ export class SQLiteSettingsRepository implements ISettingsRepository {
         @security_mode, @security_last_evaluation_at, @security_policy_source,
         @worktree_create_command, @worktree_post_create_command, @worktree_command_timeout_ms,
         @feature_flag_query_aware_harness, @harness_config,
+        @feature_flag_spaces, @feature_flag_trackers, @feature_flag_knowledge,
+        @feature_flag_signals, @feature_flag_opportunities, @feature_flag_feedback,
+        @feature_flag_discovery, @feature_flag_incidents, @feature_flag_outcomes,
+        @feature_flag_docs_first, @feature_flag_autopilot, @feature_flag_factory,
+        @feature_flag_sdlc_board,
         @messaging_enabled, @messaging_gateway_url, @messaging_device_id,
         @messaging_gateway_client_id, @messaging_debounce_ms, @messaging_chat_buffer_ms,
         @messaging_telegram_enabled, @messaging_telegram_paired, @messaging_telegram_chat_id,
@@ -154,7 +173,8 @@ export class SQLiteSettingsRepository implements ISettingsRepository {
         @messaging_telegram_bot_token, @messaging_telegram_pending_code, @messaging_telegram_pending_expires_at,
         @messaging_whatsapp_enabled, @messaging_whatsapp_paired, @messaging_whatsapp_chat_id,
         @messaging_whatsapp_route_id, @messaging_whatsapp_route_token, @messaging_whatsapp_public_url,
-        @messaging_whatsapp_bot_token, @messaging_whatsapp_pending_code, @messaging_whatsapp_pending_expires_at
+        @messaging_whatsapp_bot_token, @messaging_whatsapp_pending_code, @messaging_whatsapp_pending_expires_at,
+        ${TELEMETRY_INSERT_PARAMS}
       )
     `);
 
@@ -250,6 +270,7 @@ export class SQLiteSettingsRepository implements ISettingsRepository {
         notif_evt_merge_review_ready = @notif_evt_merge_review_ready,
         workflow_open_pr_on_impl_complete = @workflow_open_pr_on_impl_complete,
         ci_max_fix_attempts = @ci_max_fix_attempts,
+        workflow_decision_default_timeout_minutes = @workflow_decision_default_timeout_minutes,
         ci_watch_timeout_ms = @ci_watch_timeout_ms,
         ci_watch_enabled = @ci_watch_enabled,
         workflow_max_parallel_features = @workflow_max_parallel_features,
@@ -276,7 +297,6 @@ export class SQLiteSettingsRepository implements ISettingsRepository {
         feature_flag_whatsapp_dispatch = @feature_flag_whatsapp_dispatch,
         feature_flag_aspm = @feature_flag_aspm,
         feature_flag_clusters = @feature_flag_clusters,
-        feature_flag_supply_chain_security = @feature_flag_supply_chain_security,
         workflow_enable_evidence = @workflow_enable_evidence,
         workflow_commit_evidence = @workflow_commit_evidence,
         hide_ci_status = @hide_ci_status,
@@ -306,6 +326,19 @@ export class SQLiteSettingsRepository implements ISettingsRepository {
         worktree_post_create_command = @worktree_post_create_command,
         worktree_command_timeout_ms = @worktree_command_timeout_ms,
         feature_flag_query_aware_harness = @feature_flag_query_aware_harness,
+        feature_flag_spaces = @feature_flag_spaces,
+        feature_flag_trackers = @feature_flag_trackers,
+        feature_flag_knowledge = @feature_flag_knowledge,
+        feature_flag_signals = @feature_flag_signals,
+        feature_flag_opportunities = @feature_flag_opportunities,
+        feature_flag_feedback = @feature_flag_feedback,
+        feature_flag_discovery = @feature_flag_discovery,
+        feature_flag_incidents = @feature_flag_incidents,
+        feature_flag_outcomes = @feature_flag_outcomes,
+        feature_flag_docs_first = @feature_flag_docs_first,
+        feature_flag_autopilot = @feature_flag_autopilot,
+        feature_flag_factory = @feature_flag_factory,
+        feature_flag_sdlc_board = @feature_flag_sdlc_board,
         harness_config = @harness_config,
         messaging_enabled = @messaging_enabled,
         messaging_gateway_url = @messaging_gateway_url,
@@ -330,7 +363,8 @@ export class SQLiteSettingsRepository implements ISettingsRepository {
         messaging_whatsapp_public_url = @messaging_whatsapp_public_url,
         messaging_whatsapp_bot_token = @messaging_whatsapp_bot_token,
         messaging_whatsapp_pending_code = @messaging_whatsapp_pending_code,
-        messaging_whatsapp_pending_expires_at = @messaging_whatsapp_pending_expires_at
+        messaging_whatsapp_pending_expires_at = @messaging_whatsapp_pending_expires_at,
+        ${TELEMETRY_UPDATE_ASSIGNMENTS}
       WHERE id = @id
     `);
 

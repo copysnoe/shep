@@ -22,6 +22,9 @@ import type {
   AgentQuestionAnswerer,
   AgentQuestionKind,
   AgentQuestionStatus,
+  Decision,
+  DecisionResponse,
+  DecisionSurface,
 } from '../../../../domain/generated/output.js';
 
 /**
@@ -40,8 +43,14 @@ export interface AskAgentQuestionInput {
   kind: AgentQuestionKind;
   /** Free-form question text shown to the answerer. */
   prompt: string;
-  /** Optional multiple-choice options. */
+  /** Optional multiple-choice options (pre-134 shape; prefer `decision`). */
   options?: string[];
+  /**
+   * Structured questions and options every surface renders (spec 134). Its id
+   * is replaced by the question id; its `defaultAfter` becomes `expiresAt` and
+   * its recommended options the `defaultAnswer` when those are not given.
+   */
+  decision?: Decision;
   /** Default answer used on auto-expiry (non-blocking only). */
   defaultAnswer?: string;
   /** Who is permitted to answer this question. */
@@ -54,10 +63,18 @@ export interface AskAgentQuestionInput {
 export interface AnswerAgentQuestionInput {
   appId: string;
   questionId: string;
-  /** The answer string (must match one of `options` when those are provided). */
-  answer: string;
+  /**
+   * The answer as text (must match one of `options` when those are provided).
+   * For a question with a decision it is resolved to responses by option id,
+   * then label, then custom text. One of `answer` / `responses` is required.
+   */
+  answer?: string;
+  /** Structured answer to the question's decision (spec 134). */
+  responses?: DecisionResponse[];
   /** Actor namespace, e.g. `user:abc` or `supervisor:42`. */
   answeredBy: string;
+  /** Where the answer was given, for usage telemetry (spec 136). Defaults to `other`. */
+  surface?: DecisionSurface;
 }
 
 /** Inputs accepted by {@link IAgentQuestionService.cancel}. */

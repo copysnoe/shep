@@ -3,6 +3,8 @@
  * the `shep start` daemon (`_serve`) and `shep ui` alike:
  *
  * - data retention (spec 116)
+ * Software-factory passes skip themselves while their feature flag is off.
+ *
  * - Linear and Jira sync rules (spec 122)
  * - Notion knowledge sources (spec 125)
  * - scheduled discovery runs (spec 128)
@@ -10,9 +12,10 @@
  * - PR review comments (spec 124)
  * - shipped opportunities and their outcomes (spec 130)
  * - autopilot passes (spec 132)
+ * - usage metrics: the daily heartbeat and sending the outbox (spec 133)
  *
- * PR status sync takes a cross-process lock, so running both processes at
- * once is safe.
+ * PR status sync takes a cross-process lock and the telemetry flush leases
+ * its batches, so running both processes at once is safe.
  */
 
 import { container } from '@/infrastructure/di/container.js';
@@ -24,6 +27,9 @@ import {
   getPrSyncWatcher,
   initializePrSyncWatcher,
 } from '@/infrastructure/services/pr-sync/pr-sync-watcher.service.js';
+import { createTelemetryFlushWatcher } from '@/infrastructure/services/telemetry/telemetry-flush-watcher.js';
+import { setTelemetryProcessKind } from '@/infrastructure/services/telemetry/node-telemetry-runtime.js';
+import { TelemetryProcessKind } from '@/domain/generated/output.js';
 import { getExistingConnection } from '@/infrastructure/persistence/sqlite/connection.js';
 import { PruneRetainedDataUseCase } from '@/application/use-cases/maintenance/prune-retained-data.use-case.js';
 import type { SyncTrackerRulesUseCase } from '@/application/use-cases/trackers/sync-tracker-rules.use-case.js';
@@ -31,6 +37,8 @@ import type { SyncKnowledgeSourcesUseCase } from '@/application/use-cases/knowle
 import type { SyncDiscoveryUseCase } from '@/application/use-cases/discovery/sync-discovery.use-case.js';
 import type { SyncPrCommentsUseCase } from '@/application/use-cases/pr-comments/sync-pr-comments.use-case.js';
 import type { TrackOutcomesUseCase } from '@/application/use-cases/outcomes/track-outcomes.use-case.js';
+import type { FlushTelemetryUseCase } from '@/application/use-cases/telemetry/flush-telemetry.use-case.js';
+import type { RecordInstallHeartbeatUseCase } from '@/application/use-cases/telemetry/record-install-heartbeat.use-case.js';
 import type { RunAutopilotUseCase } from '@/application/use-cases/autopilot/run-autopilot.use-case.js';
 import type { IAgentRunRepository } from '@/application/ports/output/agents/agent-run-repository.interface.js';
 import type { IFeatureRepository } from '@/application/ports/output/repositories/feature-repository.interface.js';
@@ -38,6 +46,20 @@ import type { INotificationService } from '@/application/ports/output/services/n
 import type { IGitPrService } from '@/application/ports/output/services/git-pr-service.interface.js';
 import type { IGitForkService } from '@/application/ports/output/services/git-fork-service.interface.js';
 import type { ILogger } from '@/application/ports/output/services/logger.interface.js';
+import type { ITelemetry } from '@/application/ports/output/services/telemetry.interface.js';
+import type { FeatureFlagKey } from '@/domain/shared/feature-flag-catalog.js';
+import { isFeatureFlagOn } from './feature-flag-gate.js';
+
+/**
+ * Runs `job` only while `flag` is on. Checked on every pass, so turning an
+ * area off in the web UI stops its pass without a restart (spec 135).
+ */
+function whenOn<Args extends unknown[]>(
+  flag: FeatureFlagKey,
+  job: (...args: Args) => Promise<unknown>
+): (...args: Args) => Promise<unknown> {
+  return (...args) => (isFeatureFlagOn(flag) ? job(...args) : Promise.resolve());
+}
 
 export interface BackgroundSync {
   stop(): void;
@@ -48,21 +70,29 @@ export function startBackgroundSync(label: string): BackgroundSync {
   const report = (what: string) => (error: unknown) =>
     process.stderr.write(`[${label}] ${what} failed: ${String(error)}\n`);
 
+  // Events this process records are attributed to the server, not a CLI run.
+  setTelemetryProcessKind(TelemetryProcessKind.Daemon);
+
   const retention = new RetentionScheduler(
     () => container.resolve(PruneRetainedDataUseCase).execute(),
     report('data retention prune')
   );
   const trackers = createDueWorkWatcher(
-    (now) => container.resolve<SyncTrackerRulesUseCase>('SyncTrackerRulesUseCase').runDue(now),
+    whenOn('trackers', (now: Date) =>
+      container.resolve<SyncTrackerRulesUseCase>('SyncTrackerRulesUseCase').runDue(now)
+    ),
     report('tracker sync')
   );
   const knowledge = createDueWorkWatcher(
-    (now) =>
-      container.resolve<SyncKnowledgeSourcesUseCase>('SyncKnowledgeSourcesUseCase').runDue(now),
+    whenOn('knowledge', (now: Date) =>
+      container.resolve<SyncKnowledgeSourcesUseCase>('SyncKnowledgeSourcesUseCase').runDue(now)
+    ),
     report('knowledge sync')
   );
   const discovery = createDueWorkWatcher(
-    (now) => container.resolve<SyncDiscoveryUseCase>('SyncDiscoveryUseCase').runDue(now),
+    whenOn('discovery', (now: Date) =>
+      container.resolve<SyncDiscoveryUseCase>('SyncDiscoveryUseCase').runDue(now)
+    ),
     report('discovery')
   );
   const prComments = createPrCommentWatcher(
@@ -70,12 +100,22 @@ export function startBackgroundSync(label: string): BackgroundSync {
     report('PR comment sync')
   );
   const outcomes = createHourlyWatcher(
-    () => container.resolve<TrackOutcomesUseCase>('TrackOutcomesUseCase').run(),
+    whenOn('outcomes', () => container.resolve<TrackOutcomesUseCase>('TrackOutcomesUseCase').run()),
     report('outcome tracking')
   );
   const autopilot = createHourlyWatcher(
-    () => container.resolve<RunAutopilotUseCase>('RunAutopilotUseCase').runAll(),
+    whenOn('autopilot', () =>
+      container.resolve<RunAutopilotUseCase>('RunAutopilotUseCase').runAll()
+    ),
     report('autopilot')
+  );
+  const telemetry = createTelemetryFlushWatcher(
+    {
+      heartbeat: () =>
+        container.resolve<RecordInstallHeartbeatUseCase>('RecordInstallHeartbeatUseCase').execute(),
+      flush: () => container.resolve<FlushTelemetryUseCase>('FlushTelemetryUseCase').execute(),
+    },
+    report('usage metrics')
   );
   initializePrSyncWatcher(
     container.resolve<IFeatureRepository>('IFeatureRepository'),
@@ -85,7 +125,8 @@ export function startBackgroundSync(label: string): BackgroundSync {
     undefined,
     getExistingConnection(),
     container.resolve<IGitForkService>('IGitForkService'),
-    container.resolve<ILogger>('ILogger')
+    container.resolve<ILogger>('ILogger'),
+    container.resolve<ITelemetry>('ITelemetry')
   );
 
   retention.start();
@@ -95,6 +136,7 @@ export function startBackgroundSync(label: string): BackgroundSync {
   prComments.start();
   outcomes.start();
   autopilot.start();
+  telemetry.start();
   getPrSyncWatcher().start();
 
   return {
@@ -106,6 +148,7 @@ export function startBackgroundSync(label: string): BackgroundSync {
       prComments.stop();
       outcomes.stop();
       autopilot.stop();
+      telemetry.stop();
       getPrSyncWatcher().stop();
     },
   };

@@ -132,6 +132,10 @@ function makeAgentConfigResolver(cap = 3): AgentConfigResolver {
 function makeInteractionCoordinator(): UserInteractionCoordinator {
   return {
     buildOnUserQuestionCallback: vi.fn().mockReturnValue(() => Promise.resolve({})),
+    buildLiveSurface: vi.fn().mockReturnValue({
+      ask: () => Promise.resolve({}),
+      settleFromElsewhere: () => Promise.resolve(),
+    }),
     respondToInteraction: vi.fn().mockResolvedValue(undefined),
   } as unknown as UserInteractionCoordinator;
 }
@@ -260,7 +264,8 @@ describe('SessionBootstrapper', () => {
         'feat-1',
         '/wt',
         'hi agent',
-        undefined
+        undefined,
+        false
       );
     });
 
@@ -285,6 +290,44 @@ describe('SessionBootstrapper', () => {
       expect(createdExecutor.createSession).toHaveBeenCalled();
     });
 
+    it('passes a question bridge scoped to the session so chat questions reach the inbox (spec 134)', async () => {
+      const bridge = { ask: vi.fn() };
+      const questionBridges = { create: vi.fn().mockResolvedValue(bridge) };
+      bootstrapper = new SessionBootstrapper(
+        sessionRepo,
+        registry,
+        persistence,
+        dispatcher,
+        bootPromptResolver,
+        streamConsumer,
+        executorFactory,
+        agentConfigResolver,
+        interactionCoordinator,
+        logger,
+        spaceEnvironment,
+        questionBridges
+      );
+      const executor = executorFactory.createInteractiveExecutor as ReturnType<typeof vi.fn>;
+
+      const session = await bootstrapper.startSession('feat-1', '/wt');
+      await flushPromises();
+
+      expect(questionBridges.create).toHaveBeenCalledWith(
+        { scopeKey: 'feat-1', worktreePath: '/wt', sessionId: session.id },
+        expect.objectContaining({
+          ask: expect.any(Function),
+          settleFromElsewhere: expect.any(Function),
+        })
+      );
+      const createdExecutor = executor.mock.results[0].value as IInteractiveAgentExecutor;
+      expect(createdExecutor.createSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          agentQuestionBridge: bridge,
+          onUserQuestion: expect.any(Function),
+        })
+      );
+    });
+
     it("passes the feature's space environment to the agent session", async () => {
       const environment = { set: { GH_CONFIG_DIR: '/gh-acme' }, unset: ['GH_TOKEN'] };
       (spaceEnvironment.resolve as ReturnType<typeof vi.fn>).mockResolvedValue({ environment });
@@ -296,7 +339,27 @@ describe('SessionBootstrapper', () => {
       expect(spaceEnvironment.resolve).toHaveBeenCalledWith('feat-1', AgentType.ClaudeCode);
       const createdExecutor = executor.mock.results[0].value as IInteractiveAgentExecutor;
       expect(createdExecutor.createSession).toHaveBeenCalledWith(
-        expect.objectContaining({ cwd: '/wt', environment })
+        expect.objectContaining({
+          cwd: '/wt',
+          environment: {
+            set: { GH_CONFIG_DIR: '/gh-acme', SHEP_CHAT_SCOPE: 'feat-1' },
+            unset: ['GH_TOKEN'],
+          },
+        })
+      );
+    });
+
+    it('tells every session which chat conversation it is in (spec 137)', async () => {
+      const executor = executorFactory.createInteractiveExecutor as ReturnType<typeof vi.fn>;
+
+      await bootstrapper.startSession('repo-r1', '/repo');
+      await flushPromises();
+
+      const createdExecutor = executor.mock.results[0].value as IInteractiveAgentExecutor;
+      expect(createdExecutor.createSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          environment: { set: { SHEP_CHAT_SCOPE: 'repo-r1' }, unset: [] },
+        })
       );
     });
 
@@ -332,6 +395,21 @@ describe('SessionBootstrapper', () => {
       expect(sessionRepo.updateAgentSessionId).toHaveBeenCalledWith(
         expect.any(String),
         'agent-sid-1'
+      );
+    });
+
+    it('tells the boot prompt resolver when the agent session is resumed', async () => {
+      registry.cacheStoppedAgentSessionId('feat-1', 'old-sid');
+
+      await bootstrapper.startSession('feat-1', '/wt', undefined, undefined, undefined, 'again');
+      await flushPromises();
+
+      expect(bootPromptResolver.resolve).toHaveBeenCalledWith(
+        'feat-1',
+        '/wt',
+        'again',
+        undefined,
+        true
       );
     });
 

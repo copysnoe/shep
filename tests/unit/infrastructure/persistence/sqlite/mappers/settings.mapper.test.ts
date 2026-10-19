@@ -17,6 +17,7 @@ import {
 } from '@/infrastructure/persistence/sqlite/mappers/settings.mapper.js';
 import type { Settings } from '@/domain/generated/output.js';
 import { AgentEffort } from '@/domain/generated/output.js';
+import { createDefaultSettings } from '@/domain/factories/settings-defaults.factory.js';
 import {
   AgentType,
   AgentAuthMethod,
@@ -50,7 +51,6 @@ function createTestSettings(overrides: Partial<Settings> = {}): Settings {
       terminalPreference: TerminalType.System,
     },
     system: {
-      autoUpdate: true,
       logLevel: 'info',
     },
     agent: {
@@ -155,6 +155,7 @@ function createTestRow(overrides: Partial<SettingsRow> = {}): SettingsRow {
     ci_watch_enabled: 1,
     workflow_max_parallel_features: 0,
     ci_max_fix_attempts: null,
+    workflow_decision_default_timeout_minutes: null,
     ci_watch_timeout_ms: null,
     ci_log_max_chars: null,
     stage_timeout_analyze_ms: null,
@@ -180,8 +181,20 @@ function createTestRow(overrides: Partial<SettingsRow> = {}): SettingsRow {
     feature_flag_whatsapp_dispatch: 0,
     feature_flag_aspm: 0,
     feature_flag_clusters: 0,
-    feature_flag_supply_chain_security: 1,
     feature_flag_scheduled_workflows: 0,
+    feature_flag_spaces: 1,
+    feature_flag_trackers: 1,
+    feature_flag_knowledge: 1,
+    feature_flag_signals: 1,
+    feature_flag_opportunities: 1,
+    feature_flag_feedback: 1,
+    feature_flag_discovery: 1,
+    feature_flag_incidents: 1,
+    feature_flag_outcomes: 1,
+    feature_flag_docs_first: 1,
+    feature_flag_autopilot: 1,
+    feature_flag_factory: 1,
+    feature_flag_sdlc_board: 0,
     interactive_agent_enabled: 1,
     interactive_agent_auto_timeout_minutes: 15,
     interactive_agent_max_concurrent_sessions: 3,
@@ -232,6 +245,12 @@ function createTestRow(overrides: Partial<SettingsRow> = {}): SettingsRow {
     messaging_whatsapp_bot_token: null,
     messaging_whatsapp_pending_code: null,
     messaging_whatsapp_pending_expires_at: null,
+    telemetry_enabled: 1,
+    telemetry_include_identity: 1,
+    telemetry_contact_consent: 0,
+    telemetry_install_id: null,
+    telemetry_notice_shown_at: null,
+    telemetry_last_heartbeat_at: null,
     ...overrides,
   };
 }
@@ -492,6 +511,31 @@ describe('Settings Mapper', () => {
     });
   });
 
+  describe('fromDatabase() - removed agent types (spec 135)', () => {
+    it.each(['aider', 'continue'])(
+      'reads a persisted %s agent type back as the default agent',
+      (legacyType) => {
+        const settings = fromDatabase(createTestRow({ agent_type: legacyType }));
+        expect(settings.agent.type).toBe(createDefaultSettings().agent.type);
+      }
+    );
+
+    it('keeps a known agent type', () => {
+      const settings = fromDatabase(createTestRow({ agent_type: AgentType.CodexCli }));
+      expect(settings.agent.type).toBe(AgentType.CodexCli);
+    });
+  });
+
+  describe('legacy sys_auto_update column (spec 135)', () => {
+    it('still writes the NOT NULL column so inserts and older builds keep working', () => {
+      expect(toDatabase(createTestSettings()).sys_auto_update).toBe(1);
+    });
+
+    it('does not surface autoUpdate on read', () => {
+      expect(fromDatabase(createTestRow()).system).not.toHaveProperty('autoUpdate');
+    });
+  });
+
   describe('fromDatabase() - preserves existing field mappings', () => {
     it('should still reconstruct all pre-existing fields correctly', () => {
       const row = createTestRow();
@@ -502,7 +546,6 @@ describe('Settings Mapper', () => {
       expect(settings.models.default).toBe('claude-opus-4');
       expect(settings.user.name).toBe('Test User');
       expect(settings.environment.defaultEditor).toBe('vscode');
-      expect(settings.system.autoUpdate).toBe(true);
       expect(settings.agent.type).toBe('claude-code');
     });
   });
@@ -1474,87 +1517,53 @@ describe('Settings Mapper', () => {
     });
   });
 
-  describe('supplyChainSecurity feature flag (migration 056)', () => {
-    it('maps featureFlags.supplyChainSecurity=true to feature_flag_supply_chain_security=1', () => {
-      const settings = createTestSettings({
-        featureFlags: {
-          envDeploy: false,
-          debug: false,
-          reactFileManager: false,
-          projects: false,
-          codeReview: false,
-          collaboration: false,
-          bedrockIntegration: false,
-          whatsappDispatch: false,
-          aspm: false,
-          clusters: false,
-          supplyChainSecurity: true,
-          scheduledWorkflows: false,
-          githubImport: true,
-          queryAwareHarness: false,
-        },
-      });
-      const row = toDatabase(settings);
-      expect(row.feature_flag_supply_chain_security).toBe(1);
+  describe('software-factory flags (spec 135)', () => {
+    it.each([
+      ['spaces', 'feature_flag_spaces'],
+      ['trackers', 'feature_flag_trackers'],
+      ['knowledge', 'feature_flag_knowledge'],
+      ['signals', 'feature_flag_signals'],
+      ['opportunities', 'feature_flag_opportunities'],
+      ['feedback', 'feature_flag_feedback'],
+      ['discovery', 'feature_flag_discovery'],
+      ['incidents', 'feature_flag_incidents'],
+      ['outcomes', 'feature_flag_outcomes'],
+      ['docsFirst', 'feature_flag_docs_first'],
+      ['autopilot', 'feature_flag_autopilot'],
+      ['factory', 'feature_flag_factory'],
+    ] as const)('maps %s to %s both ways', (flag, column) => {
+      const base = createDefaultSettings().featureFlags!;
+      for (const value of [true, false]) {
+        const row = toDatabase(createTestSettings({ featureFlags: { ...base, [flag]: value } }));
+        expect(row[column]).toBe(value ? 1 : 0);
+        expect(fromDatabase(row).featureFlags?.[flag]).toBe(value);
+      }
+    });
+  });
+
+  describe('SDLC board flag (spec 140)', () => {
+    it('maps sdlcBoard to feature_flag_sdlc_board both ways', () => {
+      const base = createDefaultSettings().featureFlags!;
+      for (const value of [true, false]) {
+        const row = toDatabase(createTestSettings({ featureFlags: { ...base, sdlcBoard: value } }));
+        expect(row.feature_flag_sdlc_board).toBe(value ? 1 : 0);
+        expect(fromDatabase(row).featureFlags?.sdlcBoard).toBe(value);
+      }
+    });
+  });
+
+  describe('legacy supply-chain flag column (folded into ASPM, spec 135)', () => {
+    it('no longer writes feature_flag_supply_chain_security', () => {
+      const row = toDatabase(createTestSettings()) as unknown as Record<string, unknown>;
+      expect(row).not.toHaveProperty('feature_flag_supply_chain_security');
     });
 
-    it('maps featureFlags.supplyChainSecurity=false to feature_flag_supply_chain_security=0', () => {
-      const settings = createTestSettings({
-        featureFlags: {
-          envDeploy: false,
-          debug: false,
-          reactFileManager: false,
-          projects: false,
-          codeReview: false,
-          collaboration: false,
-          bedrockIntegration: false,
-          whatsappDispatch: false,
-          aspm: false,
-          clusters: false,
-          supplyChainSecurity: false,
-          scheduledWorkflows: false,
-          githubImport: true,
-          queryAwareHarness: false,
-        },
-      });
-      const row = toDatabase(settings);
-      expect(row.feature_flag_supply_chain_security).toBe(0);
-    });
-
-    it('reconstructs supplyChainSecurity=true from feature_flag_supply_chain_security=1', () => {
-      const row = createTestRow({ feature_flag_supply_chain_security: 1 });
-      const settings = fromDatabase(row);
-      expect(settings.featureFlags?.supplyChainSecurity).toBe(true);
-    });
-
-    it('reconstructs supplyChainSecurity=false from feature_flag_supply_chain_security=0', () => {
-      const row = createTestRow({ feature_flag_supply_chain_security: 0 });
-      const settings = fromDatabase(row);
-      expect(settings.featureFlags?.supplyChainSecurity).toBe(false);
-    });
-
-    it('round-trips supplyChainSecurity through toDatabase → fromDatabase', () => {
-      const settings = createTestSettings({
-        featureFlags: {
-          envDeploy: true,
-          debug: true,
-          reactFileManager: true,
-          projects: true,
-          codeReview: true,
-          collaboration: true,
-          bedrockIntegration: true,
-          whatsappDispatch: true,
-          aspm: true,
-          clusters: true,
-          supplyChainSecurity: false,
-          scheduledWorkflows: false,
-          githubImport: true,
-          queryAwareHarness: false,
-        },
-      });
-      const row = toDatabase(settings);
-      const restored = fromDatabase(row);
-      expect(restored.featureFlags).toEqual(settings.featureFlags);
+    it('ignores the column on read', () => {
+      const row = {
+        ...createTestRow(),
+        feature_flag_supply_chain_security: 0,
+      } as Parameters<typeof fromDatabase>[0];
+      expect(fromDatabase(row).featureFlags).not.toHaveProperty('supplyChainSecurity');
     });
   });
 
@@ -1742,6 +1751,23 @@ describe('Settings Mapper', () => {
         createTestSettings({ models: { default: 'claude-opus-5', adaptive } })
       );
       expect(fromDatabase(row).models.adaptive).toEqual(adaptive);
+    });
+  });
+
+  describe('telemetry identity default (identity is opt-in)', () => {
+    it('writes identity off when settings carry no telemetry', () => {
+      const row = toDatabase(createTestSettings({ telemetry: undefined }));
+
+      expect(row.telemetry_enabled).toBe(1);
+      expect(row.telemetry_include_identity).toBe(0);
+    });
+
+    it('reads identity off from a row without a stored value', () => {
+      const row = createTestRow({
+        telemetry_include_identity: null as unknown as number,
+      });
+
+      expect(fromDatabase(row).telemetry?.includeIdentity).toBe(false);
     });
   });
 });
