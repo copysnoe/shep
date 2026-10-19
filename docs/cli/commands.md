@@ -681,39 +681,52 @@ approve anything by accident.
 
 ### `shep fleet retry`
 
-Restart the agents behind failures the triage feed has already surfaced — "retry the 3 that
-failed CI" as one command instead of three.
+Restart the agents behind failures the triage feed has already surfaced — "restart the 3 that
+crashed" as one command instead of three.
 
 **Source**: `src/presentation/cli/commands/fleet/retry.command.ts`
 
-| Option           | Description                                                        |
-| ---------------- | ------------------------------------------------------------------ |
-| `--ci`           | Retry features whose CI checks failed (`ci_failed` triage category) |
-| `--failed`       | Retry features whose agent run crashed or failed (`crash`)          |
-| `--repo <path>`  | Restrict the batch to one repository path                           |
+| Option          | Description                                                                    |
+| --------------- | ------------------------------------------------------------------------------ |
+| `--failed`      | Retry the runs that crashed, failed **or were stopped by the user** (`crash`)  |
+| `--repo <path>` | Restrict the batch to one repository path                                      |
 
 ```
-$ shep fleet retry --ci
-✓ Retried 3 of 3 CI-failed features.
-  ✓ feat-a1b2
-  ✓ feat-c3d4
-  ✓ feat-e5f6
+$ shep fleet retry --failed
+✓ Retried 3 of 3 failed features.
+  ✓ Payment Retry
+  ✓ Auth Refactor
+  ✓ CSV Import
 ```
 
-Exactly one of `--ci` or `--failed` is required, for the same reason `fleet approve` requires a
-scope: a bare `shep fleet retry` must never be able to restart the whole fleet by accident.
+`--failed` is required, for the same reason `fleet approve` requires a scope: a bare
+`shep fleet retry` must never be able to restart the whole fleet by accident.
+
+`--failed` includes runs **you stopped on purpose**. `StopAgentRunUseCase` writes `interrupted`,
+the same status a crash reconciliation writes, and nothing in the run record reliably separates
+them — so the help text says so rather than pretending a deliberate stop was a crash.
 
 Retry is a **projection of the triage feed**, not a second resume path — each selected feature
 goes through the same `ResumeFeatureUseCase` that `shep feat resume` and the web Resume action
-use, so agent identity, worktree sync and capacity accounting stay in one place. Two
+use, so agent identity, worktree sync and capacity accounting stay in one place. Four
 consequences worth knowing:
 
 - **Each feature is retried once**, even if the feed lists it several times (a crashed run *and* a
   failing CI check on its PR). Retrying twice would put two agents in one worktree on one branch.
-- **Gates and questions are never retried**, whatever the scope. Those are decisions for a human;
-  re-running them would bypass the gate. Approving them is `shep fleet approve`.
+- **Gates and questions are never retried.** Those are decisions for a human; re-running them
+  would bypass the gate. Approving them is `shep fleet approve`.
+- **`ci_failed` alone never selects a feature**, which is why there is no `--ci`. That category
+  fires for any feature with a red CI run, whatever its agent run is doing, and both states it
+  produces are unusable here: a run parked at the merge gate would be resumed with no payload,
+  which the worker reads as `{ approved: true }` — a silent approval of a merge with failing CI —
+  and a run that already finished cannot be resumed at all. The only CI-red features that *were*
+  resumable are those whose run had already failed, which `--failed` covers.
 - **One refusal does not strand the batch.** The summary reports per-feature reasons, taken
-  verbatim from the resume path.
+  verbatim from the resume path. A batch that retried nothing prints a warning, not a success
+  tick, and features are listed by name in both the retried and the failed list.
+
+The same action is in the web triage drawer: **Retry** on a failed row, and **Retry all failed**
+in the footer behind a confirmation.
 
 > **Not implemented yet**: `shep fleet pause` / `resume` and the `--low-risk` filter. See
 > `specs/111-fleet-control-plane/tasks.yaml` for the remaining work.

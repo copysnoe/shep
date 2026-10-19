@@ -15,12 +15,15 @@
  * batch approve to the CLI, and this surface now exposes the same use cases:
  *
  * - every row is a link into its feature,
- * - a gate row approves inline,
- * - the footer clears the whole P1 gate backlog behind a confirmation.
+ * - a gate row approves inline, and a failed row retries inline,
+ * - the footer clears the whole P1 gate backlog — or restarts every failed run —
+ *   behind a confirmation.
  *
  * Approvals resume agent runs, so they are consequential: each one has an
  * in-flight state, a refusal path that toasts the reason, and — for the batch —
- * an `AlertDialog` naming the count before anything is sent.
+ * an `AlertDialog` naming the count before anything is sent. Retries are the same
+ * shape, for the same reason: they start agents, and a partial batch must never
+ * read as a clean one.
  */
 
 import { useCallback, useMemo, useState } from 'react';
@@ -51,6 +54,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { approveFeature } from '@/app/actions/approve-feature';
 import { batchApproveFeatures } from '@/app/actions/batch-approve-features';
+import { retryFailedFleetFeatures } from '@/app/actions/retry-failed-fleet-features';
 import {
   FleetTriageCategory,
   FleetTriagePriority,
@@ -103,6 +107,19 @@ function isApprovableGate(item: FleetTriageItem): boolean {
   return item.category === FleetTriageCategory.gate;
 }
 
+/**
+ * A failed run is the only kind this surface can retry.
+ *
+ * `ci_failed` is deliberately excluded, and it is the interesting omission: that
+ * category fires for any feature with a red CI run, whatever its agent run is
+ * doing, so retrying it would either approve a merge gate by accident or hit a
+ * run that already finished. `RetryFailedFleetFeaturesUseCase` carries the full
+ * reasoning.
+ */
+function isRetryableRun(item: FleetTriageItem): boolean {
+  return item.category === FleetTriageCategory.crash;
+}
+
 export function FleetTriageDrawer({
   items,
   open,
@@ -117,11 +134,30 @@ export function FleetTriageDrawer({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [batchPending, setBatchPending] = useState(false);
 
+  /** Same, for retries — kept separate so one row's retry never blocks an approve. */
+  const [retrying, setRetrying] = useState<ReadonlySet<string>>(() => new Set());
+  const [retryConfirmOpen, setRetryConfirmOpen] = useState(false);
+  const [retryBatchPending, setRetryBatchPending] = useState(false);
+
   const p1Gates = useMemo(
     () =>
       items.filter((item) => isApprovableGate(item) && item.priority === FleetTriagePriority.p1),
     [items]
   );
+
+  /**
+   * One entry per feature, as the use case selects them. A feature can hold both
+   * a crashed run and a failing CI check, and retrying it twice would put two
+   * agents in one worktree.
+   */
+  const retryable = useMemo(() => {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      if (!isRetryableRun(item) || seen.has(item.featureId)) return false;
+      seen.add(item.featureId);
+      return true;
+    });
+  }, [items]);
 
   const handleApprove = useCallback(
     async (item: FleetTriageItem) => {
@@ -179,6 +215,71 @@ export function FleetTriageDrawer({
     }
   }, [p1Gates, onRefresh]);
 
+  const handleRetry = useCallback(
+    async (item: FleetTriageItem) => {
+      setRetrying((prev) => new Set(prev).add(item.featureId));
+      try {
+        const result = await retryFailedFleetFeatures({ featureIds: [item.featureId] });
+
+        if (result.error) {
+          toast.error(result.error);
+          return;
+        }
+
+        if (result.retriedCount === 0) {
+          // The row was selectable but the resume refused — a paused queue, a
+          // capacity cap, a run that finished underneath us. Say why.
+          toast.error(result.failures[0]?.reason ?? `Could not restart ${item.featureName}`);
+          return;
+        }
+
+        toast.success(`${item.featureName} restarted — agent resuming`);
+        onRefresh?.();
+      } catch (error: unknown) {
+        toast.error(message(error, `Failed to retry ${item.featureName}`));
+      } finally {
+        setRetrying((prev) => {
+          const next = new Set(prev);
+          next.delete(item.featureId);
+          return next;
+        });
+      }
+    },
+    [onRefresh]
+  );
+
+  const handleRetryAll = useCallback(async () => {
+    const featureIds = retryable.map((item) => item.featureId);
+    setRetryBatchPending(true);
+    try {
+      const result = await retryFailedFleetFeatures({ featureIds });
+
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      if (result.failedCount > 0) {
+        // A partial batch is the dangerous outcome: the count drops, the
+        // operator assumes it is done, and the stragglers go unnoticed.
+        toast.error(
+          `Retried ${result.retriedCount} of ${result.totalAttempted} — ${result.failures
+            .map((failure) => `${failure.featureName}: ${failure.reason}`)
+            .join('; ')}`
+        );
+      } else {
+        toast.success(`Retried ${result.retriedCount} features — agents resuming`);
+      }
+
+      onRefresh?.();
+    } catch (error: unknown) {
+      toast.error(message(error, 'Failed to retry features'));
+    } finally {
+      setRetryBatchPending(false);
+      setRetryConfirmOpen(false);
+    }
+  }, [retryable, onRefresh]);
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
       <DrawerContent
@@ -225,6 +326,7 @@ export function FleetTriageDrawer({
           ) : (
             items.map((item) => {
               const pending = approving.has(item.featureId);
+              const retryPending = retrying.has(item.featureId);
               return (
                 <div
                   key={`${item.featureId}:${item.category}:${item.runId ?? ''}`}
@@ -261,18 +363,35 @@ export function FleetTriageDrawer({
 
                   <p className="text-muted-foreground mt-2 text-xs">{item.reason}</p>
 
-                  {isApprovableGate(item) ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2 h-7 px-2 text-xs"
-                      onClick={() => void handleApprove(item)}
-                      disabled={pending}
-                      data-testid={`fleet-triage-approve-${item.featureId}`}
-                    >
-                      {pending ? 'Approving…' : 'Approve'}
-                    </Button>
+                  {isApprovableGate(item) || isRetryableRun(item) ? (
+                    <div className="mt-2 flex items-center gap-2">
+                      {isApprovableGate(item) ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => void handleApprove(item)}
+                          disabled={pending}
+                          data-testid={`fleet-triage-approve-${item.featureId}`}
+                        >
+                          {pending ? 'Approving…' : 'Approve'}
+                        </Button>
+                      ) : null}
+                      {isRetryableRun(item) ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => void handleRetry(item)}
+                          disabled={retryPending}
+                          data-testid={`fleet-triage-retry-${item.featureId}`}
+                        >
+                          {retryPending ? 'Retrying…' : 'Retry'}
+                        </Button>
+                      ) : null}
+                    </div>
                   ) : null}
                 </div>
               );
@@ -290,6 +409,18 @@ export function FleetTriageDrawer({
               data-testid="fleet-triage-approve-all"
             >
               {batchPending ? 'Approving…' : `Approve all P1 (${p1Gates.length})`}
+            </Button>
+          ) : null}
+          {retryable.length > 0 ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setRetryConfirmOpen(true)}
+              disabled={retryBatchPending}
+              data-testid="fleet-triage-retry-all"
+            >
+              {retryBatchPending ? 'Retrying…' : `Retry all failed (${retryable.length})`}
             </Button>
           ) : null}
           {onRefresh ? (
@@ -340,6 +471,41 @@ export function FleetTriageDrawer({
                 data-testid="fleet-triage-approve-all-confirm"
               >
                 {batchPending ? 'Approving…' : 'Approve all'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={retryConfirmOpen} onOpenChange={setRetryConfirmOpen}>
+          <AlertDialogContent data-testid="fleet-triage-retry-all-dialog">
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Retry {retryable.length} failed feature{retryable.length === 1 ? '' : 's'}?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Each retry starts a new agent run for that feature. Runs you stopped on purpose are
+                included, and a feature that cannot be restarted is reported individually without
+                blocking the rest.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                disabled={retryBatchPending}
+                data-testid="fleet-triage-retry-all-cancel"
+              >
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(event) => {
+                  // Keep the dialog up while the batch runs so its in-flight
+                  // state is visible; `handleRetryAll` closes it when done.
+                  event.preventDefault();
+                  void handleRetryAll();
+                }}
+                disabled={retryBatchPending}
+                data-testid="fleet-triage-retry-all-confirm"
+              >
+                {retryBatchPending ? 'Retrying…' : 'Retry all'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

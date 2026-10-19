@@ -73,11 +73,22 @@ const ITEMS: FleetTriageItem[] = [
     reason: 'Agent run has been running for more than 45 minutes',
     createdAt: NOW,
   },
+  {
+    featureId: 'feat-6',
+    featureName: 'Payment Retry',
+    slug: 'payment-retry',
+    priority: FleetTriagePriority.p2,
+    category: FleetTriageCategory.crash,
+    reason: 'Agent run failed: spawn ENOENT',
+    runId: 'run-6',
+    createdAt: NOW,
+  },
 ];
 
 /**
- * The working feed: every row links into its feature, the two P1 gates approve
- * inline, and the footer clears both at once behind a confirmation.
+ * The working feed: every row links into its feature, the P1 gates approve
+ * inline, the failed run retries inline, and the footer clears the gate backlog
+ * or restarts every failed run — each behind a confirmation.
  */
 export const Default: Story = {
   args: {
@@ -125,12 +136,32 @@ export const Empty: Story = {
 };
 
 /**
- * Exceptions that exist but cannot be approved from here. The batch action is
- * absent rather than disabled-at-zero, since there is nothing to explain.
+ * Exceptions that exist but cannot be approved from here. The batch approve is
+ * absent rather than disabled-at-zero, since there is nothing to explain — the
+ * failed run below is still retryable, so that action remains.
  */
 export const NothingApprovable: Story = {
   args: {
     items: ITEMS.filter((item) => item.category !== FleetTriageCategory.gate),
+    open: true,
+    onOpenChange: noop,
+    onRefresh: noop,
+  },
+};
+
+/**
+ * Nothing this surface can act on at all: CI failures and merge conflicts need
+ * the CI fix loop and a branch resolution rather than a restarted agent, so
+ * neither batch button renders.
+ */
+export const NothingActionable: Story = {
+  args: {
+    items: ITEMS.filter(
+      (item) =>
+        item.category === FleetTriageCategory.ci_failed ||
+        item.category === FleetTriageCategory.conflict ||
+        item.category === FleetTriageCategory.warning
+    ),
     open: true,
     onOpenChange: noop,
     onRefresh: noop,

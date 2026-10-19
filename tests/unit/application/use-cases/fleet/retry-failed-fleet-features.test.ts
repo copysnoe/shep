@@ -1,17 +1,17 @@
 /**
  * RetryFailedFleetFeaturesUseCase Unit Tests
  *
- * `shep fleet retry` is a projection: it reads the triage feed the operator is
- * already looking at, filters it, and drives each selected feature through the
- * EXISTING `ResumeFeatureUseCase`. It invents no second resume path — the whole
- * value is that "retry the 3 that failed CI" is one command instead of three.
+ * `shep fleet retry --failed` is a projection: it reads the triage feed the
+ * operator is already looking at, filters it to the runs that can actually be
+ * resumed, and drives each through the EXISTING `ResumeFeatureUseCase`. It
+ * invents no second resume path — the whole value is that "restart the 3 that
+ * crashed" is one command instead of three.
  *
  * Properties that matter:
- *  - `--ci` and `--failed` select disjoint, correct categories
+ *  - a feature parked at a merge gate is NEVER resumed (the `--ci` bug)
+ *  - `ci_failed` alone never selects a feature, whatever its run is doing
  *  - a feature appears ONCE even when the feed lists it more than once
  *  - one failing resume does not strand the rest of the batch
- *  - a fleet whose admission queue is parked says so, rather than appearing to
- *    succeed while admitting nothing
  *
  * TDD Phase: RED-GREEN-REFACTOR
  */
@@ -57,34 +57,70 @@ describe('RetryFailedFleetFeaturesUseCase', () => {
   });
 
   describe('selection', () => {
-    it('retries only CI-failed features for --ci', async () => {
+    /**
+     * The regression this whole category filter exists for.
+     *
+     * `ci_failed` is emitted for any feature with a PR and a red CI run, whatever
+     * its agent run is doing — and the usual case is a feature parked at the
+     * merge gate. `ResumeFeatureUseCase` reads a missing resume payload as
+     * `{ approved: true }`, so a `--ci` retry approved the merge gate of a PR
+     * with failing CI, skipping everything `ApproveAgentRunUseCase` records.
+     */
+    it('never resumes a feature parked at a merge gate, even when its CI is red', async () => {
       triage.execute.mockResolvedValue([
-        item('ci-1', FleetTriageCategory.ci_failed),
-        item('crash-1', FleetTriageCategory.crash),
-        item('gate-1', FleetTriageCategory.gate),
+        item('gate-1', FleetTriageCategory.gate, { priority: FleetTriagePriority.p1 }),
+        item('gate-1', FleetTriageCategory.ci_failed),
       ]);
 
-      const result = await useCase.execute({ scope: 'ci' });
+      const result = await useCase.execute();
 
-      expect(result.retriedFeatureIds).toEqual(['ci-1']);
+      expect(result.retried).toEqual([]);
+      expect(result.totalAttempted).toBe(0);
+      expect(resume.execute).not.toHaveBeenCalled();
+    });
+
+    it('never selects a feature on ci_failed alone', async () => {
+      // The second half of the same bug: for a run that already completed there
+      // is nothing to resume at all, so `--ci` reported "could not be restarted"
+      // for the most common CI failure.
+      triage.execute.mockResolvedValue([item('ci-1', FleetTriageCategory.ci_failed)]);
+
+      const result = await useCase.execute();
+
+      expect(result.retried).toEqual([]);
+      expect(resume.execute).not.toHaveBeenCalled();
+    });
+
+    it('retries a feature whose CI is red AND whose run failed', async () => {
+      // The overlap case is the safe one: the run genuinely failed, so the crash
+      // item selects it. That is the only CI-red feature `--failed` ever retried
+      // too, which is why dropping `--ci` lost nothing.
+      triage.execute.mockResolvedValue([
+        item('both-1', FleetTriageCategory.ci_failed),
+        item('both-1', FleetTriageCategory.crash),
+      ]);
+
+      const result = await useCase.execute();
+
+      expect(result.retried.map((outcome) => outcome.featureId)).toEqual(['both-1']);
       expect(resume.execute).toHaveBeenCalledOnce();
-      expect(resume.execute).toHaveBeenCalledWith('ci-1');
     });
 
-    it('retries only crashed runs for --failed', async () => {
+    it('retries crashed runs, with their names', async () => {
       triage.execute.mockResolvedValue([
         item('ci-1', FleetTriageCategory.ci_failed),
         item('crash-1', FleetTriageCategory.crash),
       ]);
 
-      const result = await useCase.execute({ scope: 'failed' });
+      const result = await useCase.execute();
 
-      expect(result.retriedFeatureIds).toEqual(['crash-1']);
+      expect(result.retried).toEqual([{ featureId: 'crash-1', featureName: 'Feature crash-1' }]);
+      expect(resume.execute).toHaveBeenCalledWith('crash-1');
     });
 
-    it('never retries a gate or question, whatever the scope', async () => {
-      // Those are decisions for a human, not failures to re-run. Approving them
-      // is `fleet approve`; re-running them would bypass the gate entirely.
+    it('never retries a gate, question, conflict or warning', async () => {
+      // Gates and questions are decisions for a human — approving them is
+      // `fleet approve`, and re-running them would bypass the gate entirely.
       triage.execute.mockResolvedValue([
         item('gate-1', FleetTriageCategory.gate),
         item('question-1', FleetTriageCategory.question),
@@ -92,8 +128,9 @@ describe('RetryFailedFleetFeaturesUseCase', () => {
         item('warn-1', FleetTriageCategory.warning),
       ]);
 
-      expect((await useCase.execute({ scope: 'ci' })).retriedFeatureIds).toEqual([]);
-      expect((await useCase.execute({ scope: 'failed' })).retriedFeatureIds).toEqual([]);
+      const result = await useCase.execute();
+
+      expect(result.retried).toEqual([]);
       expect(resume.execute).not.toHaveBeenCalled();
     });
 
@@ -106,23 +143,63 @@ describe('RetryFailedFleetFeaturesUseCase', () => {
         item('dup-1', FleetTriageCategory.crash, { reason: 'again' }),
       ]);
 
-      const result = await useCase.execute({ scope: 'failed' });
+      const result = await useCase.execute();
 
-      expect(result.retriedFeatureIds).toEqual(['dup-1']);
+      expect(result.retried.map((outcome) => outcome.featureId)).toEqual(['dup-1']);
       expect(resume.execute).toHaveBeenCalledOnce();
     });
 
     it('retries nothing when the feed is empty', async () => {
-      const result = await useCase.execute({ scope: 'ci' });
+      const result = await useCase.execute();
 
-      expect(result).toMatchObject({ attemptedCount: 0, retriedFeatureIds: [], failures: [] });
+      expect(result).toMatchObject({
+        totalAttempted: 0,
+        retriedCount: 0,
+        retried: [],
+        failedCount: 0,
+        failures: [],
+      });
       expect(resume.execute).not.toHaveBeenCalled();
     });
 
     it('passes the repository scope through to the feed', async () => {
-      await useCase.execute({ scope: 'failed', repositoryPath: '/repo/alpha' });
+      await useCase.execute({ repositoryPath: '/repo/alpha' });
 
       expect(triage.execute).toHaveBeenCalledWith({ repositoryPath: '/repo/alpha' });
+    });
+
+    it('narrows to specific feature ids, which is how the drawer retries one row', async () => {
+      triage.execute.mockResolvedValue([
+        item('a', FleetTriageCategory.crash),
+        item('b', FleetTriageCategory.crash),
+      ]);
+
+      const result = await useCase.execute({ featureIds: ['b'] });
+
+      expect(result.retried.map((outcome) => outcome.featureId)).toEqual(['b']);
+      expect(resume.execute).toHaveBeenCalledOnce();
+      expect(resume.execute).toHaveBeenCalledWith('b');
+    });
+
+    it('treats an empty featureIds list as no narrowing', async () => {
+      // The drawer sends the ids it rendered; an empty array must mean "all
+      // failed runs", not "none", or the batch button would silently no-op.
+      triage.execute.mockResolvedValue([item('a', FleetTriageCategory.crash)]);
+
+      const result = await useCase.execute({ featureIds: [] });
+
+      expect(result.retried.map((outcome) => outcome.featureId)).toEqual(['a']);
+    });
+
+    it('cannot reach a feature the feed does not list', async () => {
+      // `featureIds` narrows the feed's selection, it does not bypass it: a
+      // caller cannot name an arbitrary feature and have its agent restarted.
+      triage.execute.mockResolvedValue([item('a', FleetTriageCategory.crash)]);
+
+      const result = await useCase.execute({ featureIds: ['not-in-the-feed'] });
+
+      expect(result.retried).toEqual([]);
+      expect(resume.execute).not.toHaveBeenCalled();
     });
   });
 
@@ -138,10 +215,11 @@ describe('RetryFailedFleetFeaturesUseCase', () => {
         .mockRejectedValueOnce(new Error('Agent is still running — stop it first before resuming'))
         .mockResolvedValueOnce({ feature: { id: 'c' }, newRun: { id: 'rc' } });
 
-      const result = await useCase.execute({ scope: 'failed' });
+      const result = await useCase.execute();
 
-      expect(result.retriedFeatureIds).toEqual(['a', 'c']);
-      expect(result.attemptedCount).toBe(3);
+      expect(result.retried.map((outcome) => outcome.featureId)).toEqual(['a', 'c']);
+      expect(result.totalAttempted).toBe(3);
+      expect(result.failedCount).toBe(1);
       expect(result.failures).toEqual([
         {
           featureId: 'b',
@@ -155,9 +233,11 @@ describe('RetryFailedFleetFeaturesUseCase', () => {
       triage.execute.mockResolvedValue([item('a', FleetTriageCategory.crash)]);
       resume.execute.mockRejectedValue(new Error('boom'));
 
-      const result = await useCase.execute({ scope: 'failed' });
+      const result = await useCase.execute();
 
-      expect(result.retriedFeatureIds).toEqual([]);
+      expect(result.retried).toEqual([]);
+      expect(result.retriedCount).toBe(0);
+      expect(result.failedCount).toBe(1);
       expect(result.failures).toHaveLength(1);
     });
   });
@@ -177,7 +257,7 @@ describe('RetryFailedFleetFeaturesUseCase', () => {
     triage.execute.mockResolvedValue([item('a', FleetTriageCategory.crash)]);
     resume.execute.mockRejectedValue(new Error('Feature "a" is missing specPath — cannot resume'));
 
-    const result = await useCase.execute({ scope: 'failed' });
+    const result = await useCase.execute();
 
     expect(result.failures[0]?.reason).toBe('Feature "a" is missing specPath — cannot resume');
   });

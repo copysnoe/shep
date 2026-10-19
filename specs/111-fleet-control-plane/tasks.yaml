@@ -227,8 +227,8 @@ tasks:
     acceptanceCriteria:
       - "shep fleet approve --all batch approves waiting features"
       - "shep fleet pause / resume toggles admission queue (delivered in a separate PR)"
-      - "shep fleet retry --ci restarts features whose CI failed; --failed restarts crashed runs"
-      - "shep fleet retry requires exactly one scope, and retries each selected feature once"
+      - "shep fleet retry --failed restarts the runs that crashed, failed or were stopped, and requires an explicit scope"
+      - "shep fleet retry retries each selected feature once, and never selects a feature on ci_failed alone (there is no --ci: it would approve a merge gate with failing CI)"
     tdd: null
     estimatedEffort: "1.5h"
 
@@ -251,6 +251,7 @@ tasks:
     dependencies: [task-6, task-8]
     acceptanceCriteria:
       - "Displays exception cards with inline actions"
+      - "A failed row retries inline and the footer restarts every failed run, both through RetryFailedFleetFeaturesUseCase"
       - "fleet-triage-drawer.stories.tsx with populated and empty states"
     tdd: null
     estimatedEffort: "2.5h"
