@@ -275,6 +275,12 @@ Key files:
 - `nodes/` -- `analyze`, `ensure-infra`, `install-deps`, `start-server`, `verify`, `remediate` node factories (+ `prompts/` for the analysis and remediation prompts)
 - `schemas/run-plan-analysis.schema.ts` -- `RUN_PLAN_ANALYSIS_SCHEMA` / `DevServerAnalysis`
 
+### Git checkpoints per step (spec 138)
+
+The full, fast and exploration graphs wrap every file-changing node with `withCheckpoint`. Each one
+snapshots the worktree into `refs/shep/checkpoints/<featureId>/<seq>-<node>` without touching the
+branch or index. See [git-checkpoints.md](./git-checkpoints.md).
+
 ## Collaboration & Question Pipeline (spec 093, flag-gated)
 
 Three new domain entities — defined in `tsp/agents/` — extend the agent system
@@ -338,9 +344,9 @@ factory picks one from `settings.agent.type`; nothing else may.
 | `llmproxy`    | `llmproxy-executor.service.ts`             | sdk  |
 | `dev`         | `dev-executor.service.ts`                  | mock |
 
-**`aider` and `continue` have no executor.** They are `supported: false` in the
-agent catalog, with `binary: null` and `toolId: null`, and must never reach the
-executor factory. There is no `aider-executor.service.ts`.
+Every `AgentType` has an executor. A catalog entry marked `supported: false`
+would be shown as "Coming Soon" and must never reach the executor factory; none
+exist today (the `aider` and `continue` placeholders were removed in spec 135).
 
 Supporting files in the same directory:
 

@@ -119,7 +119,7 @@ layer has one responsibility and does not leak into the others.
   adding a second rendering surface for chat content (another
   drawer, a secondary list, a parallel component), STOP — it is a
   Layer 3 card that belongs inside the existing timeline.
-- `OperationBubble`, `InteractionBubble`, `StepTracker`, and
+- `OperationBubble`, `ChatPendingDecision`, `StepTracker`, and
   `TurnGroupCard` are all Layer 3 card types. Their order in the
   column is chronological.
 
@@ -134,6 +134,20 @@ layer has one responsibility and does not leak into the others.
   about messages; takes pre-baked props (`title`, `status`, children).
 - `StepTracker.tsx` — Layer 3 card for the setup workflow.
 - `operation-bubble.tsx` — Layer 3 card for publish/deploy operations.
+- `ChatPendingDecision.tsx` — Layer 3 card for an agent question (spec 134):
+  the shared `DecisionPanel`, rendered INSIDE the in-progress turn card that
+  asked it (via `SingleTurnCard`'s `decision` slot), with the composer as
+  "Other". An answered question (`{{interaction}}` record, parsed only by
+  `domain/shared/interaction-answer.ts`) stays in its turn and renders as an
+  `AnsweredDecisionRow`.
+- `ChatBlockMessage.tsx` / `ChatBlockResponseRow.tsx` — rich blocks an agent posts
+  (spec 137: spec review, HTML preview, plan card) and the user's answer to one. A block is a
+  `{{block}}` assistant message and its answer a `{{block-response}}` user message, parsed only
+  by `domain/shared/chat-block.ts`. Blocks render through the inline block registry. In turn
+  cards they are PINNED (`TurnGroupCard`'s `pinned` slot) so a collapsed card never hides
+  something the user must answer; they are not repeated among the expanded raw messages.
+  `ChatBlocksProvider` (`chat-blocks-context.tsx`, mounted by `ChatTab`) gives every renderer
+  the conversation's blocks, their answers and the responder.
 - `ChatTab.tsx` — Composes the timeline. Calls `useChatRuntime` once
   with `hideAllMessages: turnGroupsEnabled`, calls `useTurnGroupsView`
   over `rawMessages`, and renders all Layer 3 cards in chronological

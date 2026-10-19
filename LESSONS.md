@@ -161,6 +161,34 @@ Rules:
    process and then deletes files is a Windows-only failure waiting for main.
 4. **One retry budget, one home.** Six suites had each inlined their own
    `{ maxRetries, retryDelay }`; that is `@tests/helpers/remove-dir.helper.ts` now.
+5. **The shell's exit is not the ConPTY host's exit.** On Windows node-pty's `conhost.exe`
+   inherits the shell's cwd and can outlive the exit event (CI killed it as an orphan at job
+   end), so even exit-wait + retries can still hit `EBUSY`. A test whose temp dir served only as
+   the shell's cwd may leave it to the OS on that one Windows error; every other error fails.
+
+## A ConPTY session is two processes — and an exit event is not proof either died
+
+On Windows node-pty starts the shell *and* its pseudo-console host (`conhost.exe`, or
+`OpenConsole.exe` with `useConptyDll`) as siblings, both children of our process. A probe on
+windows-2022 (#927) showed that a terminal closed right after `create()` left both alive for about
+0.7 s, with the cwd `EBUSY` that whole time, and that `useConptyDll: true` left `OpenConsole.exe`
+running for seconds *after* the exit event.
+
+Rules:
+
+1. **`close()` returns a promise that settles when the processes are gone.** Kill, await the exit
+   event (bounded), then terminate any survivor by its PID.
+2. **Capture the host PID while the shell is alive.** `NtQueryInformationProcess(
+   ProcessConsoleHostProcess)` on the shell returns its exact host; the query fails once the
+   shell is dead. `ConptyHostReaper` owns this.
+3. **Never kill by image name.** An image name only confirms that a captured PID was not
+   recycled before the kill.
+4. **An immediate `rmSync` is a weak RED signal on Windows.** Removing a dir held by a dying
+   process can succeed or fail depending on timing. Assert on the processes themselves (diff
+   the parent's children around the session), then on the removal.
+5. **Probe on the real runner before designing.** A temporary Windows-only test that logs JSON
+   to stdout took two CI rounds and replaced guesses ("conhost holds the cwd") with facts
+   (the shell holds it; the host is a separate leak).
 
 ## A one-shot download inside a build step is an unguarded failure
 
@@ -797,9 +825,9 @@ Feature flags are persisted in the Settings singleton and toggled via the Settin
    - UPDATE SET clause
 6. `packages/core/src/domain/factories/settings-defaults.factory.ts` — add `<name>: false` to the `FeatureFlags` defaults object
 7. `src/presentation/web/lib/feature-flags.ts` — add field to `FeatureFlagsState` interface, to the DB-primary branch, and to the env-var fallback branch (+ optional deprecated accessor)
-8. `src/presentation/web/components/features/settings/settings-page-client.tsx` — add `<SwitchRow>` inside the Feature Flags `SettingsSection` and add the key to the fallback object at the top (`const featureFlags = settings.featureFlags ?? { ... }`).
-9. Translation strings in EVERY locale — `translations/<lang>/web.json` → `settings.featureFlags.<name>` and `settings.featureFlags.<name>Description`. Missing keys render as the raw key path on-screen. Locales: `en, ar, es, de, fr, he, pt, uk, ru`.
-10. Gate the UI on `featureFlags.<name>` wherever the feature is exposed (sidebar, routes, search, FAB actions). **If the feature ships any pages under `src/presentation/web/app/<name>/`, you MUST also ADD a `SidebarNavItem` in `app-sidebar.tsx` gated on the flag — "gate the existing sidebar entry" silently passes when there is no entry to gate. See the "New Feature Pages Must Be Reachable" lesson below.**
+8. `packages/core/src/domain/shared/feature-flag-catalog.ts` — add the flag to `FEATURE_FLAG_CATALOG` with its group and a one-line description (a missing entry is a compile error). The Settings page's Feature Flags section, `/settings/feature-flags` and `shep settings flags` all render from it (spec 135) — do not hand-write a `<SwitchRow>`.
+9. Translation strings in EVERY locale — `translations/<lang>/web.json` → `settings.featureFlags.<name>` and `settings.featureFlags.<name>Description`, named exactly after the flag key (the list builds the key from it). Missing keys render as the raw key path on-screen. Locales: `en, ar, es, de, fr, he, pt, uk, ru`.
+10. Gate the UI on `featureFlags.<name>` wherever the feature is exposed (sidebar `flag` in `sidebar-links.ts`, `requireFeaturePage()` in pages, `featureNotFound()` in API routes and `{ error: FEATURE_OFF_ERROR }` in server actions — both from `lib/feature-gate.ts` — `gateByFeatureFlag()` for CLI groups, search, FAB actions). A page that is gated is not enough: its API routes and server actions stay callable by URL or action id. **If the feature ships any pages under `src/presentation/web/app/<name>/`, you MUST also ADD a `SidebarNavItem` in `app-sidebar.tsx` gated on the flag — "gate the existing sidebar entry" silently passes when there is no entry to gate. See the "New Feature Pages Must Be Reachable" lesson below.**
 11. Update hardcoded `FeatureFlags` / `FeatureFlagsState` fixtures across stories, tests, and hooks. `tsc --noEmit` will surface every one — run `pnpm typecheck` BEFORE committing so the pre-commit hook doesn't bounce. Known fixture locations (grow this list when a new one shows up):
     - `src/presentation/web/hooks/feature-flags-context.tsx`
     - `src/presentation/web/components/features/settings/settings-page-client.tsx` (fallback object)
@@ -3016,3 +3044,111 @@ that a squash merge would invalidate.
 `relative(ROOT, file)` returns backslashes on Windows, so a test comparing it with
 `'packages/core/src/...'` passed on Linux and failed on `windows-latest`. Always
 `.replace(/\\/g, '/')` a computed path before comparing or printing it in a test.
+
+## A new hook in a shared shell is a change to every test that renders the shell
+
+Adding `useRouteViewTelemetry()` to `AppShell` (it calls `useParams`) failed four AppShell suites
+whose `vi.mock('next/navigation')` only returned `usePathname`/`useRouter`, and a new
+`container.resolve('ITelemetry')` in `startBackgroundSync` failed the `ui` and `_serve` command
+tests whose stubs throw on unknown tokens. Before mounting a hook in a layout, grep the tests that
+mock its imports; before adding a resolve to a shared starter, grep the stubs of every command that
+calls it. The web test setup replaces `localStorage` with `vi.fn()` mocks (`getItem` returns
+`undefined`), so drive it with `vi.mocked(localStorage.getItem)` and treat "missing" as falsy, not
+`!== null`.
+
+## PostHog `/batch/` answers 200 for any project key
+
+A live probe returned `200 {"status":"Ok"}` for a fake key and `400` for a malformed body. A
+successful send proves the wire format, not that events reach a project — check the project's
+event stream after configuring a real key.
+
+## A scripted "insert before the first import" can land above `import 'reflect-metadata'`
+
+Adding an import to `container-bootstrap.test.ts` with a script that inserted it before the
+file's first `import` put a tsyringe-decorated module above `import 'reflect-metadata'`. The DI
+suite still passed when run together with other files (another file had loaded the polyfill in
+the same worker) and failed alone in `test:int` with "tsyringe requires a reflect polyfill".
+When inserting imports programmatically, anchor on a sibling import of the same kind, never on
+"the first import", and run the touched test file on its own.
+
+## In-memory repositories have no foreign keys — smoke the real process before trusting a wired path
+
+`EscalateToUserUseCase` wrote its audit row with `work_item_id` = the agent question's id, but
+`activity_log.work_item_id` references `work_items(id)`. With collaboration on, every non-info
+`AskAgentQuestionUseCase` call threw `FOREIGN KEY constraint failed` after storing the question
+and sending the notification. The gate publisher swallowed it, and every unit test used
+in-memory repositories, so it stayed hidden until spec 134 ran the `ask_decision` MCP server as a
+real process against a real database. Rules: an audit write that is not the point of the call is
+best-effort (the approval use cases already wrap theirs); a use case that writes several tables
+needs at least one test against the migrated SQLite schema; and a new process entry point
+(an MCP server, a worker) gets one real spawn-and-call smoke before it is called done — that run
+also caught the entry skipping `initializeSettings()`.
+
+## Agent worktrees under `.claude/worktrees/` are not gitignored
+
+A subagent started with worktree isolation checks out under `.claude/worktrees/<id>/` inside the
+main clone, and `.gitignore` does not cover that path, so `git add -A` or `git status`-driven lint
+and prettier runs pick up the whole second checkout. Add `.claude/worktrees/` to
+`.git/info/exclude` before starting one, and stage with `git add -u` plus explicit new paths.
+
+## Never isolate git config with `NUL` on Windows
+
+`GIT_CONFIG_GLOBAL=NUL` worked until the Windows runner moved to git 2.56, which fails every
+command with `fatal: unable to access 'NUL': Invalid argument`. Point `GIT_CONFIG_GLOBAL` and
+`GIT_CONFIG_SYSTEM` at an empty temp file (as `tests/helpers/harness/temp-git-repo.ts` does) — it
+reads the same on every platform and git version, so never branch on `process.platform` for it.
+
+## Wait for a specific server action in e2e, never "the first `next-action` POST"
+
+The i18n spec waited for any server-action response, then called `response.finished()` to stop the
+page closing mid-save. Pages fire several actions on load (model catalog, routing plan), so the wait
+could match the wrong one, and a server action's response streams the re-rendered page, so
+`finished()` can hang past the test timeout even after the action has persisted. Match the action
+by its request body (`request.postData()` contains the field it saves), treat its response headers
+as "persisted", and verify through a reload rather than `finished()`.
+
+## Fields that identify a person are opt-in, even when usage metrics are opt-out
+
+Spec 133 first shipped "Include my identity" on by default (account hash, GitHub username and
+owners). The owner reversed it before merge: anonymous usage events may be opt-out, but anything
+that identifies a person defaults to off and the notice offers to turn it on. Keep one source for
+the default (`DEFAULT_TELEMETRY_PREFERENCES`) and make the migration's column default, the mapper's
+fallback and every `?? default` read it — the first version had `?? true` in three places.
+
+## Trace "the agent is told X" to the bytes the agent receives
+
+Spec 137 added a "Rich replies" section to the interactive agent's context and the unit test
+for `FeatureContextBuilder` passed — but the Claude Agent SDK V2 session drops `systemPrompt`,
+and a chat booted by the user's first message sent only that message. So no Shep context had
+ever reached a Claude chat started that way; only chats opened without a message (where the
+context doubles as the boot prompt) saw it. Rules: when a change depends on an agent knowing
+something, follow it to the first turn the executor actually sends (`BootPromptResolver`
+output), not to the string that builds it; and check an SDK's option type before passing an
+option — a field the type does not declare is silently ignored. The same SDK also hard-codes
+`mcpServers: {}` for V2 sessions, which is why chat tools go through the shell
+(`shep chat block`) rather than MCP.
+
+## A shared fake must answer from its own rows, not a constant
+
+`createFakeAgentRunRepository().findLatestByFeatureId` always returned `null`, even after `seed()`.
+So every test of "refuse while an agent runs" would have passed, because there was never a run to
+refuse on. Spec 138 fixed it to answer from the seeded rows. When a shared fake has a `seed`, every
+read method must use it. When adding a guard that depends on a read, first watch the guard's test
+fail against the fake.
+
+## Renaming a spec number: change only the lines you added
+
+T4 started as spec 135 while another merged PR also used "spec 135" in its comments, so a
+repository-wide replace would have rewritten that PR's references. Instead, take your branch's
+added lines (`git diff -U0 <merge-base> <your-last-commit>`) and replace only those. Grep
+afterwards for anything a later reformat moved. Ask which number to use before
+`/shep-kit:new-feature` when workstreams run in parallel.
+
+## Files under `.storybook/mocks/` cannot import `@shepai/core/*`
+
+A Storybook action mock that imported `@shepai/core/domain/shared/git-checkpoint` failed the
+Storybook build with `Rollup failed to resolve import`. Web components can import that path, but
+the mock lives outside the web package, where the alias does not resolve. Mocks may import from
+`@/…` (fixtures, `lib/`) only; derive anything else from the fixture data. The commit had been
+pushed while the local `build:storybook` was still running. Wait for the build's exit code before
+pushing any change to a story or a mock.

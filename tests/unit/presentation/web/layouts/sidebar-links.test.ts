@@ -20,6 +20,19 @@ const OFF = {
   scheduledWorkflows: false,
   githubImport: false,
   queryAwareHarness: false,
+  spaces: false,
+  trackers: false,
+  knowledge: false,
+  signals: false,
+  opportunities: false,
+  feedback: false,
+  discovery: false,
+  incidents: false,
+  outcomes: false,
+  docsFirst: false,
+  autopilot: false,
+  factory: false,
+  sdlcBoard: false,
 } satisfies FeatureFlagsState;
 
 describe('sidebar links', () => {
@@ -27,6 +40,15 @@ describe('sidebar links', () => {
     const hrefs = SIDEBAR_LINKS.map((link) => link.href);
     expect(hrefs[0]).toBe('/control-center');
     expect(hrefs.indexOf('/opportunities')).toBe(hrefs.indexOf('/connections') + 1);
+  });
+
+  it('lists Chat right under Home and keeps it active on every conversation (spec 137)', () => {
+    const hrefs = SIDEBAR_LINKS.map((l) => l.href);
+    expect(hrefs.indexOf('/chats')).toBe(1);
+    const chat = SIDEBAR_LINKS.find((l) => l.href === '/chats')!;
+    expect(chat.labelKey).toBe('chat');
+    expect(chat.flag).toBeUndefined();
+    expect(isSidebarLinkActive(chat, '/chats/repo-r1')).toBe(true);
   });
 
   it('lists Incidents right after Opportunities (spec 129)', () => {
@@ -43,6 +65,28 @@ describe('sidebar links', () => {
     expect(visibleSidebarLinks(OFF).map((l) => l.href)).not.toContain('/clusters');
     expect(visibleSidebarLinks({ ...OFF, clusters: true }).map((l) => l.href)).toContain(
       '/clusters'
+    );
+  });
+
+  it.each([
+    ['spaces', '/spaces'],
+    ['trackers', '/connections'],
+    ['opportunities', '/opportunities'],
+    ['incidents', '/incidents'],
+    ['factory', '/factory'],
+  ] as const)('shows the %s area at %s only while its flag is on (spec 135)', (flag, href) => {
+    expect(visibleSidebarLinks(OFF).map((l) => l.href)).not.toContain(href);
+    expect(visibleSidebarLinks({ ...OFF, [flag]: true }).map((l) => l.href)).toContain(href);
+  });
+
+  it('shows the SDLC Board only while sdlcBoard is on (spec 140)', () => {
+    expect(visibleSidebarLinks(OFF).map((l) => l.href)).not.toContain('/sdlc');
+    expect(visibleSidebarLinks({ ...OFF, sdlcBoard: true }).map((l) => l.href)).toContain('/sdlc');
+  });
+
+  it('shows /connections for either trackers or Notion knowledge', () => {
+    expect(visibleSidebarLinks({ ...OFF, knowledge: true }).map((l) => l.href)).toContain(
+      '/connections'
     );
   });
 

@@ -225,7 +225,7 @@
         "governanceFindingsLabel": "GitHub Governance (audit-only)",
         "noFindings": "No findings",
         "failedToEnforce": "Failed to evaluate security posture",
-        "flagDisabledNote": "Supply chain security feature flag is off — enforce is a no-op"
+        "flagDisabledNote": "Supply-chain security is part of ASPM and the aspm feature flag is off — enforce is a no-op"
       }
     },
     "feat": {
@@ -510,6 +510,41 @@
         "description": "يعالج وكيل تعليقات المراجعة المعلّقة في مساحة عمل الميزة ويدفع التغييرات ويرد على كل تعليق",
         "commentsArg": "معرّفات التعليقات أو بادئاتها (الافتراضي: كل المعلّقة)",
         "spinner": "جارٍ معالجة {{count}} تعليقات"
+      },
+      "checkpoints": {
+        "description": "عرض نقاط حفظ git المأخوذة بعد كل خطوة من الميزة",
+        "idArgument": "معرّف الميزة أو بادئته",
+        "title": "نقاط الحفظ — {{name}}",
+        "stepColumn": "الخطوة",
+        "timeColumn": "وقت الأخذ",
+        "changesColumn": "التغييرات",
+        "commitColumn": "الإيداع",
+        "files_one": "{{count}} ملف",
+        "files_few": "{{count}} ملفات",
+        "files_many": "{{count}} ملفًا",
+        "files_other": "{{count}} ملف",
+        "empty": "لا توجد نقاط حفظ بعد. تُسجَّل بعد كل خطوة عند تشغيل وكيل الميزة.",
+        "failed": "تعذّر عرض نقاط الحفظ"
+      },
+      "diff": {
+        "description": "عرض ما غيّرته خطوة أو مقارنة خطوتين",
+        "idArgument": "معرّف الميزة أو بادئته",
+        "toOption": "الخطوة المطلوبة: رقم أو اسم أو تسمية (مثل 3 أو implement أو 0003-implement)",
+        "fromOption": "الخطوة المقارَن بها (الافتراضي: الخطوة السابقة لـ --to)",
+        "statOption": "عرض الملفات المتغيرة فقط",
+        "noChanges": "لا توجد تغييرات بين هاتين الخطوتين.",
+        "failed": "تعذّرت مقارنة نقاط الحفظ"
+      },
+      "restore": {
+        "description": "إرجاع شجرة عمل الميزة إلى نقطة حفظ",
+        "idArgument": "معرّف الميزة أو بادئته",
+        "stepArgument": "نقطة الحفظ المراد استعادتها: رقم أو اسم خطوة أو تسمية",
+        "forceOption": "تخطي التأكيد",
+        "confirm": "استعادة شجرة العمل إلى \"{{step}}\"؟ تُحفظ التغييرات اللاحقة في نقطة حفظ ولا يتحرك الفرع.",
+        "cancelled": "أُلغي",
+        "restored": "استُعيدت شجرة العمل إلى {{step}}",
+        "undoHint": "للتراجع:",
+        "failed": "تعذّرت استعادة نقطة الحفظ"
       }
     },
     "repo": {
@@ -1793,6 +1828,78 @@
         "features": "الميزات",
         "featuresValue": "قيد التنفيذ: {{inFlight}}، بانتظار الموافقة: {{waiting}}"
       }
+    },
+    "telemetry": {
+      "description": "إدارة مقاييس الاستخدام (قياس عن بُعد قابل للإلغاء)",
+      "stateArgument": "on أو off",
+      "invalidState": "المتوقع \"on\" أو \"off\"، لكن تم استلام \"{{value}}\"",
+      "failed": "فشل تحديث إعدادات مقاييس الاستخدام",
+      "forcedOff": "تبقى مقاييس الاستخدام متوقفة في هذه البيئة: {{reason}}.",
+      "on": {
+        "description": "تشغيل مقاييس الاستخدام",
+        "done": "مقاييس الاستخدام قيد التشغيل."
+      },
+      "off": {
+        "description": "إيقاف مقاييس الاستخدام وحذف الأحداث في قائمة الانتظار",
+        "done": "مقاييس الاستخدام متوقفة. تم حذف الأحداث في قائمة الانتظار."
+      },
+      "identity": {
+        "description": "تضمين هويتك أو استبعادها (اسم المستخدم والمالكون على GitHub، وتجزئة حساب الوكيل)",
+        "on": "سيتم تضمين هويتك مع مقاييس الاستخدام.",
+        "off": "سيتم استبعاد هويتك. تبقى مقاييس الاستخدام مجهولة الهوية."
+      },
+      "contact": {
+        "description": "السماح لفريق Shep بالتواصل معك على GitHub أو رفض ذلك",
+        "on": "يمكن لفريق Shep التواصل معك على GitHub.",
+        "off": "لن يتواصل فريق Shep معك."
+      },
+      "status": {
+        "description": "عرض ما إذا كانت مقاييس الاستخدام قيد التشغيل وما هو موجود في قائمة الانتظار",
+        "metrics": "مقاييس الاستخدام",
+        "on": "قيد التشغيل",
+        "off": "متوقفة ({{reason}})",
+        "identity": "الهوية",
+        "included": "مُضمَّنة",
+        "excluded": "مُستبعَدة",
+        "contact": "التواصل على GitHub",
+        "yes": "مسموح",
+        "no": "غير مسموح",
+        "installId": "معرّف التثبيت",
+        "queued": "الأحداث في قائمة الانتظار",
+        "destination": "تُرسل إلى",
+        "notConfigured": "لا مكان — لم يتم تكوين مفتاح مشروع"
+      },
+      "show": {
+        "description": "عرض ما سيتم إرساله بالضبط",
+        "header": "الدفعة التالية إلى {{destination}} ({{queued}} حدثًا في قائمة الانتظار):",
+        "empty": "لا يوجد شيء في قائمة الانتظار.",
+        "notConfigured": "لم يتم تكوين مفتاح مشروع، لذلك لا يُرسل شيء حتى الآن.",
+        "disabled": "مقاييس الاستخدام متوقفة؛ ستُحذف الأحداث في قائمة الانتظار عند الإرسال التالي."
+      },
+      "reasons": {
+        "ci": "تم تعيين متغير البيئة CI",
+        "do-not-track": "تم تعيين DO_NOT_TRACK",
+        "env-disabled": "تم تعيين SHEP_TELEMETRY_DISABLED",
+        "test": "يعمل ضمن مشغّل اختبارات",
+        "user-opt-out": "قمت بإيقافها"
+      }
+    },
+    "chat": {
+      "description": "أدوات محادثات الدردشة",
+      "block": {
+        "description": "عرض كتلة غنية في الدردشة: مواصفات للمراجعة أو معاينة HTML أو خطة",
+        "kindArgument": "نوع الكتلة: {{kinds}}",
+        "titleOption": "العنوان المعروض في رأس الكتلة",
+        "fileOption": "قراءة المحتوى (Markdown، أو HTML للمعاينة) من هذا الملف",
+        "contentOption": "المحتوى (Markdown، أو HTML للمعاينة)",
+        "scopeOption": "المحادثة التي يُنشر فيها (الافتراضي: ${{variable}})",
+        "posted": "تم نشر \"{{title}}\" في الدردشة (الكتلة {{id}}).",
+        "unknownKind": "نوع كتلة غير معروف \"{{kind}}\". استخدم أحد: {{kinds}}.",
+        "noScope": "لا توجد محادثة: مرّر --scope أو شغّل الأمر داخل دردشة Shep (فهي تضبط {{variable}}).",
+        "oneSource": "مرّر --file أو --content (واحدًا فقط).",
+        "unreadable": "تعذّرت قراءة {{file}}.",
+        "failed": "تعذّر نشر الكتلة"
+      }
     }
   },
   "ui": {
@@ -1830,7 +1937,24 @@
     "failedDatabase": "فشلت تهيئة قاعدة البيانات",
     "failedSettings": "فشلت تهيئة الإعدادات",
     "unexpectedError": "حدث خطأ غير متوقع",
-    "unhandledRejection": "رفض وعد غير معالج"
+    "unhandledRejection": "رفض وعد غير معالج",
+    "telemetryNotice": {
+      "title": "يجمع Shep مقاييس الاستخدام",
+      "intro": "لمعرفة الميزات المستخدمة، يرسل Shep أحداث الاستخدام إلى فريق Shep (PostHog، منطقة الاتحاد الأوروبي). لا يرسل أبدًا المطالبات أو الشيفرة أو مسارات الملفات أو أسماء المستودعات أو الفروع أو عناوين الميزات أو رسائل الخطأ.",
+      "fieldsHeading": "ما يتم إرساله:",
+      "fields": {
+        "installId": "معرّف تثبيت عشوائي",
+        "usage": "الأوامر والصفحات والميزات التي تستخدمها، وكيف تنتهي عمليات التشغيل",
+        "platform": "إصدار Shep ونظام التشغيل وإصدار Node.js",
+        "agentAccountHash": "تجزئة SHA-256 لمعرّف حسابك على Claude أو Codex",
+        "githubUsername": "اسم المستخدم الخاص بك على GitHub (يُقرأ باستخدام gh)",
+        "githubOwners": "مالكو المستودعات على GitHub (مستخدمون أو مؤسسات) التي تستخدمها مع Shep",
+        "contactConsent": "ما إذا كان يمكن لفريق Shep التواصل معك على GitHub (لا، ما لم تسمح بذلك)"
+      },
+      "identityHeading": "يُرسل فقط إذا فعّلت الهوية (معطّلة افتراضيًا):",
+      "identityNote": "هذه البيانات تحدد هويتك، لذا تبقى معطّلة حتى تفعّلها: shep telemetry identity on",
+      "optOut": "إيقاف المقاييس: shep telemetry off (أو عيّن DO_NOT_TRACK=1). عرض ما يتم إرساله: shep telemetry show"
+    }
   },
   "features": {
     "queued": "في قائمة الانتظار",

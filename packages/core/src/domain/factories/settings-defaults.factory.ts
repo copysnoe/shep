@@ -26,7 +26,9 @@ import type {
   SkillInjectionConfig,
   WhatsAppConfig,
   SecurityConfig,
+  TelemetryConfig,
 } from '../generated/output';
+import { DEFAULT_TELEMETRY_PREFERENCES } from '../shared/telemetry/telemetry-state';
 import {
   AgentType,
   AgentAuthMethod,
@@ -114,7 +116,6 @@ export function createDefaultSettings(): Settings {
   };
 
   const system: SystemConfig = {
-    autoUpdate: true,
     logLevel: DEFAULT_LOG_LEVEL,
   };
 
@@ -238,14 +239,28 @@ export function createDefaultSettings(): Settings {
     projects: true,
     codeReview: true,
     collaboration: true,
-    aspm: true,
+    aspm: false,
     bedrockIntegration: true,
     whatsappDispatch: false,
     clusters: false,
-    supplyChainSecurity: true,
     scheduledWorkflows: false,
     githubImport: true,
     queryAwareHarness: false,
+    // Software-factory areas (spec 135): on, so nothing changes for users.
+    spaces: true,
+    trackers: true,
+    knowledge: true,
+    signals: true,
+    opportunities: true,
+    feedback: true,
+    discovery: true,
+    incidents: true,
+    outcomes: true,
+    docsFirst: true,
+    autopilot: true,
+    factory: true,
+    // The SDLC board is opt-in (spec 140).
+    sdlcBoard: false,
   };
 
   const whatsapp: WhatsAppConfig = {
@@ -255,6 +270,11 @@ export function createDefaultSettings(): Settings {
 
   const security: SecurityConfig = {
     mode: SecurityMode.Advisory,
+  };
+
+  const telemetry: TelemetryConfig = {
+    ...DEFAULT_TELEMETRY_PREFERENCES,
+    installId: globalThis.crypto.randomUUID(),
   };
 
   return {
@@ -270,6 +290,7 @@ export function createDefaultSettings(): Settings {
     whatsapp,
     defaultHomePage: DefaultHomePage.ControlCenter,
     security,
+    telemetry,
     onboardingComplete: false,
     createdAt: now,
     updatedAt: now,

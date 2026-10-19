@@ -23,7 +23,8 @@
       "security": "Security",
       "messaging": "Messaging",
       "mcp": "MCP",
-      "harness": "Harness לסוכן"
+      "harness": "Harness לסוכן",
+      "telemetry": "מדדי שימוש"
     },
     "language": {
       "title": "שפה",
@@ -83,6 +84,8 @@
       "defaultModeDescription": "מצב ברירת מחדל לפיצ'רים חדשים שנוצרים דרך CLI או ממשק ה-Web",
       "maxParallelFeatures": "מקסימום פיצ'רים במקביל",
       "maxParallelFeaturesDescription": "מספר הפיצ'רים המקסימלי שמריצים סוכן בו-זמנית. 0 פירושו ללא הגבלה. פיצ'רים נוספים ממתינים בתור ומתחילים אוטומטית כשמתפנה מקום.",
+      "decisionTimeout": "מועד אחרון לשאלות",
+      "decisionTimeoutDescription": "כמה זמן סוכן ברקע ממתין לתשובה שלכם לפני שהוא ממשיך עם האפשרות המומלצת.",
       "modeRegular": "רגיל",
       "modeFast": "מהיר",
       "modeExploration": "חקירה",
@@ -243,8 +246,8 @@
       "description": "הפעל או השבת תכונות ניסיוניות ובטא",
       "sectionDescription": "הפעל או השבת תכונות ניסיוניות",
       "badge": "ניסיוני",
-      "deployments": "פריסות",
-      "deploymentsDescription": "הפעל תהליכי פריסה לסביבות",
+      "envDeploy": "פריסות",
+      "envDeployDescription": "הפעל תהליכי פריסה לסביבות",
       "debug": "ניפוי שגיאות",
       "debugDescription": "הצג לוחות ניפוי שגיאות ורישום מפורט",
       "reactFileManager": "מנהל קבצים React",
@@ -265,7 +268,46 @@
       "clustersDescription": "הפעלת ניווט אשכולות וניהול אשכולות Kubernetes בממשק הווב",
       "hint": "תכונות ניסיוניות שעדיין בפיתוח. הפעל על אחריותך — הן עשויות להשתנות או להיות מוסרות בגרסאות עתידיות. מצב ניפוי שגיאות מוסיף רישום מפורט שימושי לפתרון בעיות.",
       "queryAwareHarness": "Harness סוכן מודע-שאילתה",
-      "queryAwareHarnessDescription": "ניסיוני: סוכן Shep Harness, /harness, לשונית ההקשר של הפיצ'ר ובקשות הרשאה"
+      "queryAwareHarnessDescription": "ניסיוני: סוכן Shep Harness, /harness, לשונית ההקשר של הפיצ'ר ובקשות הרשאה",
+      "githubImport": "ייבוא מ-GitHub",
+      "githubImportDescription": "שכפול או פיצול של מאגרי GitHub והוספתם ל-Shep",
+      "scheduledWorkflows": "תהליכים מתוזמנים",
+      "scheduledWorkflowsDescription": "יצירה, תזמון והרצה של תהליכים אוטומטיים לפי לוח זמנים של cron",
+      "spaces": "מרחבים",
+      "spacesDescription": "מרחבים וקווי מוצר שמפרידים את הידע וההתחברויות של הסוכנים בכל הקשר",
+      "trackers": "מעקבים",
+      "trackersDescription": "סנכרון דו-כיווני של משימות Linear ו-Jira עם פרויקטים ב-Shep",
+      "knowledge": "ידע",
+      "knowledgeDescription": "סנכרון דפי Notion נבחרים לידע של מרחב עבור הסוכנים שלו",
+      "signals": "אותות",
+      "signalsDescription": "איסוף אותות מלקוחות ומתקלות כראיות להזדמנויות",
+      "opportunities": "הזדמנויות",
+      "opportunitiesDescription": "דירוג הזדמנויות לפי ערך לשעת סקירה ומילוי הקיבולת השבועית",
+      "feedback": "משוב",
+      "feedbackDescription": "קבלת משוב לקוחות דרך נקודת קצה עם מפתח וקיבוצו לנושאים",
+      "discovery": "גילוי",
+      "discoveryDescription": "סוכן מציע הזדמנויות מתוך הראיות הפזורות של מרחב",
+      "incidents": "תקלות",
+      "incidentsDescription": "פתיחת תקלות מהתראות; סוכן מדרג סיבות ומציע תיקונים",
+      "outcomes": "תוצאות",
+      "outcomesDescription": "בדיקה אם העבודה שנשלחה פתרה את מה שלשמו נבנתה",
+      "docsFirst": "תיעוד תחילה",
+      "docsFirstDescription": "מרחבים יכולים לדרוש תיעוד שנכתב בזמן התכנון, עם שער מיזוג לתיעוד",
+      "autopilot": "טייס אוטומטי",
+      "autopilotDescription": "מרחב חוקר, מתקן ובונה בעצמו במסגרת המדיניות שלו",
+      "factory": "מפעל",
+      "factoryDescription": "הצגת דף מצב המפעל של כל מרחב",
+      "sdlcBoard": "לוח SDLC",
+      "sdlcBoardDescription": "הצגת לוח ה-SDLC: לוח חי של משימות הסוכנים בכל הפיצ׳רים הפעילים",
+      "groupPlatform": "פלטפורמה",
+      "groupSoftwareFactory": "מפעל תוכנה",
+      "groupExperimental": "ניסיוני",
+      "defaultOn": "ברירת מחדל: פעיל",
+      "defaultOff": "ברירת מחדל: כבוי",
+      "openView": "פתיחת תצוגת דגלי התכונות",
+      "backToSettings": "חזרה להגדרות",
+      "pageDescription": "כל מה ש-Shep יכול להפעיל או לכבות. השינויים חלים מיד; דפים ופקודות CLI של תכונה כבויה מוסתרים.",
+      "onCount": "{{on}} מתוך {{total}} פעילים"
     },
     "interactiveAgent": {
       "title": "סוכן אינטראקטיבי",
@@ -449,7 +491,8 @@
     "trackers": "חיבורים",
     "opportunities": "הזדמנויות",
     "incidents": "תקלות",
-    "factory": "מפעל"
+    "factory": "מפעל",
+    "chat": "צ׳אט"
   },
   "sidebar": {
     "features": "פיצ'רים",
@@ -779,7 +822,14 @@
     "wait": "המתנה",
     "cost": "עלות",
     "modelUsed": "רץ על {{model}}",
-    "noActivityRecorded": "לא נרשמה פעילות עדיין"
+    "noActivityRecorded": "לא נרשמה פעילות עדיין",
+    "decisions": {
+      "title": "החלטות",
+      "pending": "ממתין לתשובה",
+      "answered": "{{actor}} ענה: {{answer}}",
+      "defaulted": "לא התקבלה תשובה עד המועד — הסוכן המשיך עם האפשרות המומלצת: {{answer}}",
+      "cancelled": "בוטל ללא תשובה"
+    }
   },
   "logTab": {
     "structuredView": "תצוגה מובנית",
@@ -1819,6 +1869,160 @@
       "save": "שמירה",
       "run": "הרצה עכשיו",
       "running": "רץ…"
+    }
+  },
+  "decision": {
+    "answeredQuestions": "שאלות שנענו",
+    "recommended": "מומלץ",
+    "selectMany": "בחרו אפשרות אחת או יותר.",
+    "otherPlaceholder": "הקלידו תשובה משלכם, או השאירו ריק כדי להשתמש באפשרות שנבחרה",
+    "composerHint": "כתבו בתיבת ההודעה כדי לענות במילים שלכם.",
+    "restoreText": "שחזור הטקסט שהוקלד",
+    "notResumable": "כבר אי אפשר לענות על השאלה הזו — הסוכן ששאל אותה כבר לא ממתין.",
+    "defaultsAt": "אם אף אחד לא יענה עד {{time}}, הסוכן ימשיך עם האפשרות המומלצת.",
+    "preview": "תצוגה מקדימה",
+    "previous": "הקודם",
+    "next": "הבא",
+    "submit": "שליחה",
+    "submitting": "שולח…",
+    "new": "חדש"
+  },
+  "telemetry": {
+    "fieldsHeading": "מה נשלח",
+    "fields": {
+      "installId": "מזהה התקנה אקראי",
+      "usage": "באילו פקודות, דפים ותכונות אתה משתמש, ואיך הרצות מסתיימות",
+      "platform": "גרסת Shep, מערכת ההפעלה וגרסת Node.js",
+      "agentAccountHash": "גיבוב SHA-256 של מזהה חשבון Claude או Codex שלך",
+      "githubUsername": "שם המשתמש שלך ב-GitHub (נקרא באמצעות gh)",
+      "githubOwners": "הבעלים ב-GitHub (משתמשים או ארגונים) של המאגרים שבהם אתה משתמש עם Shep",
+      "contactConsent": "האם צוות Shep רשאי ליצור איתך קשר ב-GitHub"
+    },
+    "identityHeading": "נשלח רק אם תפעיל את „לכלול את הזהות שלי” (כבוי כברירת מחדל)",
+    "neverSent": "לעולם לא נשלחים: פרומפטים, קוד, נתיבי קבצים, שמות מאגרים או ענפים, כותרות פיצ'רים או הודעות שגיאה.",
+    "reasons": {
+      "ci": "משתנה הסביבה CI מוגדר",
+      "do-not-track": "DO_NOT_TRACK מוגדר",
+      "env-disabled": "SHEP_TELEMETRY_DISABLED מוגדר",
+      "test": "רץ תחת מריץ בדיקות",
+      "user-opt-out": "כיבית אותם"
+    },
+    "notice": {
+      "title": "Shep אוסף מדדי שימוש",
+      "intro": "כדי לדעת באילו תכונות משתמשים, Shep שולח אירועי שימוש לצוות Shep (PostHog, אזור האיחוד האירופי). אפשר לכבות זאת בכל עת.",
+      "turnOff": "כיבוי",
+      "turnedOff": "מדדי השימוש כבויים. האירועים בתור נמחקו.",
+      "dismiss": "הבנתי",
+      "failed": "לא ניתן לעדכן את מדדי השימוש. נסה שוב מההגדרות."
+    },
+    "controls": {
+      "enabled": "שליחת מדדי שימוש",
+      "enabledDescription": "כיבוי האפשרות מוחק גם אירועים שעדיין לא נשלחו.",
+      "identity": "לכלול את הזהות שלי (שם משתמש ב-GitHub, ארגון, גיבוב חשבון)",
+      "identityDescription": "כבוי עד שתפעיל אותו. כל עוד הוא כבוי, מדדי השימוש נשארים אנונימיים.",
+      "contact": "צוות Shep רשאי ליצור איתי קשר ב-GitHub",
+      "contactDescription": "כבוי, אלא אם תפעיל אותו."
+    },
+    "settings": {
+      "title": "מדדי שימוש",
+      "description": "עזור להחליט מה לבנות בהמשך על ידי שליחת אירועי שימוש לצוות Shep.",
+      "forcedOff": "כבוי בסביבה זו: {{reason}}.",
+      "queued": "{{count}} אירועים ממתינים לשליחה",
+      "destination": "נשלח אל {{destination}}",
+      "notConfigured": "לא הוגדר מפתח פרויקט בבנייה זו, לכן דבר אינו נשלח.",
+      "hint": "הרץ `shep telemetry show` כדי לראות בדיוק מה יישלח.",
+      "loading": "טוען את הגדרות מדדי השימוש…",
+      "loadFailed": "לא ניתן לטעון את הגדרות מדדי השימוש."
+    }
+  },
+  "checkpoints": {
+    "loading": "טוען נקודות שמירה…",
+    "empty": "אין עדיין נקודות שמירה. Shep שומר את ה-worktree אחרי כל שלב כשהסוכן רץ.",
+    "modeStep": "לפי שלב",
+    "modeCompare": "השוואה",
+    "kindBaseline": "התחלה",
+    "kindPreRestore": "לפני שחזור",
+    "files_one": "{{count}} קובץ",
+    "files_few": "{{count}} קבצים",
+    "files_many": "{{count}} קבצים",
+    "files_other": "{{count}} קבצים",
+    "from": "מ-",
+    "to": "עד",
+    "selectStep": "בחרו שלב כדי לראות מה הוא שינה.",
+    "baselineSelected": "זו נקודת ההתחלה: אין דבר לפניה.",
+    "diffLoading": "טוען הבדלים…",
+    "noChanges": "אין שינויים בין השלבים האלה.",
+    "restore": "שחזור",
+    "restoreAria": "שחזור ה-worktree ל-{{step}}",
+    "restoreTitle": "לשחזר את ה-worktree ל-{{step}}?",
+    "restoreDescription": "קבצי ה-worktree יוחלפו בנקודת השמירה הזו. המצב הנוכחי נשמר קודם כנקודת שמירה חדשה, והענף והקומיטים שלו לא משתנים.",
+    "restoreConfirm": "שחזור",
+    "cancel": "ביטול",
+    "restored": "ה-worktree שוחזר ל-{{step}}",
+    "restoreFailed": "השחזור נכשל",
+    "blocked": {
+      "NoOwnWorktree": "שחזור זמין רק לפיצ'ר שרץ ב-worktree משלו.",
+      "NotLinkedWorktree": "שחזור לא זמין: התיקייה אינה worktree מקושר של git.",
+      "WorktreeUnavailable": "שחזור לא זמין: לא ניתן לקרוא את ה-worktree.",
+      "AgentRunning": "שחזור לא זמין בזמן שהסוכן רץ."
+    }
+  },
+  "chatBlocks": {
+    "kinds": {
+      "spec_review": "סקירת מפרט",
+      "html_preview": "תצוגה מקדימה",
+      "plan_card": "תוכנית"
+    },
+    "actions": {
+      "approve": "אישור",
+      "request_changes": "בקשת שינויים",
+      "implement": "ביצוע",
+      "refine": "חידוד"
+    },
+    "resolved": {
+      "approve": "אושר",
+      "request_changes": "התבקשו שינויים",
+      "implement": "בביצוע",
+      "refine": "התבקש חידוד"
+    },
+    "notePlaceholder": "מה צריך לשנות?",
+    "send": "שליחה",
+    "cancel": "ביטול",
+    "preview": "תצוגה מקדימה",
+    "source": "קוד מקור",
+    "openFullScreen": "פתיחה במסך מלא",
+    "sandboxNote": "רץ בארגז חול ללא גישה לרשת.",
+    "answerFailed": "התשובה שלך לא נמסרה",
+    "answerFailedDescription": "הבלוק עדיין פתוח. נסו שוב.",
+    "retry": "ניסיון חוזר"
+  },
+  "chats": {
+    "title": "צ׳אט",
+    "conversations": "שיחות",
+    "conversation": "שיחה",
+    "groups": {
+      "global": "Shep",
+      "repository": "מאגרים",
+      "feature": "פיצ׳רים",
+      "application": "אפליקציות"
+    },
+    "openOnCanvas": "פתיחה בקנבס",
+    "openApplication": "פתיחת האפליקציה",
+    "lifecycle": {
+      "Started": "התחיל",
+      "Analyze": "ניתוח",
+      "Requirements": "דרישות",
+      "Research": "מחקר",
+      "Planning": "תכנון",
+      "Implementation": "מימוש",
+      "Review": "סקירה",
+      "Maintain": "מוזג",
+      "Blocked": "חסום",
+      "Pending": "ממתין",
+      "Exploring": "חקירה",
+      "Deleting": "נמחק",
+      "AwaitingUpstream": "ממתין ל-upstream",
+      "Archived": "בארכיון"
     }
   }
 }
