@@ -52,6 +52,16 @@ describe('GetFleetOverviewUseCase', () => {
     );
   });
 
+  /**
+   * The auto-pause ships OFF, so a trip only parks the queue on an install that
+   * has opted in. Every suite that exercises the pause asks for it explicitly,
+   * exactly as an opted-in install would — a suite that leaned on the default
+   * would quietly stop testing the pause the moment the default changed.
+   */
+  const withAutoPauseQueue = () => {
+    settingsRepo.load.mockResolvedValue({ workflow: { circuitBreakerAutoPauseQueue: true } });
+  };
+
   it('should return overview with normal circuit breaker state when failures are below threshold', async () => {
     const baseOverview: FleetOverview = {
       counts: {
@@ -184,6 +194,9 @@ describe('GetFleetOverviewUseCase', () => {
    * as a badge and nothing stopped.
    */
   describe('auto-pausing the admission queue on trip', () => {
+    // Opted in explicitly: parking on a trip is no longer the shipped default.
+    beforeEach(withAutoPauseQueue);
+
     const tripByConsecutiveFailures = () => {
       vi.mocked(mockFleetRepo.getOverview).mockResolvedValue(overview());
       vi.mocked(mockFleetRepo.getConsecutiveFailures).mockResolvedValue(4);
@@ -268,6 +281,57 @@ describe('GetFleetOverviewUseCase', () => {
     });
   });
 
+  /**
+   * The shipped default, and the reason the switch exists. The web dashboard's
+   * own reads are the most common thing that trips the breaker, and it has no
+   * way to release a pause — so a default that parked the queue would strand a
+   * web user with no way out (`LESSONS.md`, "No CLI-Only Flows in the Web UI").
+   * The switch stays off until the web resume surface lands.
+   */
+  describe('the auto-pause switch ships off', () => {
+    const trip = () => {
+      vi.mocked(mockFleetRepo.getOverview).mockResolvedValue(overview());
+      vi.mocked(mockFleetRepo.getConsecutiveFailures).mockResolvedValue(4);
+      vi.mocked(mockFleetRepo.getRollingFailureRate).mockResolvedValue({
+        totalCompleted: 5,
+        failedCount: 4,
+        failureRatePercent: 80,
+      });
+    };
+
+    it('reports the trip without parking when the install has never chosen', async () => {
+      trip();
+
+      const result = await useCase.execute();
+
+      // The trip is still surfaced — only the pause is withheld.
+      expect(result.circuitBreakerTripped).toBe(true);
+      expect(queuePause.execute).not.toHaveBeenCalled();
+    });
+
+    it('treats an explicit false exactly like never having chosen', async () => {
+      trip();
+      settingsRepo.load.mockResolvedValue({ workflow: { circuitBreakerAutoPauseQueue: false } });
+
+      const result = await useCase.execute();
+
+      expect(result.circuitBreakerTripped).toBe(true);
+      expect(queuePause.execute).not.toHaveBeenCalled();
+    });
+
+    it('parks the queue once an install opts in', async () => {
+      trip();
+      withAutoPauseQueue();
+
+      await useCase.execute();
+
+      expect(queuePause.execute).toHaveBeenCalledWith({
+        paused: true,
+        reason: expect.stringContaining('Consecutive failure threshold reached (4/4'),
+      });
+    });
+  });
+
   describe('reporting the pause', () => {
     const quietBreaker = () => {
       vi.mocked(mockFleetRepo.getOverview).mockResolvedValue(overview());
@@ -312,6 +376,8 @@ describe('GetFleetOverviewUseCase', () => {
    * could never produce.
    */
   describe('the tripping read reports the pause it just wrote', () => {
+    beforeEach(withAutoPauseQueue);
+
     it('includes the pause on the read that trips the breaker', async () => {
       vi.mocked(mockFleetRepo.getOverview).mockResolvedValue(overview());
       vi.mocked(mockFleetRepo.getConsecutiveFailures).mockResolvedValue(4);
@@ -414,6 +480,10 @@ describe('GetFleetOverviewUseCase', () => {
    * repo.
    */
   describe('a scoped read reports the trip without parking the fleet', () => {
+    // Opted in, so the scope guard is what stops the write — not the switch
+    // being off, which would make this suite pass for the wrong reason.
+    beforeEach(withAutoPauseQueue);
+
     it('does not write a pause when a repository scope is supplied', async () => {
       vi.mocked(mockFleetRepo.getOverview).mockResolvedValue(overview());
       vi.mocked(mockFleetRepo.getConsecutiveFailures).mockResolvedValue(4);

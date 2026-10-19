@@ -515,6 +515,10 @@ export type WorkflowConfig = {
    */
   breakerAcknowledgedAt?: any;
   /**
+   * Whether a tripped circuit breaker parks the admission queue (default: false)
+   */
+  circuitBreakerAutoPauseQueue?: boolean;
+  /**
    * Minutes a background agent's question waits before the agent proceeds with its recommended option (spec 134; default: 30)
    */
   decisionDefaultTimeoutMinutes?: number;

@@ -143,6 +143,10 @@ export interface SettingsRow extends SettingsTelemetryRow {
   // WorkflowConfig breaker acknowledgement (workflow.breakerAcknowledgedAt; NULL = never)
   workflow_breaker_acknowledged_at: string | null;
 
+  // WorkflowConfig breaker auto-pause switch (workflow.circuitBreakerAutoPauseQueue;
+  // NULL = never chosen, which reads as off)
+  workflow_circuit_breaker_auto_pause_queue: number | null;
+
   // WorkflowConfig per-stage timeouts (workflow.stageTimeouts.*)
   stage_timeout_analyze_ms: number | null;
   stage_timeout_requirements_ms: number | null;
@@ -368,6 +372,16 @@ export function toDatabase(settings: Settings): SettingsRow {
     // judges the whole rolling window, which is how it behaved before this
     // column existed.
     workflow_breaker_acknowledged_at: serializeIsoLike(settings.workflow.breakerAcknowledgedAt),
+
+    // Whether a trip parks the admission queue. NULL when the install has never
+    // chosen; the default is off, so NULL and 0 behave identically and an
+    // install that never touches this parks nothing.
+    workflow_circuit_breaker_auto_pause_queue:
+      settings.workflow.circuitBreakerAutoPauseQueue === undefined
+        ? null
+        : settings.workflow.circuitBreakerAutoPauseQueue
+          ? 1
+          : 0,
 
     // WorkflowConfig per-stage timeouts (optional number → INTEGER | null)
     stage_timeout_analyze_ms: settings.workflow.stageTimeouts?.analyzeMs ?? null,
@@ -901,6 +915,9 @@ export function fromDatabase(row: SettingsRow): Settings {
       ...buildQueuePauseFromRow(row),
       ...(row.workflow_breaker_acknowledged_at !== null && {
         breakerAcknowledgedAt: row.workflow_breaker_acknowledged_at,
+      }),
+      ...(row.workflow_circuit_breaker_auto_pause_queue != null && {
+        circuitBreakerAutoPauseQueue: row.workflow_circuit_breaker_auto_pause_queue !== 0,
       }),
       ciWatchEnabled: row.ci_watch_enabled !== 0,
       // The user's ceiling, NOT the paused 0 — a paused fleet that displayed

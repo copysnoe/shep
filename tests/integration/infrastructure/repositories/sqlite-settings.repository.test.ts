@@ -1410,6 +1410,51 @@ describe('SQLiteSettingsRepository', () => {
     });
   });
 
+  describe('workflow.circuitBreakerAutoPauseQueue', () => {
+    // The switch that decides whether a trip parks the fleet. It ships off, so
+    // the cases that matter are "absent stays absent", "an explicit choice
+    // survives UPDATE", and "an explicit false is not read back as unset".
+
+    it('leaves the switch absent when the install has never chosen', async () => {
+      await repository.initialize(createTestSettings());
+
+      expect((await repository.load())?.workflow.circuitBreakerAutoPauseQueue).toBeUndefined();
+    });
+
+    it('persists an opted-in install through initialize()', async () => {
+      const settings = createTestSettings();
+      settings.workflow.circuitBreakerAutoPauseQueue = true;
+
+      await repository.initialize(settings);
+
+      expect((await repository.load())?.workflow.circuitBreakerAutoPauseQueue).toBe(true);
+    });
+
+    it('persists a toggled switch through update()', async () => {
+      // Written twice on purpose: only the SECOND write exercises UPDATE, and a
+      // dropped write here would silently keep parking the fleet (or silently
+      // stop) long after the user changed their mind.
+      const settings = createTestSettings();
+      settings.workflow.circuitBreakerAutoPauseQueue = false;
+      await repository.initialize(settings);
+
+      settings.workflow.circuitBreakerAutoPauseQueue = true;
+      settings.updatedAt = new Date('2025-02-09T00:00:00Z');
+      await repository.update(settings);
+
+      expect((await repository.load())?.workflow.circuitBreakerAutoPauseQueue).toBe(true);
+    });
+
+    it('keeps an explicit false distinct from never having chosen', async () => {
+      const settings = createTestSettings();
+      settings.workflow.circuitBreakerAutoPauseQueue = false;
+
+      await repository.initialize(settings);
+
+      expect((await repository.load())?.workflow.circuitBreakerAutoPauseQueue).toBe(false);
+    });
+  });
+
   describe('workflow.ciWatchEnabled', () => {
     it('persists a disabled CI watch through initialize()', async () => {
       const settings = createTestSettings();

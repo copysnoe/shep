@@ -251,7 +251,7 @@ A trip does two things:
 
 1. **Reports** — `circuitBreakerTripped` and its reason surface in `shep fleet status` and on the
    dashboard, as before.
-2. **Acts** — when `FleetCircuitBreakerSettings.autoPauseQueue` is set, the trip **parks the
+2. **Acts** — when `WorkflowConfig.circuitBreakerAutoPauseQueue` is set, the trip **parks the
    admission queue**: no queued feature starts, and no manual start is admitted either, until the
    queue is released.
 
@@ -259,6 +259,12 @@ This closes the gap the original RFC described as *"auto-pauses the feature admi
 consecutive failures exceed threshold"*. It was weakened to a status signal only because
 admission control did not exist yet when the breaker was written; `maxParallelFeatures` and
 `AdmitQueuedFeaturesUseCase` landed in #847, so the pause now has something to stop.
+
+**The switch ships off.** A trip is reported either way, and while it is off `shep fleet pause` /
+`shep fleet resume` is the lever. It stays off until the dashboard can both show a pause and
+release it — the dashboard's own reads are the most common thing that trips the breaker, so a
+default that parked the queue would strand a web user with no way out (`LESSONS.md`, "No CLI-Only
+Flows in the Web UI"). The web resume surface is spec 111 follow-up work and flips the default.
 
 ### The pause is a separate record, never `maxParallelFeatures = 0`
 
@@ -326,7 +332,7 @@ silently going blind.
 
 `interrupted` is written by `StopAgentRunUseCase` when the user stops an agent, and by
 crash/liveness reconciliation after a daemon restart. Counting it was harmless while the breaker
-only reported a badge; now that a trip parks the whole fleet, a user who stops four agents in a
+only reported a badge; now that a trip can park the whole fleet, a user who stops four agents in a
 row — or restarts the daemon with four running — would park every repo by doing something
 deliberate. The feed still shows interrupted runs, because a stopped run is a real thing to offer
 a retry for.

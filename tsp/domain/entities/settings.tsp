@@ -466,6 +466,21 @@ model WorkflowConfig {
   @doc("When the user last acknowledged a breaker trip; failures before this do not re-trip")
   breakerAcknowledgedAt?: utcDateTime;
 
+  /**
+   * Whether a tripped circuit breaker parks the fleet admission queue.
+   *
+   * Ships **off**. A trip is reported either way, and while this is off the only
+   * lever is `shep fleet pause` / `shep fleet resume`.
+   *
+   * It stays off until the web dashboard can both show a pause and release it.
+   * The dashboard's own reads are the most common thing that trips the breaker,
+   * so turning this on before a web resume surface exists strands a web user
+   * with no way out — `LESSONS.md`, "No CLI-Only Flows in the Web UI". The web
+   * surface is spec 111 follow-up work; it flips this default to true.
+   */
+  @doc("Whether a tripped circuit breaker parks the admission queue (default: false)")
+  circuitBreakerAutoPauseQueue?: boolean;
+
   @doc("Minutes a background agent's question waits before the agent proceeds with its recommended option (spec 134; default: 30)")
   decisionDefaultTimeoutMinutes?: int32;
 

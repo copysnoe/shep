@@ -15,6 +15,7 @@ import type {
   FleetOverview,
   FleetCircuitBreakerSettings,
   FleetQueuePause,
+  Settings,
 } from '../../../domain/generated/output.js';
 import type { IFleetRepository } from '../../ports/output/repositories/fleet-repository.interface.js';
 import type { ISettingsRepository } from '../../ports/output/repositories/settings.repository.interface.js';
@@ -37,21 +38,43 @@ export const CIRCUIT_BREAKER_MIN_SAMPLE_SIZE = 4;
 /**
  * Circuit breaker policy.
  *
- * NOTE: these bounds are not yet user-configurable. Exposing them requires a
+ * NOTE: the thresholds are not yet user-configurable. Exposing them requires a
  * `workflow.circuitBreaker` field on the TypeSpec `Settings` model plus a
  * migration and a settings-mapper round-trip; that is tracked as follow-up
  * work in `specs/111-fleet-control-plane/tasks.yaml` rather than half-wired here.
  *
- * `autoPauseQueue` IS acted on: a trip parks the admission queue. Admission
- * control (`maxParallelFeatures`, `AdmitQueuedFeaturesUseCase`) landed in #847,
- * so the pause has something to stop.
+ * `autoPauseQueue` ships **off**, and is the one field here a user can choose
+ * (`workflow.circuitBreakerAutoPauseQueue`). A trip is reported either way;
+ * while this is off, `shep fleet pause` / `shep fleet resume` is the lever. It
+ * stays off until the web dashboard can both show a pause and release it — the
+ * dashboard's own reads are the most common thing that trips the breaker, so
+ * turning this on first would strand a web user with no way out (`LESSONS.md`,
+ * "No CLI-Only Flows in the Web UI").
  */
 export const DEFAULT_CIRCUIT_BREAKER_SETTINGS: FleetCircuitBreakerSettings = {
   enabled: true,
   consecutiveFailureThreshold: 4,
   failureRateThresholdPercent: 25,
-  autoPauseQueue: true,
+  autoPauseQueue: false,
 };
+
+/**
+ * The breaker policy for this install: the built-in bounds above, with the one
+ * field a user can currently choose layered over them.
+ *
+ * An install that has never chosen (`undefined`, NULL in the column) keeps the
+ * default rather than being read as an explicit `false`, so "never asked" and
+ * "asked for no" stay distinguishable in the settings model even though the
+ * breaker treats them the same.
+ */
+export function resolveCircuitBreakerSettings(
+  settings: Settings | null
+): FleetCircuitBreakerSettings {
+  const chosen = settings?.workflow?.circuitBreakerAutoPauseQueue;
+  return chosen === undefined
+    ? DEFAULT_CIRCUIT_BREAKER_SETTINGS
+    : { ...DEFAULT_CIRCUIT_BREAKER_SETTINGS, autoPauseQueue: chosen };
+}
 
 @injectable()
 export class GetFleetOverviewUseCase {
@@ -69,9 +92,10 @@ export class GetFleetOverviewUseCase {
    *
    * When the breaker trips and `autoPauseQueue` is set, this also parks the
    * admission queue — the behaviour the spec's RFC promised, which was weakened
-   * to a status signal only while admission control was still unmerged. The trip
-   * is reported either way: a pause that cannot be written must not turn a
-   * readable status into an error.
+   * to a status signal only while admission control was still unmerged. That
+   * switch ships off, so by default the trip is reported and the pause is left
+   * to `shep fleet pause`. Either way the trip is reported: a pause that cannot
+   * be written must not turn a readable status into an error.
    *
    * @param repositoryPath Optional repository path to scope the fleet
    */
@@ -87,7 +111,7 @@ export class GetFleetOverviewUseCase {
     // `shep fleet pause`, and the user needs to see it either way.
     overview.queuePaused = resolveFleetQueuePause(settings);
 
-    const config = DEFAULT_CIRCUIT_BREAKER_SETTINGS;
+    const config = resolveCircuitBreakerSettings(settings);
     if (!config.enabled) {
       return overview;
     }
