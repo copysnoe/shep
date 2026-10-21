@@ -24,6 +24,7 @@ import {
   encodeClaudeProjectDir,
   shepWorktreeRepoHash,
 } from '@/domain/shared/agent-session-paths.js';
+import { getShepHomeDir } from '@/infrastructure/services/filesystem/shep-directory.service.js';
 import * as os from 'node:os';
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -257,9 +258,11 @@ describe('ClaudeCodeSessionRepository (integration)', () => {
       const mainDir = encodeClaudeProjectDir(repoPath);
       // Convention 1: a sibling directory sharing the repo's encoded prefix.
       const nestedWorktreeDir = encodeClaudeProjectDir(`${repoPath}/.worktrees/feat-x`);
-      // Convention 2: shep's own worktree under ~/.shep/repos/<hash>/wt/<slug>.
+      // Convention 2: shep's own worktree under <shep home>/repos/<hash>/wt/<slug>.
+      // Built with `getShepHomeDir()`, as the collector does: a hand-rolled
+      // `~/.shep` here pointed at a different directory whenever SHEP_HOME was set.
       const shepWorktreeDir = encodeClaudeProjectDir(
-        path.join(os.homedir(), '.shep', 'repos', shepWorktreeRepoHash(repoPath), 'wt', 'feat-y')
+        path.join(getShepHomeDir(), 'repos', shepWorktreeRepoHash(repoPath), 'wt', 'feat-y')
       );
 
       for (const [dir, cwd] of [

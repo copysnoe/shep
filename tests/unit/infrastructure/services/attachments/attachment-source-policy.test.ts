@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, realpathSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, delimiter, join, sep } from 'node:path';
 import {
@@ -207,7 +207,9 @@ describe('attachment source path policy', () => {
 
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.canonicalPath.startsWith(root)).toBe(true);
+        // `canonicalPath` is realpath'd, so compare against the canonical root: on
+        // macOS `os.tmpdir()` is under /var, a symlink to /private/var.
+        expect(result.canonicalPath.startsWith(realpathSync(root))).toBe(true);
         expect(result.size).toBe(5);
         expect(result.filename).toBe('notes.md');
         expect(result.mimeType).toBe('text/markdown');

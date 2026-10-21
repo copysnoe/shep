@@ -9,7 +9,7 @@
  * TDD Phase: RED → GREEN
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 
@@ -20,7 +20,14 @@ vi.mock('node:os', () => ({
 import { computeWorktreePath } from '@/infrastructure/services/ide-launchers/compute-worktree-path.js';
 
 describe('computeWorktreePath', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('should compute correct worktree path for repo and branch', () => {
+    // Pinned: `SHEP_HOME` overrides the home directory, and the documented test
+    // recipe sets it — without this the expectation below depends on the shell.
+    vi.stubEnv('SHEP_HOME', undefined);
     const repoPath = '/home/user/project';
     const branch = 'feat/my-feature';
 
@@ -31,6 +38,15 @@ describe('computeWorktreePath', () => {
     );
 
     expect(computeWorktreePath(repoPath, branch)).toBe(expected);
+  });
+
+  it('places the worktree under SHEP_HOME when it is set', () => {
+    vi.stubEnv('SHEP_HOME', '/isolated/shep-home');
+
+    const result = computeWorktreePath('/home/user/project', 'feat/my-feature');
+
+    expect(result.startsWith('/isolated/shep-home/repos/')).toBe(true);
+    expect(result).not.toContain('/mock/.shep');
   });
 
   it('should replace slashes in branch name with hyphens', () => {
