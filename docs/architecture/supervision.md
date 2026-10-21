@@ -261,10 +261,14 @@ admission control did not exist yet when the breaker was written; `maxParallelFe
 `AdmitQueuedFeaturesUseCase` landed in #847, so the pause now has something to stop.
 
 **The switch ships off.** A trip is reported either way, and while it is off `shep fleet pause` /
-`shep fleet resume` is the lever. It stays off until the dashboard can both show a pause and
-release it — the dashboard's own reads are the most common thing that trips the breaker, so a
-default that parked the queue would strand a web user with no way out (`LESSONS.md`, "No CLI-Only
-Flows in the Web UI"). The web resume surface is spec 111 follow-up work and flips the default.
+`shep fleet resume` is the lever. It was kept off because the dashboard's own reads are the most
+common thing that trips the breaker, so a default that parked the queue would have stranded a web
+user with no way out (`LESSONS.md`, "No CLI-Only Flows in the Web UI").
+
+The dashboard now closes that gap: the fleet status bar shows any pause in force, with its reason,
+and its **Resume** action releases it through the same `SetFleetQueuePauseUseCase` as
+`shep fleet resume` (a server action resolving the use case by its string token). That is the
+precondition for turning the switch on by default; flipping the default is a separate change.
 
 ### The pause is a separate record, never `maxParallelFeatures = 0`
 

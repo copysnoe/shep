@@ -111,3 +111,23 @@ export const EmptyFleet: Story = {
     },
   },
 };
+
+/**
+ * The admission queue is parked. Resume calls the mocked action, then re-reads
+ * the mocked fleet — which reports no pause — so the badge clears the way it does
+ * against a real server.
+ */
+export const QueuePaused: Story = {
+  args: {
+    initialData: {
+      overview: {
+        ...OVERVIEW,
+        queuePaused: {
+          pausedAt: '2026-10-21T08:00:00.000Z',
+          reason: 'Circuit breaker tripped: 4 consecutive feature runs failed',
+        },
+      },
+      triageItems: ITEMS,
+    },
+  },
+};

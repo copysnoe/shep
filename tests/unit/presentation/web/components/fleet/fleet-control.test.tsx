@@ -10,6 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { toast } from 'sonner';
 import { FleetControl } from '@/components/fleet/fleet-control';
 import { AgentEventsContext } from '@/hooks/agent-events-provider';
 import type { UseAgentEventsResult } from '@/hooks/use-agent-events';
@@ -26,6 +27,12 @@ const getFleetData = vi.fn();
 
 vi.mock('@/app/actions/fleet-data', () => ({
   getFleetData: (...args: unknown[]) => getFleetData(...args),
+}));
+
+const resumeFleetQueue = vi.fn();
+
+vi.mock('@/app/actions/resume-fleet-queue', () => ({
+  resumeFleetQueue: (...args: unknown[]) => resumeFleetQueue(...args),
 }));
 
 vi.mock('sonner', () => ({
@@ -62,6 +69,14 @@ const EMPTY_OVERVIEW: FleetOverview = {
     blockedQuestions: 0,
   },
   activeTriageCount: 0,
+};
+
+const PAUSED_OVERVIEW: FleetOverview = {
+  ...OVERVIEW,
+  queuePaused: {
+    pausedAt: '2026-10-21T08:00:00.000Z',
+    reason: 'Circuit breaker tripped: 4 consecutive failures',
+  },
 };
 
 const ITEMS: FleetTriageItem[] = [
@@ -106,8 +121,11 @@ function notification(): NotificationEvent {
 
 describe('FleetControl', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     getFleetData.mockReset();
     getFleetData.mockResolvedValue({ overview: OVERVIEW, triageItems: ITEMS });
+    resumeFleetQueue.mockReset();
+    resumeFleetQueue.mockResolvedValue({ resumed: true });
   });
 
   it('paints the server snapshot without calling the action', () => {
@@ -267,6 +285,71 @@ describe('FleetControl', () => {
         expect(screen.getByTestId('fleet-status-bar')).toHaveAttribute('data-state', 'ready')
       );
       expect(screen.getByTestId('fleet-count-attention')).toHaveTextContent('2');
+    });
+  });
+
+  /* ---------------------------------------------------------------- */
+  /*  Paused queue — a web user must be able to see it and release it  */
+  /* ---------------------------------------------------------------- */
+
+  describe('when the admission queue is paused', () => {
+    it('shows the pause from the server snapshot', () => {
+      render(<FleetControl initialData={{ overview: PAUSED_OVERVIEW, triageItems: ITEMS }} />);
+
+      expect(screen.getByTestId('fleet-queue-paused')).toBeInTheDocument();
+      expect(screen.getByTestId('fleet-resume-queue')).toBeInTheDocument();
+    });
+
+    it('releases the queue, says so, and re-reads the fleet', async () => {
+      // The re-read is what clears the badge: the bar shows the pause the
+      // server reports, never an optimistic guess about it.
+      getFleetData.mockResolvedValue({ overview: OVERVIEW, triageItems: ITEMS });
+      render(<FleetControl initialData={{ overview: PAUSED_OVERVIEW, triageItems: ITEMS }} />);
+
+      fireEvent.click(screen.getByTestId('fleet-resume-queue'));
+
+      await waitFor(() => expect(resumeFleetQueue).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(toast.success).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(screen.queryByTestId('fleet-queue-paused')).not.toBeInTheDocument()
+      );
+      expect(getFleetData).toHaveBeenCalled();
+    });
+
+    it('toasts the refusal and keeps showing the pause', async () => {
+      resumeFleetQueue.mockResolvedValue({
+        resumed: false,
+        error: 'Settings not found. Please run initialization first.',
+      });
+      getFleetData.mockResolvedValue({ overview: PAUSED_OVERVIEW, triageItems: ITEMS });
+      render(<FleetControl initialData={{ overview: PAUSED_OVERVIEW, triageItems: ITEMS }} />);
+
+      fireEvent.click(screen.getByTestId('fleet-resume-queue'));
+
+      await waitFor(() =>
+        expect(toast.error).toHaveBeenCalledWith(
+          'Settings not found. Please run initialization first.'
+        )
+      );
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(screen.getByTestId('fleet-queue-paused')).toBeInTheDocument();
+    });
+
+    it('re-enables Resume once the release settles', async () => {
+      let settle: (value: { resumed: boolean }) => void = () => undefined;
+      resumeFleetQueue.mockReturnValue(
+        new Promise((resolve) => {
+          settle = resolve;
+        })
+      );
+      getFleetData.mockResolvedValue({ overview: PAUSED_OVERVIEW, triageItems: ITEMS });
+      render(<FleetControl initialData={{ overview: PAUSED_OVERVIEW, triageItems: ITEMS }} />);
+
+      fireEvent.click(screen.getByTestId('fleet-resume-queue'));
+      await waitFor(() => expect(screen.getByTestId('fleet-resume-queue')).toBeDisabled());
+
+      settle({ resumed: true });
+      await waitFor(() => expect(screen.getByTestId('fleet-resume-queue')).not.toBeDisabled());
     });
   });
 });

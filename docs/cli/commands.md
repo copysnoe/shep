@@ -695,11 +695,12 @@ once the queue is released.
 When an install has opted in via `workflow.circuitBreakerAutoPauseQueue`, the circuit breaker
 pauses the queue on its own (see `shep fleet status` above) as soon as consecutive failures or the
 rolling failure rate cross the threshold. **That switch ships off**: by default a trip is reported
-and the pause is yours to make with `shep fleet pause`. It is turned on once the web dashboard can
-both show a pause and release it. A breaker pause **cannot clear itself**: a fleet that tripped
-overnight would otherwise restart into the same failing conditions as soon as the window looked
-healthy. `shep fleet resume` is the only way to release a breaker pause, and `shep fleet pause` is
-the manual lever when you want to stop new work without a trip.
+and the pause is yours to make with `shep fleet pause`. A breaker pause **cannot clear itself**: a
+fleet that tripped overnight would otherwise restart into the same failing conditions as soon as
+the window looked healthy. A person releases it — with `shep fleet resume`, or with **Resume** on
+the dashboard's fleet status bar, which shows any pause in force with its reason and calls the
+same use case. `shep fleet pause` is the manual lever when you want to stop new work without a
+trip.
 
 **Source**: `src/presentation/cli/commands/fleet/pause.command.ts`
 

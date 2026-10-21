@@ -88,4 +88,66 @@ describe('FleetStatusBar', () => {
     render(<FleetStatusBar counts={COUNTS} />);
     expect(screen.queryByTestId('fleet-open-triage')).not.toBeInTheDocument();
   });
+
+  /* ---------------------------------------------------------------- */
+  /*  Paused admission queue                                           */
+  /* ---------------------------------------------------------------- */
+
+  describe('when the admission queue is paused', () => {
+    const PAUSE = {
+      pausedAt: '2026-10-21T08:00:00.000Z',
+      reason: 'Circuit breaker tripped: 4 consecutive failures',
+    };
+
+    it('says so, with the reason, only while a pause is in force', () => {
+      const { rerender } = render(<FleetStatusBar counts={COUNTS} />);
+      expect(screen.queryByTestId('fleet-queue-paused')).not.toBeInTheDocument();
+
+      rerender(<FleetStatusBar counts={COUNTS} queuePause={PAUSE} />);
+      const badge = screen.getByTestId('fleet-queue-paused');
+      expect(badge).toHaveTextContent('queue paused');
+      expect(badge).toHaveAttribute('title', expect.stringContaining('4 consecutive failures'));
+    });
+
+    it('releases the queue from the bar', async () => {
+      const onResumeQueue = vi.fn();
+      render(<FleetStatusBar counts={COUNTS} queuePause={PAUSE} onResumeQueue={onResumeQueue} />);
+
+      await userEvent.click(screen.getByTestId('fleet-resume-queue'));
+      expect(onResumeQueue).toHaveBeenCalledTimes(1);
+    });
+
+    it('disables Resume while the release is in flight', () => {
+      render(
+        <FleetStatusBar counts={COUNTS} queuePause={PAUSE} onResumeQueue={vi.fn()} resumingQueue />
+      );
+
+      const button = screen.getByTestId('fleet-resume-queue');
+      expect(button).toBeDisabled();
+      expect(button).toHaveTextContent('Resuming…');
+    });
+
+    it('still shows the pause, and Resume, when no feature is active', () => {
+      // An empty fleet is exactly when the pause matters: the next feature the
+      // user starts will silently queue behind it.
+      render(
+        <FleetStatusBar
+          counts={{ ...COUNTS, total: 0, cruising: 0, queued: 0, attentionNeeded: 0, failed: 0 }}
+          queuePause={PAUSE}
+          onResumeQueue={vi.fn()}
+        />
+      );
+
+      expect(screen.getByTestId('fleet-status-bar')).toHaveAttribute('data-state', 'empty');
+      expect(screen.getByTestId('fleet-queue-paused')).toBeInTheDocument();
+      expect(screen.getByTestId('fleet-resume-queue')).toBeInTheDocument();
+    });
+
+    it('shows the pause without a Resume control when the host supplies no handler', () => {
+      render(<FleetStatusBar counts={COUNTS} queuePause={PAUSE} />);
+
+      expect(screen.getByTestId('fleet-queue-paused')).toBeInTheDocument();
+      expect(screen.queryByTestId('fleet-resume-queue')).not.toBeInTheDocument();
+    });
+  });
 });

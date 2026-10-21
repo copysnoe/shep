@@ -284,6 +284,7 @@ import { EvaluateGateGuardrailsUseCase } from '../../../application/use-cases/fl
 import { SetFleetQueuePauseUseCase } from '../../../application/use-cases/fleet/set-fleet-queue-pause.use-case.js';
 import { PruneRetainedDataUseCase } from '../../../application/use-cases/maintenance/prune-retained-data.use-case.js';
 import {
+  SetFleetQueuePauseUseCaseToken,
   EvaluateGateGuardrailsUseCaseToken,
   ListFleetTriageItemsUseCaseToken,
   GetFleetOverviewUseCaseToken,
@@ -1135,6 +1136,9 @@ export function registerUseCases(container: DependencyContainer): void {
     useFactory: (c) => c.resolve(BatchApproveFeaturesUseCase),
   });
   container.registerSingleton(SetFleetQueuePauseUseCase);
+  container.register(SetFleetQueuePauseUseCaseToken, {
+    useFactory: (c) => c.resolve(SetFleetQueuePauseUseCase),
+  });
 
   // ─── Maintenance ────────────────────────────────────────────────────────
   container.registerSingleton(PruneRetainedDataUseCase);
