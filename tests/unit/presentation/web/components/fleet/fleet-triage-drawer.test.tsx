@@ -558,6 +558,86 @@ describe('FleetTriageDrawer', () => {
       );
     });
 
+    it('names a shared refusal reason once, listing the features it refused', async () => {
+      // Twenty features refused for one reason used to be twenty copies of that
+      // reason in a single toast. Group by reason so the toast stays readable.
+      retryFailedFleetFeatures.mockResolvedValue({
+        totalAttempted: 3,
+        retriedCount: 0,
+        retried: [],
+        failedCount: 3,
+        failures: [
+          { featureId: 'feat-3', featureName: 'Auth Refactor', reason: 'worktree is dirty' },
+          { featureId: 'feat-4', featureName: 'Parser', reason: 'worktree is dirty' },
+          { featureId: 'feat-5', featureName: 'Billing', reason: 'missing specPath' },
+        ],
+      });
+
+      render(
+        <FleetTriageDrawer
+          items={[
+            crashItem(),
+            crashItem({ featureId: 'feat-4', featureName: 'Parser' }),
+            crashItem({ featureId: 'feat-5', featureName: 'Billing' }),
+          ]}
+          open
+          onOpenChange={noop}
+        />
+      );
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-all'));
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-all-confirm'));
+
+      await waitFor(() =>
+        expect(toast.error).toHaveBeenCalledWith(
+          'Retried 0 of 3 — Auth Refactor, Parser: worktree is dirty; Billing: missing specPath'
+        )
+      );
+    });
+
+    it('toasts the pause once when the queue is parked', async () => {
+      const blockedReason =
+        'The fleet admission queue is paused, so no agents were restarted. ' +
+        'Release it with `shep fleet resume`, then retry.';
+      retryFailedFleetFeatures.mockResolvedValue({
+        totalAttempted: 2,
+        retriedCount: 0,
+        retried: [],
+        failedCount: 0,
+        failures: [],
+        blockedReason,
+      });
+
+      render(
+        <FleetTriageDrawer
+          items={[crashItem(), crashItem({ featureId: 'feat-4', featureName: 'Parser' })]}
+          open
+          onOpenChange={noop}
+        />
+      );
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-all'));
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-all-confirm'));
+
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(blockedReason));
+      expect(toast.success).not.toHaveBeenCalled();
+    });
+
+    it('toasts the pause when a single row is retried on a parked queue', async () => {
+      const blockedReason = 'The fleet admission queue is paused.';
+      retryFailedFleetFeatures.mockResolvedValue({
+        totalAttempted: 1,
+        retriedCount: 0,
+        retried: [],
+        failedCount: 0,
+        failures: [],
+        blockedReason,
+      });
+
+      render(<FleetTriageDrawer items={[crashItem()]} open onOpenChange={noop} />);
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-feat-3'));
+
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(blockedReason));
+    });
+
     it('hides the footer retry when nothing failed', () => {
       render(<FleetTriageDrawer items={[ciItem()]} open onOpenChange={noop} />);
 

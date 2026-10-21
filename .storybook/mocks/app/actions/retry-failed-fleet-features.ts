@@ -18,6 +18,7 @@ interface RetryFailedFleetFeaturesResponse {
   retried: FleetRetryOutcome[];
   failedCount: number;
   failures: (FleetRetryOutcome & { reason: string })[];
+  blockedReason?: string;
   error?: string;
 }
 

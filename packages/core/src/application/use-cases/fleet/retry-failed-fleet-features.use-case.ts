@@ -32,10 +32,18 @@
  * do anything `--failed` does not already do correctly, so it is gone rather than
  * left as a flag that silently approves gates.
  *
+ * ## A paused queue refuses the batch once
+ *
+ * While the admission queue is parked, `claimSlot` refuses every resume, so
+ * attempting the batch would report the same "the queue is paused" failure once
+ * per feature. The pause belongs to the fleet, not to any feature, so it is
+ * checked up front and reported once as `blockedReason`. The check is advisory —
+ * `claimSlot` still refuses a resume that races a pause written mid-batch.
+ *
  * Following Clean Architecture:
  * - Application layer use case
  * - Port dependencies via existing use cases: ListFleetTriageItemsUseCase,
- *   ResumeFeatureUseCase
+ *   ResumeFeatureUseCase, and FeatureCapacityService for the pause
  */
 
 import { injectable, inject } from 'tsyringe';
@@ -43,6 +51,7 @@ import type { FleetTriageItem } from '../../../domain/generated/output.js';
 import { FleetTriageCategory } from '../../../domain/generated/output.js';
 import { ListFleetTriageItemsUseCase } from './list-fleet-triage-items.use-case.js';
 import { ResumeFeatureUseCase } from '../features/resume-feature.use-case.js';
+import { FeatureCapacityService } from '../features/capacity/feature-capacity.service.js';
 
 /**
  * The one category this retries.
@@ -54,8 +63,16 @@ import { ResumeFeatureUseCase } from '../features/resume-feature.use-case.js';
  */
 const RETRYABLE_CATEGORY = FleetTriageCategory.crash;
 
+/** Why a batch selected on a parked queue restarted nothing. */
+const QUEUE_PAUSED_REASON =
+  'The fleet admission queue is paused, so no agents were restarted. ' +
+  'Release it with `shep fleet resume`, then retry.';
+
 export interface RetryFailedFleetFeaturesInput {
-  /** When supplied, only these feature IDs are considered. */
+  /**
+   * When supplied, only these feature IDs are considered — an empty list selects
+   * nothing. Omit it to consider every failed run in the feed.
+   */
   featureIds?: string[];
   /** Restrict the batch to one repository, matching `fleet triage --repo`. */
   repositoryPath?: string;
@@ -80,6 +97,11 @@ export interface RetryFailedFleetFeaturesResult {
   retried: FleetRetryOutcome[];
   failedCount: number;
   failures: FleetRetryFailure[];
+  /**
+   * Set when the whole batch was refused before any resume was attempted — the
+   * admission queue is paused. `retried` and `failures` are then both empty.
+   */
+  blockedReason?: string;
 }
 
 @injectable()
@@ -88,7 +110,9 @@ export class RetryFailedFleetFeaturesUseCase {
     @inject(ListFleetTriageItemsUseCase)
     private readonly triage: ListFleetTriageItemsUseCase,
     @inject(ResumeFeatureUseCase)
-    private readonly resumeFeature: ResumeFeatureUseCase
+    private readonly resumeFeature: ResumeFeatureUseCase,
+    @inject(FeatureCapacityService)
+    private readonly capacity: FeatureCapacityService
   ) {}
 
   async execute(
@@ -100,9 +124,20 @@ export class RetryFailedFleetFeaturesUseCase {
 
     let selected = dedupeByFeature(items.filter((item) => item.category === RETRYABLE_CATEGORY));
 
-    if (input.featureIds && input.featureIds.length > 0) {
+    if (input.featureIds !== undefined) {
       const allowed = new Set(input.featureIds);
       selected = selected.filter((item) => allowed.has(item.featureId));
+    }
+
+    if (selected.length > 0 && (await this.capacity.isPaused())) {
+      return {
+        totalAttempted: selected.length,
+        retriedCount: 0,
+        retried: [],
+        failedCount: 0,
+        failures: [],
+        blockedReason: QUEUE_PAUSED_REASON,
+      };
     }
 
     const retried: FleetRetryOutcome[] = [];

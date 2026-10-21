@@ -120,6 +120,22 @@ function isRetryableRun(item: FleetTriageItem): boolean {
   return item.category === FleetTriageCategory.crash;
 }
 
+/**
+ * One clause per distinct refusal reason, naming the features it refused.
+ *
+ * A batch refused for one shared reason used to repeat that reason once per
+ * feature, which turned the toast into a wall of identical text.
+ */
+function describeRetryFailures(failures: { featureName: string; reason: string }[]): string {
+  const namesByReason = new Map<string, string[]>();
+  for (const failure of failures) {
+    const names = namesByReason.get(failure.reason) ?? [];
+    names.push(failure.featureName);
+    namesByReason.set(failure.reason, names);
+  }
+  return [...namesByReason].map(([reason, names]) => `${names.join(', ')}: ${reason}`).join('; ');
+}
+
 export function FleetTriageDrawer({
   items,
   open,
@@ -227,9 +243,13 @@ export function FleetTriageDrawer({
         }
 
         if (result.retriedCount === 0) {
-          // The row was selectable but the resume refused — a paused queue, a
+          // The row was selectable but nothing restarted — a paused queue, a
           // capacity cap, a run that finished underneath us. Say why.
-          toast.error(result.failures[0]?.reason ?? `Could not restart ${item.featureName}`);
+          toast.error(
+            result.blockedReason ??
+              result.failures[0]?.reason ??
+              `Could not restart ${item.featureName}`
+          );
           return;
         }
 
@@ -259,13 +279,15 @@ export function FleetTriageDrawer({
         return;
       }
 
-      if (result.failedCount > 0) {
+      if (result.blockedReason) {
+        toast.error(result.blockedReason);
+      } else if (result.failedCount > 0) {
         // A partial batch is the dangerous outcome: the count drops, the
         // operator assumes it is done, and the stragglers go unnoticed.
         toast.error(
-          `Retried ${result.retriedCount} of ${result.totalAttempted} — ${result.failures
-            .map((failure) => `${failure.featureName}: ${failure.reason}`)
-            .join('; ')}`
+          `Retried ${result.retriedCount} of ${result.totalAttempted} — ${describeRetryFailures(
+            result.failures
+          )}`
         );
       } else {
         toast.success(`Retried ${result.retriedCount} features — agents resuming`);

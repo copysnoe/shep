@@ -12,6 +12,7 @@
  *  - `ci_failed` alone never selects a feature, whatever its run is doing
  *  - a feature appears ONCE even when the feed lists it more than once
  *  - one failing resume does not strand the rest of the batch
+ *  - a parked queue refuses the batch ONCE, before any resume is attempted
  *
  * TDD Phase: RED-GREEN-REFACTOR
  */
@@ -43,6 +44,7 @@ function item(
 describe('RetryFailedFleetFeaturesUseCase', () => {
   let triage: { execute: ReturnType<typeof vi.fn> };
   let resume: { execute: ReturnType<typeof vi.fn> };
+  let capacity: { isPaused: ReturnType<typeof vi.fn> };
   let useCase: RetryFailedFleetFeaturesUseCase;
 
   beforeEach(() => {
@@ -53,7 +55,12 @@ describe('RetryFailedFleetFeaturesUseCase', () => {
         newRun: { id: 'r-new' },
       }),
     };
-    useCase = new RetryFailedFleetFeaturesUseCase(triage as never, resume as never);
+    capacity = { isPaused: vi.fn().mockResolvedValue(false) };
+    useCase = new RetryFailedFleetFeaturesUseCase(
+      triage as never,
+      resume as never,
+      capacity as never
+    );
   });
 
   describe('selection', () => {
@@ -181,14 +188,29 @@ describe('RetryFailedFleetFeaturesUseCase', () => {
       expect(resume.execute).toHaveBeenCalledWith('b');
     });
 
-    it('treats an empty featureIds list as no narrowing', async () => {
-      // The drawer sends the ids it rendered; an empty array must mean "all
-      // failed runs", not "none", or the batch button would silently no-op.
+    it('retries nothing when featureIds is an empty list', async () => {
+      // An explicit list is a selection, and an empty selection selects nothing.
+      // Reading `[]` as "no filter" turned a caller with nothing rendered — or a
+      // stale, emptied list — into "restart every failed agent in the fleet".
+      // Omitting `featureIds` is the only way to ask for all of them.
       triage.execute.mockResolvedValue([item('a', FleetTriageCategory.crash)]);
 
       const result = await useCase.execute({ featureIds: [] });
 
-      expect(result.retried.map((outcome) => outcome.featureId)).toEqual(['a']);
+      expect(result.totalAttempted).toBe(0);
+      expect(result.retried).toEqual([]);
+      expect(resume.execute).not.toHaveBeenCalled();
+    });
+
+    it('retries every failed run when featureIds is omitted', async () => {
+      triage.execute.mockResolvedValue([
+        item('a', FleetTriageCategory.crash),
+        item('b', FleetTriageCategory.crash),
+      ]);
+
+      const result = await useCase.execute({});
+
+      expect(result.retried.map((outcome) => outcome.featureId)).toEqual(['a', 'b']);
     });
 
     it('cannot reach a feature the feed does not list', async () => {
@@ -242,14 +264,56 @@ describe('RetryFailedFleetFeaturesUseCase', () => {
     });
   });
 
-  /**
-   * NOTE for the follow-up: while the admission queue is parked, `claimSlot`
-   * refuses every resume in the batch, so the operator gets N identical
-   * cap-shaped messages ("raise the limit") that raising the limit cannot fix.
-   * That belongs with the web pause surface and `describeRefusedClaim`, on the
-   * branch that introduces the pause — deliberately NOT here, so this command
-   * does not depend on unmerged work.
-   */
+  describe('a paused admission queue', () => {
+    /**
+     * While the queue is parked, `claimSlot` refuses every resume, so attempting
+     * the batch produced one identical "the queue is paused" failure per feature
+     * — twenty lines in the CLI, one enormous toast in the drawer. The pause is a
+     * property of the fleet, not of any feature, so it is reported once.
+     */
+    it('refuses the batch once, without attempting a single resume', async () => {
+      capacity.isPaused.mockResolvedValue(true);
+      triage.execute.mockResolvedValue([
+        item('a', FleetTriageCategory.crash),
+        item('b', FleetTriageCategory.crash),
+      ]);
+
+      const result = await useCase.execute();
+
+      expect(resume.execute).not.toHaveBeenCalled();
+      expect(result).toMatchObject({
+        totalAttempted: 2,
+        retriedCount: 0,
+        retried: [],
+        failedCount: 0,
+        failures: [],
+      });
+      expect(result.blockedReason).toContain('paused');
+      expect(result.blockedReason).toContain('shep fleet resume');
+    });
+
+    it('reports nothing to retry, not a pause, when nothing failed', async () => {
+      // "No failed runs" is the true answer; blaming the pause would send the
+      // operator to release a queue that is blocking nothing they asked for.
+      capacity.isPaused.mockResolvedValue(true);
+      triage.execute.mockResolvedValue([item('ci-1', FleetTriageCategory.ci_failed)]);
+
+      const result = await useCase.execute();
+
+      expect(result.totalAttempted).toBe(0);
+      expect(result.blockedReason).toBeUndefined();
+    });
+
+    it('sets no blockedReason when the queue is admitting', async () => {
+      triage.execute.mockResolvedValue([item('a', FleetTriageCategory.crash)]);
+
+      const result = await useCase.execute();
+
+      expect(result.retriedCount).toBe(1);
+      expect(result.blockedReason).toBeUndefined();
+    });
+  });
+
   it('surfaces the underlying refusal reason verbatim', async () => {
     // The reason `ResumeFeatureUseCase` gives is already the most specific thing
     // known about why a feature could not restart; re-wording it here would

@@ -775,6 +775,15 @@ consequences worth knowing:
   verbatim from the resume path. A batch that retried nothing prints a warning, not a success
   tick, and features are listed by name in both the retried and the failed list.
 
+**A paused admission queue refuses the batch once.** While the queue is parked
+(`shep fleet pause`, or a circuit-breaker trip), no resume is attempted: the command prints a
+single line naming the pause and `shep fleet resume`, instead of one identical refusal per
+feature.
+
+**Exit code**: `0` when every selected feature restarted, or when nothing had failed; `1` when
+any selected feature was not restarted — a partial batch or a paused queue — so
+`shep fleet retry --failed && …` does not carry on as if the fleet recovered.
+
 The same action is in the web triage drawer: **Retry** on a failed row, and **Retry all failed**
 in the footer behind a confirmation.
 
