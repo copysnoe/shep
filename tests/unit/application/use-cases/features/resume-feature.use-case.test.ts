@@ -352,6 +352,29 @@ describe('ResumeFeatureUseCase', () => {
     await expect(useCase.execute('feat-001')).rejects.toThrow(/missing specPath/i);
   });
 
+  it('should name the paused queue, not the cap, when the claim is refused while paused', async () => {
+    featureRepo.findById.mockResolvedValue(createTestFeature());
+    runRepo.findById.mockResolvedValue(createTestRun({ status: AgentRunStatus.failed }));
+    capacity.claimSlot.mockResolvedValue(false);
+    capacity.snapshot.mockResolvedValue({
+      limit: 0,
+      unlimited: false,
+      paused: true,
+      running: 0,
+      available: 0,
+      queue: [],
+    });
+
+    const error: Error = await useCase.execute('feat-001').catch((e) => e);
+
+    // A parked fleet resolves to a limit of 0, which means UNLIMITED, so the
+    // cap-shaped message tells the operator to raise a limit that is not the
+    // obstacle — and raising it changes nothing.
+    expect(error.message).toMatch(/admission queue is paused/i);
+    expect(error.message).toMatch(/shep fleet resume/);
+    expect(error.message).not.toMatch(/raise the limit/i);
+  });
+
   it('should pass fast flag from feature entity to spawn for fast-mode features', async () => {
     featureRepo.findById.mockResolvedValue(createTestFeature({ fast: true }));
     runRepo.findById.mockResolvedValue(createTestRun({ status: AgentRunStatus.failed }));
