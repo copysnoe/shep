@@ -186,6 +186,7 @@ import { AutoResolveMergedBranchesUseCase } from '../../../application/use-cases
 import { ReparentFeatureUseCase } from '../../../application/use-cases/features/reparent-feature.use-case.js';
 import { CoordinateFeatureConflictsUseCase } from '../../../application/use-cases/features/coordinate-feature-conflicts.use-case.js';
 import { CreateApplicationUseCase } from '../../../application/use-cases/applications/create-application.use-case.js';
+import { RunApplicationSetupUseCase } from '../../../application/use-cases/applications/run-application-setup.use-case.js';
 import { AdoptLocalRepositoryUseCase } from '../../../application/use-cases/applications/adopt-local-repository.use-case.js';
 import { ListApplicationsUseCase } from '../../../application/use-cases/applications/list-applications.use-case.js';
 import { GetApplicationUseCase } from '../../../application/use-cases/applications/get-application.use-case.js';
@@ -281,6 +282,7 @@ import { GetFleetOverviewUseCase } from '../../../application/use-cases/fleet/ge
 import { BatchApproveFeaturesUseCase } from '../../../application/use-cases/fleet/batch-approve-features.use-case.js';
 import { EvaluateGateGuardrailsUseCase } from '../../../application/use-cases/fleet/evaluate-gate-guardrails.use-case.js';
 import { RetryFailedFleetFeaturesUseCase } from '../../../application/use-cases/fleet/retry-failed-fleet-features.use-case.js';
+import { SetFleetQueuePauseUseCase } from '../../../application/use-cases/fleet/set-fleet-queue-pause.use-case.js';
 import { PruneRetainedDataUseCase } from '../../../application/use-cases/maintenance/prune-retained-data.use-case.js';
 import {
   EvaluateGateGuardrailsUseCaseToken,
@@ -386,6 +388,7 @@ export function registerUseCases(container: DependencyContainer): void {
   container.registerSingleton(AutoResolveMergedBranchesUseCase);
   container.registerSingleton(ReparentFeatureUseCase);
   container.registerSingleton(CoordinateFeatureConflictsUseCase);
+  container.registerSingleton(RunApplicationSetupUseCase);
   container.registerSingleton(CreateApplicationUseCase);
   container.registerSingleton(AdoptLocalRepositoryUseCase);
   container.registerSingleton(ListApplicationsUseCase);
@@ -636,6 +639,9 @@ export function registerUseCases(container: DependencyContainer): void {
   });
   container.register('ReconcileAgentRunLivenessUseCase', {
     useFactory: (c) => c.resolve(ReconcileAgentRunLivenessUseCase),
+  });
+  container.register('RunApplicationSetupUseCase', {
+    useFactory: (c) => c.resolve(RunApplicationSetupUseCase),
   });
   container.register('CreateApplicationUseCase', {
     useFactory: (c) => c.resolve(CreateApplicationUseCase),
@@ -1134,6 +1140,7 @@ export function registerUseCases(container: DependencyContainer): void {
   container.register(RetryFailedFleetFeaturesUseCaseToken, {
     useFactory: (c) => c.resolve(RetryFailedFleetFeaturesUseCase),
   });
+  container.registerSingleton(SetFleetQueuePauseUseCase);
 
   // ─── Maintenance ────────────────────────────────────────────────────────
   container.registerSingleton(PruneRetainedDataUseCase);

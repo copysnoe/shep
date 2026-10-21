@@ -154,6 +154,9 @@ function createTestRow(overrides: Partial<SettingsRow> = {}): SettingsRow {
     default_mode: 'Fast',
     ci_watch_enabled: 1,
     workflow_max_parallel_features: 0,
+    workflow_queue_pause: null,
+    workflow_breaker_acknowledged_at: null,
+    workflow_circuit_breaker_auto_pause_queue: null,
     ci_max_fix_attempts: null,
     workflow_decision_default_timeout_minutes: null,
     ci_watch_timeout_ms: null,
@@ -1253,15 +1256,15 @@ describe('Settings Mapper', () => {
       expect(row.skill_injection_skills).toBe(JSON.stringify(skills));
     });
 
-    it('should map empty skills array to null', () => {
+    it('should map an explicitly emptied skills array to "[]", not null', () => {
       const settings = createTestSettings({
         workflow: {
           ...createTestSettings().workflow,
-          skillInjection: { enabled: false, skills: [] },
+          skillInjection: { enabled: true, skills: [] },
         },
       });
       const row = toDatabase(settings);
-      expect(row.skill_injection_skills).toBeNull();
+      expect(row.skill_injection_skills).toBe('[]');
     });
 
     it('should map undefined skillInjection to null skills', () => {
@@ -1305,6 +1308,15 @@ describe('Settings Mapper', () => {
       });
       const settings = fromDatabase(row);
       expect(settings.workflow.skillInjection).toBeUndefined();
+    });
+
+    it('should keep an explicitly empty skills list when enabled=1 and skills is "[]"', () => {
+      const row = createTestRow({
+        skill_injection_enabled: 1,
+        skill_injection_skills: '[]',
+      });
+      const settings = fromDatabase(row);
+      expect(settings.workflow.skillInjection).toEqual({ enabled: true, skills: [] });
     });
 
     it('should fall back to default skills when enabled=1 but skills is null', () => {
@@ -1782,6 +1794,42 @@ describe('Settings Mapper', () => {
       });
 
       expect(fromDatabase(row).telemetry?.includeIdentity).toBe(false);
+    });
+  });
+
+  describe('circuit-breaker auto-pause switch (spec 111)', () => {
+    const withChoice = (circuitBreakerAutoPauseQueue: boolean): Settings =>
+      createTestSettings({
+        workflow: { ...createTestSettings().workflow, circuitBreakerAutoPauseQueue },
+      });
+
+    it('writes NULL when the install has never chosen', () => {
+      // NULL rather than 0, so "never asked" and "asked for no" stay
+      // distinguishable in the settings model.
+      expect(toDatabase(createTestSettings()).workflow_circuit_breaker_auto_pause_queue).toBeNull();
+    });
+
+    it('writes 1 and 0 for an explicit choice', () => {
+      expect(toDatabase(withChoice(true)).workflow_circuit_breaker_auto_pause_queue).toBe(1);
+      expect(toDatabase(withChoice(false)).workflow_circuit_breaker_auto_pause_queue).toBe(0);
+    });
+
+    it('reconstructs an explicit choice from the column', () => {
+      const on = fromDatabase(createTestRow({ workflow_circuit_breaker_auto_pause_queue: 1 }));
+      const off = fromDatabase(createTestRow({ workflow_circuit_breaker_auto_pause_queue: 0 }));
+
+      expect(on.workflow.circuitBreakerAutoPauseQueue).toBe(true);
+      expect(off.workflow.circuitBreakerAutoPauseQueue).toBe(false);
+    });
+
+    it('leaves the field absent when the column is NULL', () => {
+      expect(fromDatabase(createTestRow()).workflow.circuitBreakerAutoPauseQueue).toBeUndefined();
+    });
+
+    it('round-trips an opted-in install', () => {
+      const stored = fromDatabase(toDatabase(withChoice(true)));
+
+      expect(stored.workflow.circuitBreakerAutoPauseQueue).toBe(true);
     });
   });
 });

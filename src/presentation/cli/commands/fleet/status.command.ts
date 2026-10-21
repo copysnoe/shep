@@ -19,6 +19,13 @@ export function createStatusCommand(): Command {
   return new Command('status')
     .description('Display aggregate health and status across the agent fleet')
     .option('--repo <path>', 'Filter fleet to a specific repository path')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ shep fleet status
+  $ shep fleet status --repo ~/src/shop`
+    )
     .action(async (options: { repo?: string }) => {
       try {
         const useCase = container.resolve(GetFleetOverviewUseCase);
@@ -43,6 +50,17 @@ export function createStatusCommand(): Command {
         );
 
         messages.newline();
+        if (overview.queuePaused) {
+          console.log(
+            `  ${colors.warning(symbols.warning)} ${fmt.bold('Admission Queue:')} ${colors.warning('PAUSED')}`
+          );
+          console.log(`    ${colors.muted(overview.queuePaused.reason)}`);
+          console.log(
+            `    ${colors.muted('New work is parked; running agents continue. Run `shep fleet resume` to admit again.')}`
+          );
+          messages.newline();
+        }
+
         if (overview.circuitBreakerTripped) {
           console.log(
             `  ${colors.error(symbols.error)} ${fmt.bold('Circuit Breaker:')} ${colors.error('TRIPPED')}`

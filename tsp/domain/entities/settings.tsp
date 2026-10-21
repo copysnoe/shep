@@ -436,6 +436,51 @@ model WorkflowConfig {
   @doc("Maximum concurrently running features (default: 0 = unlimited)")
   maxParallelFeatures?: int32;
 
+  /**
+   * Set while the fleet admission queue is parked. Absent means the queue is
+   * draining normally.
+   *
+   * A separate field from `maxParallelFeatures` on purpose — see
+   * `FleetQueuePause` in fleet-overview.tsp. The pause is an override laid over
+   * the user's ceiling, not a replacement for it, so raising or lowering the
+   * ceiling later still works and `fleet resume` restores exactly what the user
+   * configured.
+   */
+  @doc("Present while the fleet admission queue is paused (absent = draining)")
+  queuePaused?: FleetQueuePause;
+
+  /**
+   * When the user last acknowledged a circuit-breaker trip.
+   *
+   * The breaker's metrics read a rolling window of `agent_runs`, and nothing in
+   * that history records that a human has already looked at the failures. So
+   * without this, `shep fleet resume` cannot stick: the next status read — and
+   * on the web that is every dashboard render and every SSE agent event — sees
+   * the same failing runs still inside the 15-minute window and trips again,
+   * re-parking the queue with a fresh `pausedAt`. The user is locked out of
+   * their own resume for the rest of the window.
+   *
+   * With it, a trip means "failures since you last looked", which is what an
+   * operator expects the breaker to mean.
+   */
+  @doc("When the user last acknowledged a breaker trip; failures before this do not re-trip")
+  breakerAcknowledgedAt?: utcDateTime;
+
+  /**
+   * Whether a tripped circuit breaker parks the fleet admission queue.
+   *
+   * Ships **off**. A trip is reported either way, and while this is off the only
+   * lever is `shep fleet pause` / `shep fleet resume`.
+   *
+   * It stays off until the web dashboard can both show a pause and release it.
+   * The dashboard's own reads are the most common thing that trips the breaker,
+   * so turning this on before a web resume surface exists strands a web user
+   * with no way out — `LESSONS.md`, "No CLI-Only Flows in the Web UI". The web
+   * surface is spec 111 follow-up work; it flips this default to true.
+   */
+  @doc("Whether a tripped circuit breaker parks the admission queue (default: false)")
+  circuitBreakerAutoPauseQueue?: boolean;
+
   @doc("Minutes a background agent's question waits before the agent proceeds with its recommended option (spec 134; default: 30)")
   decisionDefaultTimeoutMinutes?: int32;
 

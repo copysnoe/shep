@@ -1,5 +1,19 @@
 # Lessons Learned
 
+## Persisted retry state needs a "this will never work" branch
+
+A chat boot that failed re-cached its agent session id, and the DB kept it too,
+so a conversation the agent CLI had deleted was resumed again on every boot —
+even after restarts. Rules:
+
+1. When the agent says the resumed conversation is gone, forget the id
+   everywhere a later boot reads it (in-memory stopped cache AND
+   `clearAgentSessionIdsForFeature`) and boot fresh; keep the id only for
+   transient failures.
+2. The adapter translates its provider's wording ("No conversation found…")
+   into `AgentSessionNotFoundError`; shared services branch on `instanceof`,
+   never on a provider string.
+
 ## Fetch main before reporting what the code does or lacks
 
 Before an audit or status report says a model, flag or fix is missing, run
@@ -1253,7 +1267,7 @@ const args = rest.map(t => t.replace('{dir}', actualPath));
 
 The `claude` CLI emits a final `result` event over stream-json and is supposed to tear down its MCP servers and exit — but in practice it can hang for hours. Confirmed offenders, all spawned by the agent itself: `npm exec @playwright/mcp`, `npm exec @upstash/context7-mcp`, `typescript-language-server --stdio`, and any backgrounded `pnpm dev:web` / shell the agent forgot to kill. They keep stdio open and the parent claude process never closes. A worker that resolves only on `proc.on('close')` then sleeps forever — feature 92701aa8 was stuck `fast-implement` for 3+ hours after the agent had finished, committed, and pushed.
 
-**Rule:** any executor that depends on a subprocess emitting a final event must enforce a grace timer once that event is observed and SIGKILL the subprocess if it fails to exit. Don't trust the child to clean up its own children. Implemented in `claude-code-executor.service.ts` via `RESULT_TO_CLOSE_GRACE_MS = 30_000`: after seeing `type: 'result'` in stream-json, schedule a SIGKILL; the existing `proc.on('close')` handler then resolves with the already-captured result data.
+**Rule:** any executor that depends on a subprocess emitting a final event must enforce a grace timer once that event is observed and SIGKILL the subprocess if it fails to exit. Don't trust the child to clean up its own children. Use the shared guard `watchPostResultExit(proc, log)` in `executors/post-result-exit.ts` (`RESULT_TO_CLOSE_GRACE_MS = 30_000`), and do not hand-roll a timer. Create it after spawn and `arm()` it on the terminal event, in both `execute()` and `executeStream()`. It tree-kills a lingering process with SIGKILL escalation and disarms on `close`. Read the exit code through `guard.exitCode(code)`, because taskkill makes a killed Windows process exit 1. Claude, Copilot, Cursor, Codex (`turn.completed`/`turn.failed`) and Gemini use it. Kimi and Cline have no terminal event.
 
 ## Canvas Node Wiring Has TWO Halves — Server Loader AND Client Deriver
 
@@ -3045,6 +3059,53 @@ that a squash merge would invalidate.
 `'packages/core/src/...'` passed on Linux and failed on `windows-latest`. Always
 `.replace(/\\/g, '/')` a computed path before comparing or printing it in a test.
 
+## A "pause" must not be encoded as `0` in a field where `0` already means "off/unlimited"
+
+The circuit breaker needed to stop new work. The one-field fix — set
+`workflow.maxParallelFeatures = 0` — was backwards twice over. In that field `0` means
+**UNLIMITED**, so it would have removed the cap and admitted *everything*; and it would have
+overwritten the ceiling the user chose, leaving `resume` with nothing to restore.
+`hasCapacity(0, 0)` is literally `true`, so the pause would have silently done nothing.
+
+The pause became its own record (`workflow.queuePaused`) beside the untouched ceiling, and
+`resolveMaxParallelFeatures` returns `0` while paused — which means the returned `0` now has TWO
+meanings depending on a second field. That is only safe because the gate reads
+`isFleetQueuePaused` first, and because a separate `resolveConfiguredMaxParallelFeatures` exists
+for the callers that persist or display the user's own number.
+
+**Rules:**
+
+1. Before overloading a sentinel value, grep the field for what it already means. `0`/`-1`/`''`
+   are almost never free, and the failure is silent because the code still runs.
+2. When one value must carry two meanings, add a second field that discriminates them and make
+   the GATE read the discriminator — never the number. Write the pair of assertions down as the
+   contract: `resolveMaxParallelFeatures(paused) === 0` **and** `isFleetQueuePaused(paused)`.
+3. Give the persistence/display path its own resolver. A mapper that reuses the effective limit
+   writes the override over the user's setting, and the only symptom appears at `resume` time.
+   The round-trip test ("leaves the user ceiling intact while paused") caught exactly this.
+4. A pause that is re-evaluated on every read must be idempotent and keep the ORIGINAL
+   `pausedAt`; re-stamping makes "parked for an hour" read as "paused just now", forever.
+
+## `container.resolve(X)` is not a DI registration test — tsyringe auto-constructs `@injectable`
+
+A test asserting `expect(container.resolve(SetFleetQueuePauseUseCase)).toBeInstanceOf(...)`
+proves nothing about registration: tsyringe constructs any `@injectable` class on demand. I
+deleted the `registerSingleton` call and the test stayed green.
+
+The registration's real job here was to put the class into the container's token registry,
+because `hollow-dependency-guard` only sweeps **registered class tokens** — so an unregistered
+use case escapes that guard entirely while still resolving fine.
+
+**Rules:**
+
+1. Assert the class token is present in `container._registry` (`entries()`), not that
+   `resolve()` returns an instance.
+2. Delete the registration and watch the test go red before trusting it. A registration test
+   that passes both ways is decoration.
+3. Keep the `.js` extension in a same-package import unless a sibling in that exact directory
+   omits it: `domain/` files must omit it (the web bundles that directory as raw source), and
+   `grep`ping the sibling beats guessing.
+
 ## A new hook in a shared shell is a change to every test that renders the shell
 
 Adding `useRouteViewTelemetry()` to `AppShell` (it calls `useParams`) failed four AppShell suites
@@ -3177,3 +3238,13 @@ test the executor with the empty value.
 `buildFeatureNodeData`. A field added to only the first appears when you click a node and
 vanishes on the drawer's first sync (or never shows from a `/feature/<id>` URL). Map a new
 field once (e.g. `lib/coordination-note-data.ts`) and call it from both builders.
+
+## In the sandbox, `--lockfile-only` rewrites the electron node-gyp entry
+
+`codeload.github.com` returns 403 here, so a `pnpm install --lockfile-only` silently rewrites
+`@electron/node-gyp` from its codeload tarball to `git+https://git@github.com:…`, a diff no
+dependency bump intends. After relocking, `git diff pnpm-lock.yaml | grep node-gyp` must be
+empty; restore the tarball form if not. `--filter '!@shepai/electron'` then leaves `electron`
+uninstalled and `pnpm typecheck` fails on `packages/electron`. For a full local install, swap the
+entry to `git+https://github.com/electron/node-gyp.git#<sha>` (`type: git`), run
+`pnpm install --frozen-lockfile` (git clones work), then copy the committed lockfile back.
