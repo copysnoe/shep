@@ -8,7 +8,7 @@
  */
 
 import 'reflect-metadata';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('node:fs', async (importOriginal) => {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.mock factory requires runtime import()
@@ -450,7 +450,14 @@ describe('WorktreeService', () => {
   });
 
   describe('getWorktreePath', () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
     it('should compute path under ~/.shep/repos/HASH/wt/SLUG', () => {
+      // Pinned: `SHEP_HOME` replaces `~/.shep`, and the documented test recipe
+      // sets it — without this the assertion depends on the shell.
+      vi.stubEnv('SHEP_HOME', undefined);
       const result = service.getWorktreePath('/home/user/repo', 'feat/my-feature');
       // Should NOT be inside the repo
       expect(result).not.toContain('/home/user/repo/');
@@ -459,6 +466,15 @@ describe('WorktreeService', () => {
       expect(result).toContain('/wt/');
       // Slashes in branch should be replaced with hyphens
       expect(result).toContain('feat-my-feature');
+    });
+
+    it('should compute the path under SHEP_HOME when it is set', () => {
+      vi.stubEnv('SHEP_HOME', '/isolated/shep-home');
+
+      const result = service.getWorktreePath('/home/user/repo', 'feat/my-feature');
+
+      expect(result.startsWith('/isolated/shep-home/repos/')).toBe(true);
+      expect(result).toContain('/wt/feat-my-feature');
     });
 
     it('should produce consistent hash for same repo path', () => {
