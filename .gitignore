@@ -106,6 +106,8 @@ node_modules/.cache/prettier/
 # walks them — a nested pnpm store brings hundreds of unformatted files with it.
 .tmp-run/
 .tmp-sbhome/
+.tmp-cli/
+.tmp-cli2/
 *.bak
 storybook-static/
 .worktrees/

@@ -729,7 +729,65 @@ The pause is stored as its own record (`workflow.queuePaused`) beside
 `workflow.maxParallelFeatures`, never as `maxParallelFeatures = 0` — in that field `0` means
 **unlimited**, so using it to mean "paused" would remove the cap and admit everything.
 
-> **Not implemented yet**: `shep fleet retry` and the `--low-risk` filter. See
+### `shep fleet retry`
+
+Restart the agents behind failures the triage feed has already surfaced — "restart the 3 that
+crashed" as one command instead of three.
+
+**Source**: `src/presentation/cli/commands/fleet/retry.command.ts`
+
+| Option          | Description                                                                    |
+| --------------- | ------------------------------------------------------------------------------ |
+| `--failed`      | Retry the runs that crashed, failed **or were stopped by the user** (`crash`)  |
+| `--repo <path>` | Restrict the batch to one repository path                                      |
+
+```
+$ shep fleet retry --failed
+✓ Retried 3 of 3 failed features.
+  ✓ Payment Retry
+  ✓ Auth Refactor
+  ✓ CSV Import
+```
+
+`--failed` is required, for the same reason `fleet approve` requires a scope: a bare
+`shep fleet retry` must never be able to restart the whole fleet by accident.
+
+`--failed` includes runs **you stopped on purpose**. `StopAgentRunUseCase` writes `interrupted`,
+the same status a crash reconciliation writes, and nothing in the run record reliably separates
+them — so the help text says so rather than pretending a deliberate stop was a crash.
+
+Retry is a **projection of the triage feed**, not a second resume path — each selected feature
+goes through the same `ResumeFeatureUseCase` that `shep feat resume` and the web Resume action
+use, so agent identity, worktree sync and capacity accounting stay in one place. Four
+consequences worth knowing:
+
+- **Each feature is retried once**, even if the feed lists it several times (a crashed run *and* a
+  failing CI check on its PR). Retrying twice would put two agents in one worktree on one branch.
+- **Gates and questions are never retried.** Those are decisions for a human; re-running them
+  would bypass the gate. Approving them is `shep fleet approve`.
+- **`ci_failed` alone never selects a feature**, which is why there is no `--ci`. That category
+  fires for any feature with a red CI run, whatever its agent run is doing, and both states it
+  produces are unusable here: a run parked at the merge gate would be resumed with no payload,
+  which the worker reads as `{ approved: true }` — a silent approval of a merge with failing CI —
+  and a run that already finished cannot be resumed at all. The only CI-red features that *were*
+  resumable are those whose run had already failed, which `--failed` covers.
+- **One refusal does not strand the batch.** The summary reports per-feature reasons, taken
+  verbatim from the resume path. A batch that retried nothing prints a warning, not a success
+  tick, and features are listed by name in both the retried and the failed list.
+
+**A paused admission queue refuses the batch once.** While the queue is parked
+(`shep fleet pause`, or a circuit-breaker trip), no resume is attempted: the command prints a
+single line naming the pause and `shep fleet resume`, instead of one identical refusal per
+feature.
+
+**Exit code**: `0` when every selected feature restarted, or when nothing had failed; `1` when
+any selected feature was not restarted — a partial batch or a paused queue — so
+`shep fleet retry --failed && …` does not carry on as if the fleet recovered.
+
+The same action is in the web triage drawer: **Retry** on a failed row, and **Retry all failed**
+in the footer behind a confirmation.
+
+> **Not implemented yet**: the `--low-risk` filter. See
 > `specs/111-fleet-control-plane/tasks.yaml` for the remaining work.
 
 ---

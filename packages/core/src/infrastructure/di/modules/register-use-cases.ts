@@ -281,6 +281,7 @@ import { ListFleetTriageItemsUseCase } from '../../../application/use-cases/flee
 import { GetFleetOverviewUseCase } from '../../../application/use-cases/fleet/get-fleet-overview.use-case.js';
 import { BatchApproveFeaturesUseCase } from '../../../application/use-cases/fleet/batch-approve-features.use-case.js';
 import { EvaluateGateGuardrailsUseCase } from '../../../application/use-cases/fleet/evaluate-gate-guardrails.use-case.js';
+import { RetryFailedFleetFeaturesUseCase } from '../../../application/use-cases/fleet/retry-failed-fleet-features.use-case.js';
 import { SetFleetQueuePauseUseCase } from '../../../application/use-cases/fleet/set-fleet-queue-pause.use-case.js';
 import { PruneRetainedDataUseCase } from '../../../application/use-cases/maintenance/prune-retained-data.use-case.js';
 import {
@@ -288,6 +289,7 @@ import {
   ListFleetTriageItemsUseCaseToken,
   GetFleetOverviewUseCaseToken,
   BatchApproveFeaturesUseCaseToken,
+  RetryFailedFleetFeaturesUseCaseToken,
 } from '../tokens.js';
 
 /**
@@ -1133,6 +1135,10 @@ export function registerUseCases(container: DependencyContainer): void {
   container.registerSingleton(BatchApproveFeaturesUseCase);
   container.register(BatchApproveFeaturesUseCaseToken, {
     useFactory: (c) => c.resolve(BatchApproveFeaturesUseCase),
+  });
+  container.registerSingleton(RetryFailedFleetFeaturesUseCase);
+  container.register(RetryFailedFleetFeaturesUseCaseToken, {
+    useFactory: (c) => c.resolve(RetryFailedFleetFeaturesUseCase),
   });
   container.registerSingleton(SetFleetQueuePauseUseCase);
 

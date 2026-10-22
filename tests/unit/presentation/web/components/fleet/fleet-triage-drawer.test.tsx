@@ -32,6 +32,11 @@ vi.mock('@/app/actions/batch-approve-features', () => ({
   batchApproveFeatures: (...args: unknown[]) => batchApproveFeatures(...args),
 }));
 
+const retryFailedFleetFeatures = vi.fn();
+vi.mock('@/app/actions/retry-failed-fleet-features', () => ({
+  retryFailedFleetFeatures: (...args: unknown[]) => retryFailedFleetFeatures(...args),
+}));
+
 const NOW = '2026-09-11T12:00:00.000Z';
 
 /** The drawer is controlled; most cases never change `open`. */
@@ -52,7 +57,7 @@ function item(overrides: Partial<FleetTriageItem> = {}): FleetTriageItem {
   };
 }
 
-/** A P2 CI failure — present in the feed but not approvable. */
+/** A P2 CI failure — present in the feed but neither approvable nor retryable. */
 function ciItem(overrides: Partial<FleetTriageItem> = {}): FleetTriageItem {
   return item({
     featureId: 'feat-2',
@@ -67,6 +72,21 @@ function ciItem(overrides: Partial<FleetTriageItem> = {}): FleetTriageItem {
   });
 }
 
+/** A P2 crashed run — retryable, but never approvable. */
+function crashItem(overrides: Partial<FleetTriageItem> = {}): FleetTriageItem {
+  return item({
+    featureId: 'feat-3',
+    featureName: 'Auth Refactor',
+    slug: 'auth-refactor',
+    priority: FleetTriagePriority.p2,
+    category: FleetTriageCategory.crash,
+    reason: 'Agent run failed: spawn ENOENT',
+    runId: 'run-3',
+    gateType: undefined,
+    ...overrides,
+  });
+}
+
 describe('FleetTriageDrawer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -75,6 +95,13 @@ describe('FleetTriageDrawer', () => {
       totalAttempted: 0,
       approvedCount: 0,
       approvedFeatureIds: [],
+      failedCount: 0,
+      failures: [],
+    });
+    retryFailedFleetFeatures.mockResolvedValue({
+      totalAttempted: 0,
+      retriedCount: 0,
+      retried: [],
       failedCount: 0,
       failures: [],
     });
@@ -400,5 +427,221 @@ describe('FleetTriageDrawer', () => {
 
     expect(screen.getByTestId('fleet-triage-refresh')).toBeDisabled();
     expect(screen.getByTestId('fleet-triage-refresh')).toHaveTextContent('Refreshing…');
+  });
+
+  /* ---------------------------------------------------------------- */
+  /*  Retry                                                            */
+  /* ---------------------------------------------------------------- */
+
+  describe('retrying a failed run', () => {
+    it('offers Retry on a crashed row and sends just that feature', async () => {
+      retryFailedFleetFeatures.mockResolvedValue({
+        totalAttempted: 1,
+        retriedCount: 1,
+        retried: [{ featureId: 'feat-3', featureName: 'Auth Refactor' }],
+        failedCount: 0,
+        failures: [],
+      });
+
+      render(<FleetTriageDrawer items={[crashItem()]} open onOpenChange={noop} />);
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-feat-3'));
+
+      await waitFor(() =>
+        expect(retryFailedFleetFeatures).toHaveBeenCalledWith({ featureIds: ['feat-3'] })
+      );
+      await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    });
+
+    it('does not offer Retry on a CI failure row', () => {
+      // `ci_failed` fires for any feature with a red CI run, whatever its agent
+      // run is doing — retrying one could approve a merge gate. The use case
+      // refuses it, so the surface must not offer it.
+      render(<FleetTriageDrawer items={[ciItem()]} open onOpenChange={noop} />);
+
+      expect(screen.queryByTestId('fleet-triage-retry-feat-2')).toBeNull();
+    });
+
+    it('does not offer Retry on a gate row', () => {
+      render(<FleetTriageDrawer items={[item()]} open onOpenChange={noop} />);
+
+      expect(screen.queryByTestId('fleet-triage-retry-feat-1')).toBeNull();
+    });
+
+    it('surfaces the refusal reason when the row could not be restarted', async () => {
+      retryFailedFleetFeatures.mockResolvedValue({
+        totalAttempted: 1,
+        retriedCount: 0,
+        retried: [],
+        failedCount: 1,
+        failures: [
+          {
+            featureId: 'feat-3',
+            featureName: 'Auth Refactor',
+            reason: 'Agent is still running — stop it first before resuming',
+          },
+        ],
+      });
+
+      render(<FleetTriageDrawer items={[crashItem()]} open onOpenChange={noop} />);
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-feat-3'));
+
+      await waitFor(() =>
+        expect(toast.error).toHaveBeenCalledWith(
+          'Agent is still running — stop it first before resuming'
+        )
+      );
+    });
+
+    it('retries every failed row from the footer behind a confirmation', async () => {
+      retryFailedFleetFeatures.mockResolvedValue({
+        totalAttempted: 2,
+        retriedCount: 2,
+        retried: [],
+        failedCount: 0,
+        failures: [],
+      });
+
+      render(
+        <FleetTriageDrawer
+          items={[crashItem(), crashItem({ featureId: 'feat-4', featureName: 'Parser' })]}
+          open
+          onOpenChange={noop}
+        />
+      );
+
+      expect(screen.getByTestId('fleet-triage-retry-all')).toHaveTextContent(
+        'Retry all failed (2)'
+      );
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-all'));
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-all-confirm'));
+
+      await waitFor(() =>
+        expect(retryFailedFleetFeatures).toHaveBeenCalledWith({ featureIds: ['feat-3', 'feat-4'] })
+      );
+    });
+
+    it('counts a feature once in the footer even when the feed lists it twice', () => {
+      render(
+        <FleetTriageDrawer
+          items={[crashItem(), crashItem({ reason: 'listed again' })]}
+          open
+          onOpenChange={noop}
+        />
+      );
+
+      expect(screen.getByTestId('fleet-triage-retry-all')).toHaveTextContent(
+        'Retry all failed (1)'
+      );
+    });
+
+    it('reports a partial batch as an error, never as done', async () => {
+      retryFailedFleetFeatures.mockResolvedValue({
+        totalAttempted: 2,
+        retriedCount: 1,
+        retried: [],
+        failedCount: 1,
+        failures: [{ featureId: 'feat-4', featureName: 'Parser', reason: 'worktree is dirty' }],
+      });
+
+      render(
+        <FleetTriageDrawer
+          items={[crashItem(), crashItem({ featureId: 'feat-4', featureName: 'Parser' })]}
+          open
+          onOpenChange={noop}
+        />
+      );
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-all'));
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-all-confirm'));
+
+      await waitFor(() =>
+        expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('1 of 2'))
+      );
+    });
+
+    it('names a shared refusal reason once, listing the features it refused', async () => {
+      // Twenty features refused for one reason used to be twenty copies of that
+      // reason in a single toast. Group by reason so the toast stays readable.
+      retryFailedFleetFeatures.mockResolvedValue({
+        totalAttempted: 3,
+        retriedCount: 0,
+        retried: [],
+        failedCount: 3,
+        failures: [
+          { featureId: 'feat-3', featureName: 'Auth Refactor', reason: 'worktree is dirty' },
+          { featureId: 'feat-4', featureName: 'Parser', reason: 'worktree is dirty' },
+          { featureId: 'feat-5', featureName: 'Billing', reason: 'missing specPath' },
+        ],
+      });
+
+      render(
+        <FleetTriageDrawer
+          items={[
+            crashItem(),
+            crashItem({ featureId: 'feat-4', featureName: 'Parser' }),
+            crashItem({ featureId: 'feat-5', featureName: 'Billing' }),
+          ]}
+          open
+          onOpenChange={noop}
+        />
+      );
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-all'));
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-all-confirm'));
+
+      await waitFor(() =>
+        expect(toast.error).toHaveBeenCalledWith(
+          'Retried 0 of 3 — Auth Refactor, Parser: worktree is dirty; Billing: missing specPath'
+        )
+      );
+    });
+
+    it('toasts the pause once when the queue is parked', async () => {
+      const blockedReason =
+        'The fleet admission queue is paused, so no agents were restarted. ' +
+        'Release it with `shep fleet resume`, then retry.';
+      retryFailedFleetFeatures.mockResolvedValue({
+        totalAttempted: 2,
+        retriedCount: 0,
+        retried: [],
+        failedCount: 0,
+        failures: [],
+        blockedReason,
+      });
+
+      render(
+        <FleetTriageDrawer
+          items={[crashItem(), crashItem({ featureId: 'feat-4', featureName: 'Parser' })]}
+          open
+          onOpenChange={noop}
+        />
+      );
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-all'));
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-all-confirm'));
+
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(blockedReason));
+      expect(toast.success).not.toHaveBeenCalled();
+    });
+
+    it('toasts the pause when a single row is retried on a parked queue', async () => {
+      const blockedReason = 'The fleet admission queue is paused.';
+      retryFailedFleetFeatures.mockResolvedValue({
+        totalAttempted: 1,
+        retriedCount: 0,
+        retried: [],
+        failedCount: 0,
+        failures: [],
+        blockedReason,
+      });
+
+      render(<FleetTriageDrawer items={[crashItem()]} open onOpenChange={noop} />);
+      fireEvent.click(screen.getByTestId('fleet-triage-retry-feat-3'));
+
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(blockedReason));
+    });
+
+    it('hides the footer retry when nothing failed', () => {
+      render(<FleetTriageDrawer items={[ciItem()]} open onOpenChange={noop} />);
+
+      expect(screen.queryByTestId('fleet-triage-retry-all')).toBeNull();
+    });
   });
 });

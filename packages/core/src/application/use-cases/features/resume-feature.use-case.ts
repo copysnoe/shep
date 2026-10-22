@@ -188,13 +188,24 @@ export class ResumeFeatureUseCase {
     return { feature: resumedFeature, newRun };
   }
 
-  /** Why a resume claim was refused: another resume won, or the cap is full. */
+  /** Why a resume claim was refused: another resume won, the queue is parked, or the cap is full. */
   private async describeRefusedClaim(feature: Feature, readRunId: string): Promise<string> {
     const fresh = await this.featureRepo.findById(feature.id);
     if (fresh?.agentRunId !== readRunId || fresh?.lifecycle !== feature.lifecycle) {
       return `Feature "${feature.name}" was resumed or changed by another process — nothing to resume`;
     }
-    const { running, limit } = await this.capacity.snapshot();
+    const { running, limit, paused } = await this.capacity.snapshot();
+    // The pause is reported first because the cap message would be actively
+    // misleading: a parked fleet resolves to a limit of 0, which the snapshot
+    // deliberately reports as the CONFIGURED ceiling, so "raise the limit" names
+    // an obstacle that is not the one refusing the claim. `fleet retry` and the
+    // web Resume both surface this string verbatim.
+    if (paused) {
+      return (
+        `Cannot resume "${feature.name}": the fleet admission queue is paused. ` +
+        `Release it with \`shep fleet resume\`, then retry.`
+      );
+    }
     return (
       `Cannot resume "${feature.name}": ${running} of ${limit} parallel features are already ` +
       `running (workflow.maxParallelFeatures). Resume it when one finishes, or raise the limit.`
