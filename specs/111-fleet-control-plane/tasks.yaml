@@ -190,6 +190,7 @@ tasks:
     acceptanceCriteria:
       - "All tokens exported in tokens.ts"
       - "Resolving via string tokens passes without undefined errors"
+      - "`SetFleetQueuePauseUseCase` resolves by the string token `SetFleetQueuePauseUseCase`, so the web resume action can reach it without a value import of core"
     tdd:
       red:
         - "Write container-resolution unit test"
@@ -244,6 +245,9 @@ tasks:
       - "Uses shadcn/ui semantic tokens"
       - "Displays live cruising, queued, attention, and failed badges"
       - "fleet-status-bar.stories.tsx contains light and dark stories"
+      - "Shows a 'queue paused' state with the pause reason whenever `FleetOverview.queuePaused` is set — including when no feature is active, because a paused fleet is exactly when a newly started feature silently queues"
+      - "Offers Resume, which releases the pause through `SetFleetQueuePauseUseCase` via a server action resolved by string token; the button shows an in-flight state, a refusal is toasted, and the bar re-reads the fleet afterwards"
+      - "fleet-status-bar.stories.tsx and fleet-control.stories.tsx cover the paused state, with a Storybook mock for the resume action"
     tdd: null
     estimatedEffort: "2h"
 

@@ -26,10 +26,12 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { FleetStatusBar, type FleetStatusBarState } from './fleet-status-bar';
 import { FleetTriageDrawer } from './fleet-triage-drawer';
 import { getFleetData, type FleetData } from '@/app/actions/fleet-data';
+import { resumeFleetQueue } from '@/app/actions/resume-fleet-queue';
 import { useOptionalAgentEventsContext } from '@/hooks/agent-events-provider';
 
 export interface FleetControlProps {
@@ -46,6 +48,7 @@ export function FleetControl({ initialData, repositoryPath, className }: FleetCo
   const [error, setError] = useState<string | undefined>(undefined);
   const [refreshing, setRefreshing] = useState(false);
   const [open, setOpen] = useState(false);
+  const [resumingQueue, setResumingQueue] = useState(false);
 
   /** A read is in flight; further triggers collapse into one trailing read. */
   const runningRef = useRef(false);
@@ -99,12 +102,35 @@ export function FleetControl({ initialData, repositoryPath, className }: FleetCo
     void load();
   }, [lastEvent, load]);
 
+  // Releasing a pause is the web half of `shep fleet resume`. The bar is cleared
+  // by the re-read, not optimistically: it must show the pause the server
+  // reports, and a refusal leaves the pause exactly where it was.
+  const handleResumeQueue = useCallback(async (): Promise<void> => {
+    setResumingQueue(true);
+    try {
+      const result = await resumeFleetQueue();
+      if (!result.resumed) {
+        toast.error(result.error ?? 'Could not resume the fleet queue');
+        return;
+      }
+      toast.success('Fleet queue resumed — queued features start as slots free up');
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not resume the fleet queue');
+    } finally {
+      setResumingQueue(false);
+    }
+  }, [load]);
+
   return (
     <div className={cn('flex justify-end', className)} data-testid="fleet-control">
       <FleetStatusBar
         counts={data?.overview.counts}
         circuitBreakerTripped={data?.overview.circuitBreakerTripped}
         circuitBreakerReason={data?.overview.circuitBreakerReason}
+        queuePause={data?.overview.queuePaused}
+        onResumeQueue={() => void handleResumeQueue()}
+        resumingQueue={resumingQueue}
         state={state}
         errorMessage={error}
         onOpenTriage={() => setOpen(true)}

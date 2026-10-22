@@ -10,12 +10,18 @@
  * The point of the surface is that an operator running 50 agents does not have to
  * scan 50 canvas nodes to find the 5 that need them. So the bar reports the
  * exception count prominently and stays quiet about everything else.
+ *
+ * The one exception to "quiet": a paused admission queue. A pause — from
+ * `shep fleet pause` or a circuit-breaker trip — stops every new feature from
+ * starting, and on the web it otherwise looks like a capacity limit. So the bar
+ * names it and offers **Resume**, in the empty state too: an empty fleet is
+ * exactly when the next feature the user starts would silently queue.
  */
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import type { FleetStatusCounts } from '@shepai/core/domain/generated/output';
+import type { FleetQueuePause, FleetStatusCounts } from '@shepai/core/domain/generated/output';
 
 /** Visual state of the bar. `loading` and `error` replace the counts. */
 export type FleetStatusBarState = 'loading' | 'ready' | 'error';
@@ -24,6 +30,12 @@ export interface FleetStatusBarProps {
   counts?: FleetStatusCounts;
   circuitBreakerTripped?: boolean;
   circuitBreakerReason?: string;
+  /** The admission-queue pause in force, if any. */
+  queuePause?: FleetQueuePause;
+  /** Releases the pause. Omit to show the pause without the control. */
+  onResumeQueue?: () => void;
+  /** A release is in flight. */
+  resumingQueue?: boolean;
   state?: FleetStatusBarState;
   /** Error detail shown when `state` is `error`. */
   errorMessage?: string;
@@ -70,10 +82,49 @@ function Chip({
   );
 }
 
+function QueuePaused({
+  pause,
+  onResume,
+  resuming = false,
+}: {
+  pause: FleetQueuePause;
+  onResume?: () => void;
+  resuming?: boolean;
+}) {
+  return (
+    <>
+      <Badge
+        variant="outline"
+        className="border-amber-500/60 text-[10px] text-amber-700 dark:text-amber-400"
+        title={`${pause.reason} — new features wait until the queue is resumed`}
+        data-testid="fleet-queue-paused"
+      >
+        queue paused
+      </Badge>
+      {onResume ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-6 px-2 text-xs"
+          onClick={onResume}
+          disabled={resuming}
+          data-testid="fleet-resume-queue"
+        >
+          {resuming ? 'Resuming…' : 'Resume'}
+        </Button>
+      ) : null}
+    </>
+  );
+}
+
 export function FleetStatusBar({
   counts,
   circuitBreakerTripped = false,
   circuitBreakerReason,
+  queuePause,
+  onResumeQueue,
+  resumingQueue = false,
   state = 'ready',
   errorMessage,
   onOpenTriage,
@@ -122,17 +173,22 @@ export function FleetStatusBar({
     );
   }
 
+  const paused = queuePause ? (
+    <QueuePaused pause={queuePause} onResume={onResumeQueue} resuming={resumingQueue} />
+  ) : null;
+
   if (!counts || counts.total === 0) {
     return (
       <div
         className={cn(
-          'bg-background/80 text-muted-foreground inline-flex items-center rounded-full border px-3 py-1.5 text-xs shadow-sm backdrop-blur',
+          'bg-background/80 text-muted-foreground inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs shadow-sm backdrop-blur',
           className
         )}
         data-testid="fleet-status-bar"
         data-state="empty"
       >
         No active features
+        {paused}
       </div>
     );
   }
@@ -168,6 +224,8 @@ export function FleetStatusBar({
           breaker tripped
         </Badge>
       ) : null}
+
+      {paused}
 
       {onOpenTriage ? (
         <Button

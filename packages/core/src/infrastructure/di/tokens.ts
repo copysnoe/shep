@@ -46,6 +46,9 @@ export const IFleetRepositoryToken = 'IFleetRepository' as const;
 /** Resolves to `GetFleetOverviewUseCase`. */
 export const GetFleetOverviewUseCaseToken = 'GetFleetOverviewUseCase' as const;
 
+/** Resolves to `SetFleetQueuePauseUseCase` — the web Resume action reaches it by this string. */
+export const SetFleetQueuePauseUseCaseToken = 'SetFleetQueuePauseUseCase' as const;
+
 /** Resolves to `EvaluateGateGuardrailsUseCase`. */
 export const EvaluateGateGuardrailsUseCaseToken = 'EvaluateGateGuardrailsUseCase' as const;
 

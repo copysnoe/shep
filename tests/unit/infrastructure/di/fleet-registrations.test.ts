@@ -126,11 +126,32 @@ describe('Fleet Control Plane DI registrations', () => {
     expect(classTokens).toContain(SetFleetQueuePauseUseCase);
   });
 
+  it('resolves the queue-pause use case by its string token, as the web resume action does', async () => {
+    // The dashboard's Resume button reaches this use case through a server
+    // action, and server actions resolve by STRING: a value import of core breaks
+    // the Next build (Turbopack cannot follow core's `.js`-suffixed imports). A
+    // class-only registration compiles fine and throws at runtime, on click.
+    const { initializeContainer } = await import(
+      '../../../../packages/core/src/infrastructure/di/container.js'
+    );
+    const { SetFleetQueuePauseUseCase } = await import(
+      '../../../../packages/core/src/application/use-cases/fleet/set-fleet-queue-pause.use-case.js'
+    );
+
+    const container = await initializeContainer();
+
+    expect(container.isRegistered('SetFleetQueuePauseUseCase')).toBe(true);
+    expect(container.resolve('SetFleetQueuePauseUseCase')).toBeInstanceOf(
+      SetFleetQueuePauseUseCase
+    );
+  });
+
   it('exposes stable string tokens matching the use-case names', async () => {
     const tokens = await import('../../../../packages/core/src/infrastructure/di/tokens.js');
 
     expect(tokens.IFleetRepositoryToken).toBe('IFleetRepository');
     expect(tokens.GetFleetOverviewUseCaseToken).toBe('GetFleetOverviewUseCase');
+    expect(tokens.SetFleetQueuePauseUseCaseToken).toBe('SetFleetQueuePauseUseCase');
     expect(tokens.ListFleetTriageItemsUseCaseToken).toBe('ListFleetTriageItemsUseCase');
     expect(tokens.BatchApproveFeaturesUseCaseToken).toBe('BatchApproveFeaturesUseCase');
     expect(tokens.RetryFailedFleetFeaturesUseCaseToken).toBe('RetryFailedFleetFeaturesUseCase');
