@@ -160,6 +160,10 @@
       "failed": "com falha",
       "done": "concluídas"
     },
+    "fleet": {
+      "queuePaused": "fila em pausa {{duration}}",
+      "breakerTripped": "disjuntor disparado"
+    },
     "strip": {
       "label": "PRECISA DE VOCÊ",
       "empty": "Nada precisa de você agora",
@@ -229,6 +233,7 @@
       "reject": "rejeitar",
       "stop": "parar",
       "resume": "retomar",
+      "releaseQueue": "liberar a fila",
       "help": "ajuda",
       "quit": "sair"
     },
@@ -239,11 +244,16 @@
     "stop": {
       "confirm": "Parar {{name}}? A execução poderá ser retomada. (y/n)"
     },
+    "release": {
+      "confirm": "Liberar a fila em pausa? Novos features podem começar. (y/n)",
+      "done": "Fila liberada — os features em espera podem começar"
+    },
     "progress": {
       "approve": "Aprovando {{name}}…",
       "reject": "Rejeitando {{name}}…",
       "stop": "Parando {{name}}…",
-      "resume": "Retomando {{name}}…"
+      "resume": "Retomando {{name}}…",
+      "releaseQueue": "Liberando a fila em pausa…"
     },
     "refreshFailed": "Falha ao atualizar: {{message}}",
     "empty": {
@@ -260,6 +270,7 @@
       "reject": "r   rejeitar a etapa com feedback",
       "stop": "s   parar a execução (pergunta antes)",
       "resume": "R   retomar uma execução interrompida ou com falha",
+      "releaseQueue": "u   liberar a fila em pausa (pede confirmação)",
       "help": "?   esta ajuda (esc fecha)",
       "quit": "q / ctrl+c   sair"
     },

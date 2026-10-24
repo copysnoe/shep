@@ -104,6 +104,11 @@ in a strip at the top and sorted first.
 | `--repo <path>` | Only show features of this repository  | —       |
 | `--all`         | Include archived features              | —       |
 
+A parked admission queue — from `shep fleet pause` or a circuit-breaker trip — shows as a banner
+line above the strip, with its age and reason (spec 143). `u` releases it through the same
+`SetFleetQueuePauseUseCase` as `shep fleet resume` and the web dashboard's Resume button. The
+console never parks the queue itself.
+
 **Keys**:
 
 | Key               | Action                                             |
@@ -116,6 +121,7 @@ in a strip at the top and sorted first.
 | `r`               | Reject the gate; type feedback, `enter` sends      |
 | `s`               | Stop the run, after `y` to confirm (stays resumable) |
 | `R`               | Resume an interrupted or failed run                |
+| `u`               | Release a paused fleet queue, after `y` to confirm (only offered while paused) |
 | `?`               | Help                                               |
 | `q` / `ctrl+c`    | Quit and restore the terminal                      |
 

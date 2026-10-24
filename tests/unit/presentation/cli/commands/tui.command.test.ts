@@ -24,6 +24,7 @@ describe('createTuiCommand', () => {
     snapshot: { execute: ReturnType<typeof vi.fn> };
     action: { execute: ReturnType<typeof vi.fn> };
     logTail: { execute: ReturnType<typeof vi.fn> };
+    queuePause: { execute: ReturnType<typeof vi.fn> };
   };
   let runConsole: ReturnType<typeof vi.fn<(deps: FeatureConsoleAppDeps) => Promise<void>>>;
 
@@ -39,6 +40,7 @@ describe('createTuiCommand', () => {
       snapshot: { execute: vi.fn(async () => ({ rows: [] })) },
       action: { execute: vi.fn(async () => ({ ok: true, message: 'done' })) },
       logTail: { execute: vi.fn(async () => ({ lines: [] })) },
+      queuePause: { execute: vi.fn(async () => null) },
     };
     runConsole = vi.fn(async () => undefined);
   });
@@ -92,5 +94,24 @@ describe('createTuiCommand', () => {
       repositoryPath: resolve('some/repo').replace(/\\/g, '/'),
       includeArchived: true,
     });
+  });
+
+  it('releases the paused queue through SetFleetQueuePauseUseCase', async () => {
+    await command(true).parseAsync(['node', 'shep']);
+
+    const result = await runConsole.mock.calls[0][0].releaseQueue();
+
+    expect(useCases.queuePause.execute).toHaveBeenCalledWith({ paused: false });
+    expect(result.ok).toBe(true);
+    expect(result.message).toContain('Queue released');
+  });
+
+  it('reports a failed release instead of throwing at the console', async () => {
+    useCases.queuePause.execute.mockRejectedValue(new Error('Settings not found'));
+
+    await command(true).parseAsync(['node', 'shep']);
+    const result = await runConsole.mock.calls[0][0].releaseQueue();
+
+    expect(result).toEqual({ ok: false, message: 'Settings not found' });
   });
 });

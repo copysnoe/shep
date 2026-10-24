@@ -9,6 +9,7 @@ import { wrapTextWithAnsi } from '@mariozechner/pi-tui';
 import { FeatureConsoleAction, FeatureState } from '@/domain/generated/output.js';
 import { getAgentDescriptor } from '@/domain/shared/agent-catalog.js';
 import type {
+  FeatureConsoleFleet,
   FeatureConsoleRow,
   FeatureConsoleSnapshot,
   FeatureLogTail,
@@ -51,6 +52,42 @@ export function renderHeader(snapshot: FeatureConsoleSnapshot | undefined, t: TF
     `${s.done} ${t(`${NS}.summary.done`)}`,
   ];
   return `${title}  ${parts.join(paint.muted(SEPARATOR))}`;
+}
+
+/**
+ * One line about the fleet itself: a parked queue first, then a bare trip.
+ *
+ * Returns undefined when there is nothing to say, so the caller decides whether
+ * the line exists — and takes it out of the body height when it does. `now` is
+ * the snapshot's clock, not a fresh read: the age shown must match the counts
+ * shown beside it.
+ */
+export function renderBanner(
+  fleet: FeatureConsoleFleet | undefined,
+  now: Date,
+  t: TFunction
+): string | undefined {
+  if (!fleet) return undefined;
+
+  if (fleet.queuePause) {
+    const elapsed = Math.max(0, now.getTime() - fleet.queuePause.pausedAt.getTime());
+    const label = t(`${NS}.fleet.queuePaused`, { duration: formatDuration(elapsed) });
+    return `${paint.attention(` ⏸ ${label}`)} — ${paint.muted(oneLine(fleet.queuePause.reason))}`;
+  }
+
+  if (fleet.circuitBreakerTripped) {
+    const label = paint.error(` ⚡ ${t(`${NS}.fleet.breakerTripped`)}`);
+    return fleet.circuitBreakerReason
+      ? `${label} — ${paint.muted(oneLine(fleet.circuitBreakerReason))}`
+      : label;
+  }
+
+  return undefined;
+}
+
+/** Outside text (a reason) on one line: no wrapping, no control characters. */
+function oneLine(text: string): string {
+  return sanitizeText(text).replace(/\s+/g, ' ').trim();
 }
 
 export function renderStrip(rows: readonly FeatureConsoleRow[], t: TFunction): string {
@@ -249,6 +286,7 @@ const HELP_KEYS = [
   'reject',
   'stop',
   'resume',
+  'releaseQueue',
   'help',
   'quit',
 ] as const;
@@ -278,14 +316,23 @@ const ACTION_KEY: Record<FeatureConsoleAction, string> = {
   [FeatureConsoleAction.Resume]: 'R',
 };
 
-/** Navigation and pane keys, then only the actions the selected row offers. */
-export function renderKeyBar(row: FeatureConsoleRow | undefined, t: TFunction): string {
+/**
+ * Navigation and pane keys, then only the actions the selected row offers.
+ * `releaseQueue` adds the fleet-level key, which only exists while a pause is
+ * in force — the same rule the row actions follow.
+ */
+export function renderKeyBar(
+  row: FeatureConsoleRow | undefined,
+  t: TFunction,
+  releaseQueue = false
+): string {
   const item = (key: string, label: string) => `${paint.key(key)} ${paint.muted(label)}`;
   const items = [
     item('↑↓', t(`${NS}.keys.select`)),
     item('enter', t(`${NS}.keys.details`)),
     item('l', t(`${NS}.keys.log`)),
     ...(row?.actions ?? []).map((a) => item(ACTION_KEY[a], t(`${NS}.keys.${a}`))),
+    ...(releaseQueue ? [item('u', t(`${NS}.keys.releaseQueue`))] : []),
     item('?', t(`${NS}.keys.help`)),
     item('q', t(`${NS}.keys.quit`)),
   ];

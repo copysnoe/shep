@@ -12,6 +12,8 @@ The TUI layer has two kinds of surface:
 2. **The feature console** (`shep tui`, spec 142) — a full-screen, live view of every feature built
    on [`@mariozechner/pi-tui`](https://github.com/badlogic/pi-mono/tree/main/packages/tui): a
    needs-you strip, a roster, a details or log pane, and keys to approve, reject, stop and resume.
+   A parked fleet queue or a tripped circuit breaker shows as one banner line above the strip,
+   and `u` releases the pause (spec 143).
 
 Both are entered from a CLI command and reach the core only through use cases.
 

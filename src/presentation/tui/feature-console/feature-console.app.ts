@@ -33,6 +33,8 @@ export interface FeatureConsoleAppDeps {
     feedback?: string
   ) => Promise<FeatureConsoleActionResult>;
   loadLogTail: (featureId: string, maxLines: number) => Promise<FeatureLogTail>;
+  /** Release the paused admission queue, as `shep fleet resume` does. */
+  releaseQueue: () => Promise<FeatureConsoleActionResult>;
   refreshIntervalMs?: number;
 }
 
@@ -50,6 +52,7 @@ export function runFeatureConsole(deps: FeatureConsoleAppDeps): Promise<void> {
         logFeatureId = row?.featureId;
         if (row) void refreshLog();
       },
+      releaseQueue: () => void releaseQueue(),
       quit: () => finish(),
       requestRender: () => tui.requestRender(),
     };
@@ -96,6 +99,26 @@ export function runFeatureConsole(deps: FeatureConsoleAppDeps): Promise<void> {
       render();
       try {
         view.setStatus(await deps.runAction(row.featureId, action, feedback));
+      } catch (error) {
+        view.setStatus({ ok: false, message: messageOf(error) });
+      } finally {
+        view.setBusy(undefined);
+      }
+      await refresh();
+    }
+
+    /**
+     * Release the pause and re-read.
+     *
+     * Never clear the banner here: the store is the source of truth, so a
+     * refused release leaves the pause visible, exactly as the web status bar
+     * keeps its badge until the re-read says otherwise.
+     */
+    async function releaseQueue(): Promise<void> {
+      view.setBusy(deps.t('tui:console.progress.releaseQueue'));
+      render();
+      try {
+        view.setStatus(await deps.releaseQueue());
       } catch (error) {
         view.setStatus({ ok: false, message: messageOf(error) });
       } finally {

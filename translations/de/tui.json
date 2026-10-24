@@ -160,6 +160,10 @@
       "failed": "fehlgeschlagen",
       "done": "fertig"
     },
+    "fleet": {
+      "queuePaused": "Warteschlange pausiert {{duration}}",
+      "breakerTripped": "Circuit Breaker ausgelöst"
+    },
     "strip": {
       "label": "BRAUCHT DICH",
       "empty": "Gerade braucht dich nichts",
@@ -229,6 +233,7 @@
       "reject": "ablehnen",
       "stop": "stoppen",
       "resume": "fortsetzen",
+      "releaseQueue": "Warteschlange freigeben",
       "help": "Hilfe",
       "quit": "beenden"
     },
@@ -239,11 +244,16 @@
     "stop": {
       "confirm": "{{name}} stoppen? Der Lauf bleibt fortsetzbar. (y/n)"
     },
+    "release": {
+      "confirm": "Pausierte Warteschlange freigeben? Neue Features können starten. (y/n)",
+      "done": "Warteschlange freigegeben — wartende Features können starten"
+    },
     "progress": {
       "approve": "{{name}} wird freigegeben…",
       "reject": "{{name}} wird abgelehnt…",
       "stop": "{{name}} wird gestoppt…",
-      "resume": "{{name}} wird fortgesetzt…"
+      "resume": "{{name}} wird fortgesetzt…",
+      "releaseQueue": "Pausierte Warteschlange wird freigegeben…"
     },
     "refreshFailed": "Aktualisierung fehlgeschlagen: {{message}}",
     "empty": {
@@ -260,6 +270,7 @@
       "reject": "r   Gate mit Feedback ablehnen",
       "stop": "s   Lauf stoppen (fragt vorher)",
       "resume": "R   unterbrochenen oder fehlgeschlagenen Lauf fortsetzen",
+      "releaseQueue": "u   die pausierte Warteschlange freigeben (fragt nach)",
       "help": "?   diese Hilfe (Esc schließt)",
       "quit": "q / Strg+C   beenden"
     },

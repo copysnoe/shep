@@ -1,0 +1,34 @@
+Local verification, 2026-10-24, branch `feat/143-tui-fleet-awareness` off `upstream/main` (2e36ef85).
+
+lint exit=0
+format exit=0
+typecheck exit=0
+spec-validate exit=0 (specs/143-tui-fleet-awareness)
+check-stories exit=0 (389/450, unchanged)
+unit+integration: 18280 passed | 3 skipped | 2 failed
+e2e tui: NOT RUN (see below)
+tsp / generate: not run — no TypeSpec change
+
+The two unit failures are `tests/unit/infrastructure/services/terminal/pty-terminal-session.service.test.ts`
+(`posix_spawnp failed` from node-pty). They fail identically on a pristine `upstream/main` checkout of
+this clone — the repository's own error text names the cause ("node-pty's spawn-helper binary is
+probably not executable"). node-pty is installed here from prebuilds with `spawn-helper` present and
+executable at `prebuilds/darwin-arm64/spawn-helper`; the binary runs from a shell, and node-pty still
+cannot spawn. On this machine the same failure reproduces at `PtyScreen.spawn` for the **pre-existing**
+`tests/e2e/tui/feature-console.test.ts` cases, which is why the e2e suite could not be run and why the
+evidence frames are view renders rather than xterm screenshots (see evidence/README.md).
+
+Everything else in the affected area was run: 382 tests across
+`tests/unit/application/use-cases/feature-console`, `tests/unit/presentation/tui`,
+`tests/unit/presentation/cli/commands/tui.command.test.ts` and `tests/unit/translations` all pass.
+
+Note for anyone re-running on this machine: the TUI view tests assert ANSI highlight spans and need
+colour. This shell exports `NO_COLOR=1`, which picocolors honours over the test's `FORCE_COLOR`, so run
+them with `env -u NO_COLOR`.
+
+Real CLI, isolated `SHEP_HOME` (`.tmp-cli/home`), one feature created with the mock executor and parked
+at its merge gate:
+
+- `fleet pause --reason "..."` — `✓ Fleet admission queue paused.`
+- console frames in `screens/`: banner with age and reason, `u` confirm prompt, released + banner gone
+  on the re-read, and `u release queue` no longer offered afterwards.

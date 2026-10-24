@@ -23,6 +23,7 @@ import {
   SdlcLifecycle,
 } from '@/domain/generated/output.js';
 import type {
+  FeatureConsoleFleet,
   FeatureConsoleRow,
   FeatureConsoleSnapshot,
 } from '@/application/use-cases/feature-console/feature-console.types.js';
@@ -53,8 +54,25 @@ function gate(name: string): FeatureConsoleRow {
   };
 }
 
-const snapshotOf = (...rows: FeatureConsoleRow[]): FeatureConsoleSnapshot => ({
+const unpaused: FeatureConsoleFleet = { circuitBreakerTripped: false };
+
+const paused: FeatureConsoleFleet = {
+  queuePause: {
+    pausedAt: new Date(Date.now() - 90 * 60_000),
+    reason: 'Consecutive failure threshold reached (4/4)',
+  },
+  circuitBreakerTripped: true,
+};
+
+const snapshotOf = (...rows: FeatureConsoleRow[]): FeatureConsoleSnapshot =>
+  snapshotWithFleet(unpaused, ...rows);
+
+const snapshotWithFleet = (
+  fleet: FeatureConsoleFleet,
+  ...rows: FeatureConsoleRow[]
+): FeatureConsoleSnapshot => ({
   generatedAt: new Date(),
+  fleet,
   rows,
   summary: {
     total: rows.length,
@@ -75,6 +93,7 @@ describe('runFeatureConsole', () => {
   let loadSnapshot: ReturnType<typeof vi.fn<FeatureConsoleAppDeps['loadSnapshot']>>;
   let runAction: ReturnType<typeof vi.fn<FeatureConsoleAppDeps['runAction']>>;
   let loadLogTail: ReturnType<typeof vi.fn<FeatureConsoleAppDeps['loadLogTail']>>;
+  let releaseQueue: ReturnType<typeof vi.fn<FeatureConsoleAppDeps['releaseQueue']>>;
   let done: Promise<void> | undefined;
 
   beforeAll(async () => {
@@ -94,6 +113,10 @@ describe('runFeatureConsole', () => {
       logPath: '/logs/worker-run-1.log',
       lines: ['[text] hello'],
     }));
+    releaseQueue = vi.fn<FeatureConsoleAppDeps['releaseQueue']>(async () => ({
+      ok: true,
+      message: 'Queue released — queued features can start',
+    }));
   });
 
   afterEach(async () => {
@@ -111,6 +134,7 @@ describe('runFeatureConsole', () => {
       loadSnapshot,
       runAction,
       loadLogTail,
+      releaseQueue,
       refreshIntervalMs: REFRESH_MS,
     });
     return done;
@@ -186,5 +210,51 @@ describe('runFeatureConsole', () => {
     const reads = loadSnapshot.mock.calls.length;
     await new Promise((r) => setTimeout(r, REFRESH_MS * 3));
     expect(loadSnapshot.mock.calls.length).toBe(reads);
+  });
+
+  it('releases a paused queue after the confirmation, and the banner clears', async () => {
+    let released = false;
+    loadSnapshot.mockImplementation(async () =>
+      released
+        ? snapshotWithFleet(unpaused, gate('Billing UI'))
+        : snapshotWithFleet(paused, gate('Billing UI'))
+    );
+    releaseQueue.mockImplementation(async () => {
+      released = true;
+      return { ok: true, message: 'Queue released — queued features can start' };
+    });
+
+    void start();
+    await vi.waitFor(() => expect(screenText()).toContain('queue paused'));
+
+    terminal.type('u');
+    await vi.waitFor(() => expect(screenText()).toContain('Release the paused queue?'));
+    expect(releaseQueue).not.toHaveBeenCalled();
+
+    const readsBefore = loadSnapshot.mock.calls.length;
+    const writtenBefore = terminal.output.length;
+    terminal.type('y');
+    await vi.waitFor(() =>
+      expect(screenText()).toContain('Queue released — queued features can start')
+    );
+    expect(releaseQueue).toHaveBeenCalledTimes(1);
+    // The re-read is what clears it: no frame written after the release still
+    // carries the banner.
+    await vi.waitFor(() => expect(loadSnapshot.mock.calls.length).toBeGreaterThan(readsBefore));
+    expect(plain(terminal.output.slice(writtenBefore))).not.toContain('queue paused');
+  });
+
+  it('shows a refused release and leaves the pause on screen', async () => {
+    loadSnapshot.mockImplementation(async () => snapshotWithFleet(paused, gate('Billing UI')));
+    releaseQueue.mockResolvedValue({ ok: false, message: 'settings unavailable' });
+
+    void start();
+    await vi.waitFor(() => expect(screenText()).toContain('queue paused'));
+
+    terminal.type('u');
+    terminal.type('y');
+
+    await vi.waitFor(() => expect(screenText()).toContain('settings unavailable'));
+    expect(screenText()).toContain('queue paused');
   });
 });

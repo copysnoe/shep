@@ -20,6 +20,7 @@ import type {
 import { ConsoleKey, resolveConsoleKey } from './console-keys.js';
 import { fit, paint, sanitizeText } from './console-format.js';
 import {
+  renderBanner,
   renderDetails,
   renderEmpty,
   renderHeader,
@@ -37,6 +38,8 @@ export interface FeatureConsoleIntents {
   runAction(row: FeatureConsoleRow, action: FeatureConsoleAction, feedback?: string): void;
   /** Load (and keep refreshing) the log of this feature; undefined stops it. */
   showLog(row: FeatureConsoleRow | undefined): void;
+  /** Release the paused admission queue; only offered while a pause is in force. */
+  releaseQueue(): void;
   quit(): void;
   requestRender(): void;
 }
@@ -53,6 +56,7 @@ enum Mode {
   Help = 'help',
   Reject = 'reject',
   ConfirmStop = 'confirm-stop',
+  ConfirmReleaseQueue = 'confirm-release-queue',
 }
 
 enum Pane {
@@ -61,8 +65,9 @@ enum Pane {
 }
 
 const NS = 'tui:console';
-/** Header, strip, status line, key bar. */
+/** Header, strip, status line, key bar — plus the banner, when there is one. */
 const CHROME_LINES = 4;
+const BANNER_LINES = 1;
 /** At or above this width the pane sits beside the roster instead of below it. */
 const SPLIT_MIN_WIDTH = 110;
 const SPLIT_ROSTER_SHARE = 0.6;
@@ -151,6 +156,12 @@ export class FeatureConsoleView implements Component {
       this.mode = Mode.Browse;
       return;
     }
+    if (this.mode === Mode.ConfirmReleaseQueue) {
+      if (key === ConsoleKey.Confirm) this.deps.intents.releaseQueue();
+      if (key === ConsoleKey.Quit) this.deps.intents.quit();
+      this.mode = Mode.Browse;
+      return;
+    }
     if (this.mode === Mode.Help) {
       if (key === ConsoleKey.Quit) this.deps.intents.quit();
       this.mode = Mode.Browse;
@@ -195,6 +206,12 @@ export class FeatureConsoleView implements Component {
       case ConsoleKey.Stop:
         if (this.offers(FeatureConsoleAction.Stop)) this.openPrompt(Mode.ConfirmStop);
         return;
+      case ConsoleKey.ReleaseQueue:
+        // Only offered while a pause is in force: there is no fleet-level
+        // "pause" here, and an unpause with nothing to unpause is a no-op the
+        // user should not be able to trigger by accident.
+        if (this.queuePaused) this.openPrompt(Mode.ConfirmReleaseQueue);
+        return;
       default: {
         const action = DIRECT_ACTIONS[key];
         if (action) this.act(action);
@@ -220,6 +237,21 @@ export class FeatureConsoleView implements Component {
     }
   }
 
+  private get queuePaused(): boolean {
+    return this.snapshot?.fleet.queuePause !== undefined;
+  }
+
+  /** The fleet line, when there is one to show; its height comes out of the body. */
+  private bannerLine(): string | undefined {
+    const snapshot = this.snapshot;
+    if (!snapshot) return undefined;
+    return renderBanner(snapshot.fleet, snapshot.generatedAt, this.deps.t);
+  }
+
+  private get chromeLines(): number {
+    return CHROME_LINES + (this.bannerLine() ? BANNER_LINES : 0);
+  }
+
   private offers(action: FeatureConsoleAction): boolean {
     return !this.busy && (this.selectedRow?.actions.includes(action) ?? false);
   }
@@ -231,7 +263,7 @@ export class FeatureConsoleView implements Component {
     this.deps.intents.runAction(row, action, feedback);
   }
 
-  private openPrompt(mode: Mode.Reject | Mode.ConfirmStop): void {
+  private openPrompt(mode: Mode.Reject | Mode.ConfirmStop | Mode.ConfirmReleaseQueue): void {
     this.mode = mode;
     if (mode === Mode.Reject) {
       this.feedback.setValue('');
@@ -261,7 +293,8 @@ export class FeatureConsoleView implements Component {
   render(width: number): string[] {
     const height = this.deps.rows();
     const { t } = this.deps;
-    const bodyHeight = Math.max(0, height - CHROME_LINES);
+    const banner = this.bannerLine();
+    const bodyHeight = Math.max(0, height - this.chromeLines);
     const body =
       this.mode === Mode.Help
         ? renderHelp(t)
@@ -271,12 +304,13 @@ export class FeatureConsoleView implements Component {
 
     const lines = [
       renderHeader(this.snapshot, t),
+      ...(banner ? [banner] : []),
       renderStrip(this.rows, t),
       ...padTo(body, bodyHeight),
       this.renderStatusLine(width),
       this.mode === Mode.Reject
         ? paint.muted(` ${t(`${NS}.reject.hint`)}`)
-        : renderKeyBar(this.selectedRow, t),
+        : renderKeyBar(this.selectedRow, t, this.queuePaused),
     ];
     return padTo(lines, height).map((line) => fit(line, width));
   }
@@ -334,7 +368,7 @@ export class FeatureConsoleView implements Component {
 
   /** Lines this roster can show at the current height, for paging. */
   private rosterCapacity(): number {
-    return Math.max(1, this.deps.rows() - CHROME_LINES - 1);
+    return Math.max(1, this.deps.rows() - this.chromeLines - 1);
   }
 
   private renderStatusLine(width: number): string {
@@ -347,6 +381,9 @@ export class FeatureConsoleView implements Component {
     }
     if (this.mode === Mode.ConfirmStop) {
       return paint.attention(` ${t(`${NS}.stop.confirm`, { name })}`);
+    }
+    if (this.mode === Mode.ConfirmReleaseQueue) {
+      return paint.attention(` ${t(`${NS}.release.confirm`)}`);
     }
     if (this.busy) return paint.muted(` ${this.busy}`);
     if (this.refreshError) {

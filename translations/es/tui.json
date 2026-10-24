@@ -160,6 +160,10 @@
       "failed": "fallidas",
       "done": "listas"
     },
+    "fleet": {
+      "queuePaused": "cola en pausa {{duration}}",
+      "breakerTripped": "circuit breaker disparado"
+    },
     "strip": {
       "label": "TE NECESITAN",
       "empty": "Ahora mismo nada te necesita",
@@ -229,6 +233,7 @@
       "reject": "rechazar",
       "stop": "detener",
       "resume": "reanudar",
+      "releaseQueue": "liberar la cola",
       "help": "ayuda",
       "quit": "salir"
     },
@@ -239,11 +244,16 @@
     "stop": {
       "confirm": "¿Detener {{name}}? La ejecución se podrá reanudar. (y/n)"
     },
+    "release": {
+      "confirm": "¿Liberar la cola en pausa? Los nuevos features podrán empezar. (y/n)",
+      "done": "Cola liberada — los features en espera pueden empezar"
+    },
     "progress": {
       "approve": "Aprobando {{name}}…",
       "reject": "Rechazando {{name}}…",
       "stop": "Deteniendo {{name}}…",
-      "resume": "Reanudando {{name}}…"
+      "resume": "Reanudando {{name}}…",
+      "releaseQueue": "Liberando la cola en pausa…"
     },
     "refreshFailed": "Error al actualizar: {{message}}",
     "empty": {
@@ -260,6 +270,7 @@
       "reject": "r   rechazar la puerta con comentarios",
       "stop": "s   detener la ejecución (pregunta antes)",
       "resume": "R   reanudar una ejecución interrumpida o fallida",
+      "releaseQueue": "u   liberar la cola en pausa (pregunta antes)",
       "help": "?   esta ayuda (esc la cierra)",
       "quit": "q / ctrl+c   salir"
     },
