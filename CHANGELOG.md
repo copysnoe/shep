@@ -4,6 +4,45 @@
   </a>
 </p>
 
+# 🚀 Shep [v1.249.0](/compare/v1.248.0...v1.249.0) · _2026-10-24_
+
+> Your organization does not have access to Claude. Please login again or contact your administrator.
+
+
+
+### ✨ Features
+
+* **tui:** open features in tmux, zellij, wezterm or kitty panes ([#943](https://github.com/shep-ai/shep/issues/943)) ([bb67822](https://github.com/shep-ai/shep/commit/bb678222a373734c33766ab0b5145e9616128f0e)), closes [#941](https://github.com/shep-ai/shep/issues/941)
+
+  ![shell and log panes](https://raw.githubusercontent.com/shep-ai/shep/v1.249.0/specs/143-tui-multiplexer-panes/evidence/03-shell-pane.png)
+  ![filter](https://raw.githubusercontent.com/shep-ai/shep/v1.249.0/specs/143-tui-multiplexer-panes/evidence/04-filter.png)
+  ![inline shell](https://raw.githubusercontent.com/shep-ai/shep/v1.249.0/specs/143-tui-multiplexer-panes/evidence/06-inline-shell.png)
+  ![Console](https://raw.githubusercontent.com/shep-ai/shep/v1.249.0/specs/142-tui-feature-console/evidence/01-console.png)
+
+## 📦 Install or update
+
+```bash
+# upgrade an existing install
+npm i -g @shepai/cli@1.249.0
+
+# or run instantly without installing
+npx @shepai/cli@latest
+```
+
+## 💬 Join the community
+
+[💬 **Discord**](https://discord.gg/ES6tdVFfur) · [📖 **Docs**](https://github.com/shep-ai/shep#readme) · [⭐ **Star on GitHub**](https://github.com/shep-ai/shep) · [🐛 **Report an issue**](https://github.com/shep-ai/shep/issues)
+
+---
+
+<sub>🤖 Released autonomously by Shep — built by parallel AI agents working in isolated git worktrees. Try it: `npx @shepai/cli`</sub>
+
+<p align="center">
+  <a href="https://github.com/shep-ai/shep">
+    <img src="https://raw.githubusercontent.com/shep-ai/shep/main/docs/screenshots/shep-card.jpg" alt="Shep — run multiple AI agents in parallel" width="720" />
+  </a>
+</p>
+
 # 🚀 Shep [v1.248.0](/compare/v1.247.0...v1.248.0) · _2026-10-24_
 
 > Your organization does not have access to Claude. Please login again or contact your administrator.
