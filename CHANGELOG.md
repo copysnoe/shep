@@ -4,6 +4,47 @@
   </a>
 </p>
 
+# 🚀 Shep [v1.250.0](/compare/v1.249.0...v1.250.0) · _2026-10-25_
+
+> Your organization does not have access to Claude. Please login again or contact your administrator.
+
+
+
+### ✨ Features
+
+* **cli:** add --low-risk to shep fleet approve ([#942](https://github.com/shep-ai/shep/issues/942)) ([25fc077](https://github.com/shep-ai/shep/commit/25fc07712869a41c797228725cfbd5f7b4308a5b)), closes [#910](https://github.com/shep-ai/shep/issues/910) [#920](https://github.com/shep-ai/shep/issues/920)
+
+* **tui:** shep ps, command palette, control center, tmux status and attach-to-chat ([#944](https://github.com/shep-ai/shep/issues/944)) ([262abb7](https://github.com/shep-ai/shep/commit/262abb771dfab0deaf291b4287cbd6b61fe573ee)), closes [#943](https://github.com/shep-ai/shep/issues/943)
+
+  ![control center](https://raw.githubusercontent.com/shep-ai/shep/v1.250.0/specs/146-tui-control-center/evidence/04-window-renamed.png)
+  ![chat question](https://raw.githubusercontent.com/shep-ai/shep/v1.250.0/specs/147-tui-feature-chat/evidence/06-chat-question.png)
+  ![palette](https://raw.githubusercontent.com/shep-ai/shep/v1.250.0/specs/145-tui-command-palette/evidence/02-palette.png)
+  ![shep ps](https://raw.githubusercontent.com/shep-ai/shep/v1.250.0/specs/144-shep-ps/evidence/ps-live.png)
+
+## 📦 Install or update
+
+```bash
+# upgrade an existing install
+npm i -g @shepai/cli@1.250.0
+
+# or run instantly without installing
+npx @shepai/cli@latest
+```
+
+## 💬 Join the community
+
+[💬 **Discord**](https://discord.gg/ES6tdVFfur) · [📖 **Docs**](https://github.com/shep-ai/shep#readme) · [⭐ **Star on GitHub**](https://github.com/shep-ai/shep) · [🐛 **Report an issue**](https://github.com/shep-ai/shep/issues)
+
+---
+
+<sub>🤖 Released autonomously by Shep — built by parallel AI agents working in isolated git worktrees. Try it: `npx @shepai/cli`</sub>
+
+<p align="center">
+  <a href="https://github.com/shep-ai/shep">
+    <img src="https://raw.githubusercontent.com/shep-ai/shep/main/docs/screenshots/shep-card.jpg" alt="Shep — run multiple AI agents in parallel" width="720" />
+  </a>
+</p>
+
 # 🚀 Shep [v1.249.0](/compare/v1.248.0...v1.249.0) · _2026-10-24_
 
 > Your organization does not have access to Claude. Please login again or contact your administrator.
