@@ -1,5 +1,5 @@
 /**
- * Feature console app (specs 142, 143).
+ * Feature console app (specs 142, 143, 145, 146, 147).
  *
  * Wires the view to the core: polls the snapshot, runs actions, keeps the log
  * pane fresh, opens terminal panes (stepping aside for an inline command when
@@ -24,6 +24,9 @@ import type {
   FeatureLogTail,
 } from '@/application/use-cases/feature-console/feature-console.types.js';
 import { FeatureConsoleView, type FeatureConsoleIntents } from './feature-console-view.js';
+import { clipboardSequence } from './terminal-clipboard.js';
+import { ControlCenter, type ControlCenterDeps } from './control-center.js';
+import { ConsoleChat, type ConsoleChatDeps } from './console-chat.js';
 
 /** How often the console re-reads every feature. */
 export const DEFAULT_REFRESH_INTERVAL_MS = 2000;
@@ -31,7 +34,7 @@ export const DEFAULT_REFRESH_INTERVAL_MS = 2000;
 const LOG_TAIL_LINES = 200;
 const TERMINATION_SIGNALS = ['SIGTERM', 'SIGHUP'] as const;
 
-export interface FeatureConsoleAppDeps {
+export interface FeatureConsoleAppDeps extends ConsoleChatDeps {
   t: TFunction;
   terminal: Terminal;
   loadSnapshot: () => Promise<FeatureConsoleSnapshot>;
@@ -50,6 +53,8 @@ export interface FeatureConsoleAppDeps {
   runInline: (plan: InlineCommand) => Promise<void>;
   /** Alert the user (bell, terminal notification); undefined turns alerts off. */
   notify?: (message: string) => void;
+  openControlCenter: ControlCenterDeps['openControlCenter'];
+  updateMultiplexer: ControlCenterDeps['updateMultiplexer'];
   refreshIntervalMs?: number;
 }
 
@@ -72,6 +77,8 @@ export function runFeatureConsole(deps: FeatureConsoleAppDeps): Promise<void> {
     /** Features needing the user at the last snapshot; undefined before the first. */
     let needingUser: Set<string> | undefined;
     let title: string | undefined;
+    let latest: FeatureConsoleSnapshot | undefined;
+    const controlCenter = new ControlCenter(deps);
 
     const intents: FeatureConsoleIntents = {
       runAction: (row, action, feedback) => void runAction(row, action, feedback),
@@ -80,6 +87,19 @@ export function runFeatureConsole(deps: FeatureConsoleAppDeps): Promise<void> {
         if (row) void refreshLog();
       },
       openPane: (row, content, placement) => void openPane(row, content, placement),
+      copyId: (row) => {
+        deps.terminal.write(clipboardSequence(row.featureId));
+        view.setStatus({
+          ok: true,
+          message: deps.t('tui:console.copied', { name: row.name, id: row.featureId }),
+        });
+        render();
+      },
+      openControlCenter: () => void openControlCenter(),
+      openChat: (row) => chat.attach(row.featureId),
+      closeChat: () => chat.detach(),
+      sendChat: (row, text) => void chat.send(row.featureId, text),
+      answerChat: (row, answers) => void chat.answer(row.featureId, answers),
       quit: () => finish(),
       requestRender: () => tui.requestRender(),
     };
@@ -89,14 +109,21 @@ export function runFeatureConsole(deps: FeatureConsoleAppDeps): Promise<void> {
       rows: () => deps.terminal.rows,
       intents,
     });
+    const chat = new ConsoleChat(deps, {
+      chat: (c) => view.setChat(c),
+      notice: (n) => view.setChatNotice(n),
+      render: () => render(),
+    });
 
     async function refresh(): Promise<void> {
       if (refreshing || finished) return;
       refreshing = true;
       try {
         const snapshot = await deps.loadSnapshot();
+        latest = snapshot;
         view.setSnapshot(snapshot);
         noticeAttention(snapshot);
+        await controlCenter.sync(snapshot).catch(() => undefined);
       } catch (error) {
         view.setRefreshError(messageOf(error));
       } finally {
@@ -134,6 +161,11 @@ export function runFeatureConsole(deps: FeatureConsoleAppDeps): Promise<void> {
         view.setBusy(undefined);
       }
       await refresh();
+    }
+
+    async function openControlCenter(): Promise<void> {
+      view.setStatus(await controlCenter.open(latest?.rows ?? []));
+      render();
     }
 
     async function openPane(
@@ -210,7 +242,11 @@ export function runFeatureConsole(deps: FeatureConsoleAppDeps): Promise<void> {
       clearInterval(interval);
       for (const signal of TERMINATION_SIGNALS) process.off(signal, finish);
       if (!suspended) tui.stop();
-      resolve();
+      // Chat agents run in this process: stop them before handing control back.
+      void chat
+        .stopAll()
+        .catch(() => undefined)
+        .finally(resolve);
     }
 
     for (const signal of TERMINATION_SIGNALS) process.once(signal, finish);

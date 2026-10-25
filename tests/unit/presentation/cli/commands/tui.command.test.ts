@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 /**
- * `shep tui` command Unit Tests (specs 142, 143)
+ * `shep tui` command Unit Tests (specs 142, 143, 146, 147)
  *
  * The command only wires: it refuses to run without an interactive terminal,
  * and otherwise hands the console app the three use cases as functions.
@@ -29,7 +29,14 @@ describe('createTuiCommand', () => {
     action: { execute: ReturnType<typeof vi.fn> };
     logTail: { execute: ReturnType<typeof vi.fn> };
     pane: { execute: ReturnType<typeof vi.fn> };
+    controlCenter: { execute: ReturnType<typeof vi.fn> };
+    multiplexerStatus: { execute: ReturnType<typeof vi.fn> };
+    chat: { execute: ReturnType<typeof vi.fn> };
+    sendChat: { execute: ReturnType<typeof vi.fn> };
+    answerChat: { execute: ReturnType<typeof vi.fn> };
+    stopChats: { execute: ReturnType<typeof vi.fn> };
   };
+  let printed: string[];
   let written: string[];
   let runConsole: ReturnType<typeof vi.fn<(deps: FeatureConsoleAppDeps) => Promise<void>>>;
 
@@ -46,7 +53,14 @@ describe('createTuiCommand', () => {
       action: { execute: vi.fn(async () => ({ ok: true, message: 'done' })) },
       logTail: { execute: vi.fn(async () => ({ lines: [] })) },
       pane: { execute: vi.fn(async () => ({ outcome: 'opened', message: 'ok' })) },
+      controlCenter: { execute: vi.fn(async () => ({ windows: [] })) },
+      multiplexerStatus: { execute: vi.fn(async () => ({ goneWindowIds: [] })) },
+      chat: { execute: vi.fn(async () => ({ entries: [] })) },
+      sendChat: { execute: vi.fn(async () => ({ ok: true, message: 'Sent' })) },
+      answerChat: { execute: vi.fn(async () => ({ ok: true, message: 'Answered' })) },
+      stopChats: { execute: vi.fn(async () => undefined) },
     };
+    printed = [];
     written = [];
     runConsole = vi.fn(async () => undefined);
   });
@@ -64,6 +78,7 @@ describe('createTuiCommand', () => {
       err: (line) => errors.push(line),
       shepCommand: () => ['/usr/bin/node', '/opt/shep/cli.js'],
       environment: () => ({ SHEP_HOME: '/tmp/shep-home', TERM_PROGRAM: 'iTerm.app', PATH: '/bin' }),
+      out: (line) => printed.push(line),
     });
 
   it('refuses to start without an interactive terminal', async () => {
@@ -128,5 +143,57 @@ describe('createTuiCommand', () => {
 
     await command(true).parseAsync(['node', 'shep', '--no-notify']);
     expect(runConsole.mock.calls[1][0].notify).toBeUndefined();
+  });
+
+  it('wires the control center and multiplexer status use cases (spec 146)', async () => {
+    await command(true).parseAsync(['node', 'shep']);
+    const deps = runConsole.mock.calls[0][0];
+
+    await deps.openControlCenter([{ featureId: 'f1', title: '● Billing' }]);
+    expect(useCases.controlCenter.execute).toHaveBeenCalledWith({
+      features: [{ featureId: 'f1', title: '● Billing' }],
+      shepCommand: ['/usr/bin/node', '/opt/shep/cli.js'],
+      environment: { SHEP_HOME: '/tmp/shep-home' },
+    });
+    await deps.updateMultiplexer({ renames: [] });
+    expect(useCases.multiplexerStatus.execute).toHaveBeenCalledWith({ renames: [] });
+  });
+
+  it('prints the status segment with --status, without a TTY or the console (spec 146)', async () => {
+    const summary = { total: 3, needsAttention: 1, running: 2, waiting: 0, failed: 0, done: 0 };
+    useCases.snapshot.execute.mockResolvedValue({ rows: [], summary });
+
+    await command(false).parseAsync(['node', 'shep', '--status']);
+    await command(false).parseAsync(['node', 'shep', '--status', 'tmux']);
+
+    expect(runConsole).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(0);
+    expect(printed).toEqual([
+      '◆ 1 needs you · ● 2 running',
+      '#[fg=yellow,bold]◆ 1 needs you#[default] · #[fg=cyan]● 2 running#[default]',
+    ]);
+  });
+
+  it('refuses an unknown --status style', async () => {
+    await command(false).parseAsync(['node', 'shep', '--status', 'neon']);
+    expect(process.exitCode).toBe(1);
+    expect(errors.join('\n')).toContain('plain, tmux');
+  });
+
+  it('wires the feature chat use cases (spec 147)', async () => {
+    await command(true).parseAsync(['node', 'shep']);
+    const deps = runConsole.mock.calls[0][0];
+
+    await deps.loadChat('f1', 100);
+    expect(useCases.chat.execute).toHaveBeenCalledWith({ featureId: 'f1', maxEntries: 100 });
+    await deps.sendChatMessage('f1', 'hi');
+    expect(useCases.sendChat.execute).toHaveBeenCalledWith({ featureId: 'f1', content: 'hi' });
+    await deps.answerChatQuestion('f1', { q: 'a' });
+    expect(useCases.answerChat.execute).toHaveBeenCalledWith({
+      featureId: 'f1',
+      answers: { q: 'a' },
+    });
+    await deps.stopChats(['f1']);
+    expect(useCases.stopChats.execute).toHaveBeenCalledWith(['f1']);
   });
 });

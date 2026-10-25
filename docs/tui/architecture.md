@@ -207,6 +207,50 @@ alerts → terminal-notification.ts for features that start needing the user
   already uses: the terminal knows whether it is focused and which tab rang. The first snapshot
   never rings.
 
+### Command palette (spec 145)
+
+`ctrl+p` or `:` lists every console command that applies to the selected feature
+(`console-palette.ts`), with its key. An entry *is* a `ConsoleKey`: enter replays that key through
+the view's browse handler, so the palette runs the same guarded path as the key and can never
+offer an action the core did not put in `row.actions`. Adding a console command is one row in
+the palette table. `c` copies the feature id over OSC 52 (works over ssh and through tmux).
+
+### Control center and tmux status (spec 146)
+
+```
+C → ControlCenter.open (control-center.ts)
+      candidates: active features (isActiveFeatureState) with a run and no window yet
+      └─ OpenControlCenterUseCase → OpenFeaturePaneUseCase per feature (Log, Window, title)
+                                    → launcher.open returns the window id the multiplexer printed
+every snapshot → ControlCenter.sync
+      renames: tracked windows whose state symbol changed
+      status:  tmuxStatusOptions(summary) when it changed (@shep_status, @shep_needs_you)
+      └─ UpdateMultiplexerStatusUseCase → launcher.renameWindow / publishStatus
+           (detects the multiplexer itself; outside one it does nothing)
+```
+
+A window the user closed fails its next rename; the console forgets it, and `C` can open it
+again. `shep tui --status [plain|tmux]` prints `formatStatusSegment(summary)` once.
+
+### Attach and steer (spec 147)
+
+```
+o → ChatView (chat-view.ts) fills the body; the message line is the status line
+      ConsoleChat (console-chat.ts) polls while attached, every 750 ms
+        └─ GetFeatureChatUseCase → GetInteractiveChatStateUseCase
+             entries: user / assistant / tool / block / answer (FeatureChatEntryKind), newest last
+             busy (ChatTurnStatus.Processing or booting), streamingText, the open question(s)
+enter → SendFeatureChatMessageUseCase → SendInteractiveMessageUseCase (worktree, else repository)
+1-9 / typed answer → AnswerFeatureChatQuestionUseCase → RespondToInteractionUseCase (by question text)
+quit → StopFeatureChatsUseCase for every chat this process started
+```
+
+"Attach" talks to the feature's **interactive chat**, not the headless background worker: one
+conversation per feature, persisted, shown identically by the web Chat tab. Interactive sessions
+live in the process that boots them, so the console stops the ones it started before it exits.
+With `SHEP_MOCK_EXECUTOR=1` the mock interactive executor answers deterministically (one tool
+call, a quote of the message; "ask me" asks a two-option question), which the e2e test drives.
+
 The tools this follows (workmux, oh-my-pi, claude-squad, Claude Code agent teams) are compared in
 [docs/competitors/agent-harness-tui.md](../competitors/agent-harness-tui.md).
 

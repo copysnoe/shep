@@ -43,6 +43,14 @@ src/presentation/tui/
     console-labels.ts               # State, phase and agent labels
     console-format.ts               # Durations, cost, sanitising, state palette
     console-keys.ts                 # Raw input -> console keys (legacy + Kitty protocol)
+    console-palette.ts              # ctrl+p command palette (spec 145)
+    console-intents.ts              # What the view asks the app to do
+    terminal-clipboard.ts           # OSC 52 copy
+    control-center.ts               # C: a window per feature; renames; tmux status (spec 146)
+    status-segment.ts               # One-line summary: plain or tmux-styled
+    chat-view.ts                    # o: attach to a feature's agent chat (spec 147)
+    console-chat.ts                 # Polls the attached chat; stops started sessions on quit
+    console-prompts.ts              # Reject-feedback and filter lines
     terminal-notification.ts        # OSC 9 / 777 / 99 or bell, tmux passthrough
     run-inline.ts                   # Lend the terminal to a shell or log (no multiplexer)
     fullscreen-terminal.ts          # Alternate-screen Terminal decorator

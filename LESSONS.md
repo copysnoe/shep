@@ -1,10 +1,19 @@
 # Lessons Learned
 
+## `kill(pid, 0)` says a zombie is alive
+
+`process.kill(pid, 0)` succeeds for a zombie: a process that exited but has not been reaped by its
+parent. The first real run of `shep ps` showed a finished worker as running with 109% CPU and
+0 MB, and `ps -o stat=` read `Zs`. Liveness alone cannot tell "running" from "exited, unreaped";
+when it matters, read the process state (`stat` starting with `Z`) in the same `ps` call. And look
+at real output before calling a monitor done: green unit tests fed it only live and dead PIDs.
+
 ## Drive tmux like a user: UTF-8 client, escape-time, printable -F fields
 
 Three tmux behaviours faked bugs while testing `shep tui` panes (spec 143), none of them in the
-console: a tmux client started without a UTF-8 locale draws every `◆`/`·` as `_` (start it with
-`tmux -u` or `LANG=C.UTF-8`); tmux holds a lone ESC for `escape-time` (500 ms) and merges it with
+console: a tmux client without a UTF-8 locale draws every `◆`/`·` as `_`, both when attached
+and when *reading* names or options (`show-options`, `list-windows`) — the stored value is
+fine, so pass `tmux -u` to every client a test reads through; tmux holds a lone ESC for `escape-time` (500 ms) and merges it with
 the next key into alt+key, so a scripted `esc` then `q` never quits (wait past it); and
 `list-panes -F` rewrites tab characters to `_` (split fields on a printable marker). Run
 e2e tmux servers on their own socket (`tmux -L <name>`) and ask tmux for pane facts

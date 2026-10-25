@@ -14,7 +14,6 @@ import {
   FeaturePaneContent,
   FeaturePaneOutcome,
   FeaturePanePlacement,
-  type Feature,
   type TerminalMultiplexer,
 } from '../../../domain/generated/output.js';
 import type { IFeatureRepository } from '../../ports/output/repositories/feature-repository.interface.js';
@@ -23,6 +22,7 @@ import type { ITerminalPaneLauncher } from '../../ports/output/services/terminal
 import type { IWorktreePathProvider } from '../../ports/output/services/worktree-path-provider.interface.js';
 import { FEATURE_SHORT_ID_LENGTH } from './feature-console.types.js';
 import { findFeatureByIdOrPrefix } from './find-feature.js';
+import { resolveFeatureDirectory } from './feature-directory.js';
 
 export interface OpenFeaturePaneInput {
   /** Feature id or id prefix. */
@@ -33,10 +33,18 @@ export interface OpenFeaturePaneInput {
   shepCommand: readonly string[];
   /** Variables the pane must share with the caller, such as SHEP_HOME. */
   environment?: Readonly<Record<string, string>>;
+  /** Name for the pane or window; defaults to `shep <short id>` (plus `log`). */
+  title?: string;
 }
 
 export type OpenFeaturePaneResult =
-  | { outcome: FeaturePaneOutcome.Opened; multiplexer: TerminalMultiplexer; message: string }
+  | {
+      outcome: FeaturePaneOutcome.Opened;
+      multiplexer: TerminalMultiplexer;
+      /** The new pane or window id, where the multiplexer prints one (spec 146). */
+      windowId?: string;
+      message: string;
+    }
   | { outcome: FeaturePaneOutcome.Inline; cwd: string; command: string[]; message: string }
   | { outcome: FeaturePaneOutcome.Failed; message: string };
 
@@ -70,7 +78,7 @@ export class OpenFeaturePaneUseCase {
       const isLog = input.content === FeaturePaneContent.Log;
       if (isLog && !feature.agentRunId) return failed(`${feature.name} has no agent run yet.`);
 
-      const cwd = this.directoryOf(feature);
+      const cwd = resolveFeatureDirectory(feature, this.worktreePaths, this.fileSystem);
       const command = isLog ? [...input.shepCommand, ...FOLLOW_LOG_ARGS, feature.id] : undefined;
       const what = CONTENT_PHRASE[input.content](feature.name);
 
@@ -85,11 +93,13 @@ export class OpenFeaturePaneUseCase {
       }
 
       const shortId = feature.id.slice(0, FEATURE_SHORT_ID_LENGTH);
-      await this.launcher.open({
+      const opened = await this.launcher.open({
         multiplexer,
         placement: input.placement,
         cwd,
-        title: [PANE_TITLE_PREFIX, shortId, ...(isLog ? [LOG_TITLE_SUFFIX] : [])].join(' '),
+        title:
+          input.title ??
+          [PANE_TITLE_PREFIX, shortId, ...(isLog ? [LOG_TITLE_SUFFIX] : [])].join(' '),
         ...(command && { command }),
         environment: input.environment ?? {},
         // A shell is for typing in; a log is for watching beside the console.
@@ -98,24 +108,12 @@ export class OpenFeaturePaneUseCase {
       return {
         outcome: FeaturePaneOutcome.Opened,
         multiplexer,
+        ...(opened.id && { windowId: opened.id }),
         message: `Opened ${what} in ${multiplexer}`,
       };
     } catch (error) {
       return failed(error instanceof Error ? error.message : String(error));
     }
-  }
-
-  private directoryOf(feature: Feature): string {
-    const candidates = [
-      feature.worktreePath,
-      feature.branch
-        ? this.worktreePaths.getWorktreePath(feature.repositoryPath, feature.branch)
-        : undefined,
-    ];
-    return (
-      candidates.find((path): path is string => !!path && this.fileSystem.pathExists(path)) ??
-      feature.repositoryPath
-    );
   }
 }
 

@@ -57,6 +57,47 @@ Show status and metrics of the running daemon.
 
 **Source**: `src/presentation/cli/commands/status.command.ts`
 
+### `shep ps`
+
+List the processes Shep runs on this machine (spec 144): the web daemon and every agent worker,
+with the feature it serves, its agent, status, uptime, CPU and memory.
+
+**Source**: `src/presentation/cli/commands/ps/ps.command.ts` (rows: `ListShepProcessesUseCase`)
+
+**Options**:
+
+| Option        | Description                                                         | Default |
+| ------------- | ------------------------------------------------------------------- | ------- |
+| `--all`       | Include runs whose process has exited (finished, failed, at a gate) | —       |
+| `--json`      | Print the rows as JSON, without colour                              | —       |
+| `-w, --watch` | Redraw every 2 seconds until `ctrl+c` (interactive terminals only)  | —       |
+
+**Subcommands**:
+
+| Command                        | Description                                                            |
+| ------------------------------ | ---------------------------------------------------------------------- |
+| `shep ps stop <id> [--force]`  | Stop an agent run by run id, feature id, or a prefix of either; a feature id stops that feature's running agent. The daemon is refused: use `shep stop`. |
+
+**Examples**:
+
+```bash
+shep ps                 # live Shep processes
+shep ps --all           # include exited runs
+shep ps --json | jq '.processes[] | select(.state == "crashed")'
+shep ps -w              # redraw every 2 seconds
+shep ps stop feat-abc1  # stop a feature's running agent
+```
+
+**Behavior**:
+
+- **State** is `running` (the process is alive), `crashed` (its run is still marked running or
+  pending but the process is gone; resume it with `shep feat resume`), or `exited` (finished,
+  failed, or paused at an approval gate). A zombie — exited but not yet reaped, so it still
+  answers `kill(pid, 0)` — counts as exited.
+- **CPU and memory** come from one `ps -o pid=,stat=,pcpu=,rss=` call for every row. They are not
+  available on Windows, where the columns show `—`.
+- Refuses to stop the agent run it is called from (inside a Shep agent) unless `--force`.
+
 ### `shep ui`
 
 Start the web UI in foreground (interactive, non-daemon mode).
@@ -105,6 +146,7 @@ a feature's shell or followed agent log in a split pane.
 | `--repo <path>` | Only show features of this repository  | —       |
 | `--all`         | Include archived features              | —       |
 | `--no-notify`   | No bell or terminal notification when a feature starts needing you | notify on |
+| `--status [style]` | Print a one-line summary and exit (`plain`, or `tmux` with styles); needs no TTY | — |
 
 **Keys**:
 
@@ -118,9 +160,13 @@ a feature's shell or followed agent log in a split pane.
 | `r`               | Reject the gate; type feedback, `enter` sends      |
 | `s`               | Stop the run, after `y` to confirm (stays resumable) |
 | `R`               | Resume an interrupted or failed run                |
+| `o`               | Attach: chat with the feature's agent (the web Chat tab's conversation); `esc` returns |
 | `t` / `T`         | Shell in the feature's worktree: split pane / new window |
 | `f` / `F`         | Follow the agent log (`shep feat logs -f`): split pane / new window |
 | `/`               | Filter the roster by every word typed; `enter` keeps it, `esc` clears it |
+| `ctrl+p` / `:`    | Command palette: every command that applies, fuzzy search, `enter` runs it |
+| `c`               | Copy the selected feature's full id to the clipboard (OSC 52) |
+| `C`               | Control center: a window per active feature, following its log, named with its state |
 | `?`               | Help                                               |
 | `q` / `ctrl+c`    | Quit and restore the terminal                      |
 
@@ -140,6 +186,26 @@ Action keys appear in the key bar only when the selected feature's run accepts t
   console. Each split halves the console's pane, so use `T` / `F` for several at once.
 - **No multiplexer.** `t` and `f` run in this terminal: the console steps aside, and comes back
   when the shell exits or `ctrl+c` ends the log.
+- **Attach (`o`).** A full-screen transcript of the feature's agent chat — the same conversation
+  the web UI's Chat tab shows, with an interactive agent (Claude Code or Cursor) running in the
+  feature's worktree. Text streams in as the agent writes, each tool call is one muted line, and
+  `enter` sends what you type. When the agent asks a question, its options are numbered: a digit
+  on an empty line picks one, or type an answer in your own words. Chat sessions the console
+  starts run inside it and stop when you quit. The background feature worker is not affected:
+  steer it at its gates with `a` / `r`.
+- **Control center.** `C` opens a window (tmux window, WezTerm or kitty tab, Zellij floating pane)
+  for every active feature that has a run and no window yet, each following that feature's log.
+  The console renames each window as its state changes (`◆` needs you, `●` running, `✗` failed,
+  `✓` done); Zellij cannot rename an unfocused pane, so its names stay as opened.
+- **tmux status.** Inside tmux the console publishes `@shep_status` (styled) and
+  `@shep_needs_you` (a number) whenever they change:
+
+  ```tmux
+  set -g status-right '#{@shep_status}  %H:%M'
+  ```
+
+  Outside the console, `shep tui --status tmux` prints the same segment (it opens the database,
+  so prefer the option while the console runs).
 - **Alerts.** When a feature starts needing you, the console sends the terminal's own
   notification (OSC 9 in iTerm2, OSC 777 in WezTerm and Ghostty, OSC 99 in kitty) or a bell. In
   tmux it uses passthrough (set `allow-passthrough on`) plus a bell; in Zellij a bell. The window
